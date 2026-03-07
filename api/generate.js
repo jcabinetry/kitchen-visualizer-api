@@ -28,7 +28,7 @@ const hardwareInstruction=hardware
 ?`Use ${hardware} hardware on the cabinet doors and drawer fronts.`
 :`Keep existing cabinet hardware.`
 
-const prompt=`Edit this exact kitchen photo. Keep the same layout walls appliances counters backsplash floor lighting and camera angle. Only change cabinet color cabinet door style and hardware. Main cabinets should be ${color}. Door style should be ${style}. ${islandInstruction} ${hardwareInstruction}. Do not redesign the room. Do not move appliances.`
+const prompt=`Edit this exact kitchen photo. Keep the same layout walls appliances counters backsplash floor lighting and camera angle. Only change cabinet color cabinet door style and hardware. Main cabinets should be ${color}. Door style should be ${style}. ${islandInstruction} ${hardwareInstruction}. Do not redesign the room.`
 
 const response=await fetch("https://api.openai.com/v1/images/edits",{
 method:"POST",
@@ -38,9 +38,14 @@ headers:{
 },
 body:JSON.stringify({
 model:"gpt-image-1",
-images:[{
-image:image
-}],
+images:[
+{
+type:"image_url",
+image_url:{
+url:image
+}
+}
+],
 prompt:prompt,
 size:"1536x1024"
 })
