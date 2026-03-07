@@ -1,14 +1,24 @@
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
+    const { prompt } = req.body || {};
 
-    const { prompt } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ error: "Missing prompt" });
+    }
 
-    const response = await fetch("https://api.openai.com/v1/images/generations", {
+    const openaiResponse = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -16,23 +26,43 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-image-1",
-        prompt: prompt,
+        prompt,
         size: "1024x1024"
       })
     });
 
-    const data = await response.json();
+    const data = await openaiResponse.json();
 
-    res.status(200).json({
-      image: data.data[0].url
-    });
+    if (!openaiResponse.ok) {
+      return res.status(openaiResponse.status).json({
+        error: data?.error?.message || "OpenAI image generation failed",
+        details: data
+      });
+    }
 
+    const imageObject = data?.data?.[0];
+
+    if (!imageObject) {
+      return res.status(500).json({ error: "No image returned from OpenAI" });
+    }
+
+    if (imageObject.b64_json) {
+      return res.status(200).json({
+        image: `data:image/png;base64,${imageObject.b64_json}`
+      });
+    }
+
+    if (imageObject.url) {
+      return res.status(200).json({
+        image: imageObject.url
+      });
+    }
+
+    return res.status(500).json({ error: "Image response format not recognized" });
   } catch (error) {
-
-    res.status(500).json({
-      error: "Image generation failed"
+    return res.status(500).json({
+      error: "Server error",
+      details: String(error)
     });
-
   }
-
 }
