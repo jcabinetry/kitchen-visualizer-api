@@ -12,13 +12,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompt } = req.body || {};
+    const { image, color, style } = req.body || {};
 
-    if (!prompt) {
-      return res.status(400).json({ error: "Missing prompt" });
+    if (!image) {
+      return res.status(400).json({ error: "Missing image" });
     }
 
-    const openaiResponse = await fetch("https://api.openai.com/v1/images/generations", {
+    const prompt = `Edit this exact kitchen photo. Keep the same room layout, walls, windows, countertops, backsplash, flooring, appliances, sink, lighting, and camera angle. Only change the cabinet doors, drawer fronts, cabinet finish, and cabinet style. Use ${color}. Use ${style}. Make it look photorealistic and like the same kitchen, not a different kitchen.`;
+
+    const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -26,6 +28,11 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-image-1",
+        images: [
+          {
+            image_url: image
+          }
+        ],
         prompt,
         size: "1024x1024"
       })
@@ -35,7 +42,7 @@ export default async function handler(req, res) {
 
     if (!openaiResponse.ok) {
       return res.status(openaiResponse.status).json({
-        error: data?.error?.message || "OpenAI image generation failed",
+        error: data?.error?.message || "OpenAI image edit failed",
         details: data
       });
     }
