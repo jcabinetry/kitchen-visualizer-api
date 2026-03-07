@@ -12,13 +12,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { image, color, style } = req.body || {};
+    const { image, color, style, island } = req.body || {};
 
     if (!image) {
       return res.status(400).json({ error: "Missing image" });
     }
 
-    const prompt = `Edit this exact kitchen photo. Keep the same room layout, walls, windows, countertops, backsplash, flooring, appliances, sink, lighting, and camera angle. Only change the cabinet doors, drawer fronts, cabinet finish, and cabinet style. Use ${color}. Use ${style}. Make it look photorealistic and like the same kitchen, not a different kitchen.`;
+    const islandInstruction = island
+      ? `If the kitchen has an island, change only the island cabinetry to ${island}.`
+      : `If the kitchen has an island, keep the island the same finish as the main cabinets unless it already matches naturally.`;
+
+    const prompt = `Edit this exact kitchen photo. Keep the same room layout, walls, windows, countertops, backsplash, flooring, appliances, sink, lighting, ceiling, and camera angle. Only change the cabinet doors, drawer fronts, cabinet finish, and cabinet door style. Use ${color} for the main cabinets. Use ${style}. ${islandInstruction} Make it photorealistic and look like the same kitchen, not a different kitchen. Do not redesign the room. Do not move or replace appliances. Do not change counters, floors, or walls.`;
 
     const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
@@ -28,13 +32,9 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-image-1",
-        images: [
-          {
-            image_url: image
-          }
-        ],
-        prompt,
-        size: "1024x1024"
+        image: image,
+        prompt: prompt,
+        size: "1536x1024"
       })
     });
 
