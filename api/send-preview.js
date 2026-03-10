@@ -26,14 +26,14 @@ export default async function handler(req, res) {
       ? previewImage.split(",")[1]
       : previewImage;
 
-    const customerSend = await resend.emails.send({
-      from: "Johnson Cabinetry and Refacing <dusty@jcabinetry.com>",
+    const customerResult = await resend.emails.send({
+      from: "Johnson Cabinetry and Refacing <onboarding@resend.dev>",
       to: [customerEmail],
       subject: "Your Kitchen Preview | Johnson Cabinetry and Refacing",
       html: `
         <p>Thank you for using our kitchen visualizer.</p>
         <p>Attached is the preview of your kitchen based on the selections you made.</p>
-        <p>If you would like to talk through your options or schedule a free estimate, please call Johnson Cabinetry and Refacing at 970-652-0240. We are here to help.</p>
+        <p>If you would like to talk through your options or schedule a free estimate, please call Johnson Cabinetry and Refacing at 970-652-0240.</p>
         <p>
           Johnson Cabinetry and Refacing<br>
           970-652-0240<br>
@@ -48,8 +48,14 @@ export default async function handler(req, res) {
       ]
     });
 
-    const ownerCopySend = await resend.emails.send({
-      from: "Johnson Cabinetry and Refacing <dusty@jcabinetry.com>",
+    if (customerResult.error) {
+      return res.status(500).json({
+        error: `Customer email failed: ${customerResult.error.message || "Unknown Resend error"}`
+      });
+    }
+
+    const ownerResult = await resend.emails.send({
+      from: "Johnson Cabinetry and Refacing <onboarding@resend.dev>",
       to: ["dusty@jcabinetry.com"],
       subject: "New Visualizer Lead | Johnson Cabinetry and Refacing",
       html: `
@@ -65,15 +71,20 @@ export default async function handler(req, res) {
       ]
     });
 
+    if (ownerResult.error) {
+      return res.status(500).json({
+        error: `Owner copy failed: ${ownerResult.error.message || "Unknown Resend error"}`
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      customerSend,
-      ownerCopySend
+      customerId: customerResult.data?.id || null,
+      ownerId: ownerResult.data?.id || null
     });
   } catch (error) {
     return res.status(500).json({
-      error: "Email failed.",
-      details: String(error)
+      error: error?.message || "Email failed."
     });
   }
 }
