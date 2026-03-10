@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       ? previewImage.split(",")[1]
       : previewImage;
 
-    await resend.emails.send({
+    const customerSend = await resend.emails.send({
       from: "Johnson Cabinetry and Refacing <dusty@jcabinetry.com>",
       to: [customerEmail],
       subject: "Your Kitchen Preview | Johnson Cabinetry and Refacing",
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       ]
     });
 
-    await resend.emails.send({
+    const ownerCopySend = await resend.emails.send({
       from: "Johnson Cabinetry and Refacing <dusty@jcabinetry.com>",
       to: ["dusty@jcabinetry.com"],
       subject: "New Visualizer Lead | Johnson Cabinetry and Refacing",
@@ -65,7 +65,11 @@ export default async function handler(req, res) {
       ]
     });
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({
+      success: true,
+      customerSend,
+      ownerCopySend
+    });
   } catch (error) {
     return res.status(500).json({
       error: "Email failed.",
