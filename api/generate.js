@@ -42,12 +42,24 @@ export default async function handler(req, res) {
       });
     }
 
+    const images = [
+      { image_url: image }
+    ];
+
+    if (usingCustomMain && mainCustomColorImage) {
+      images.push({ image_url: mainCustomColorImage });
+    }
+
+    if (usingCustomIsland && islandCustomColorImage) {
+      images.push({ image_url: islandCustomColorImage });
+    }
+
     const mainColorInstruction = usingCustomMain
-      ? "Match the main cabinets to the uploaded main cabinet reference image. If the reference appears to be a solid painted color, apply it as a smooth painted cabinet finish with no wood grain visible. If the reference appears to be stained wood or wood veneer, replicate the wood tone and natural grain pattern as a stained wood cabinet finish."
+      ? "Use the uploaded main cabinet reference image as the exact finish reference for the main cabinets. Match the tone, depth, warmth, and wood character as closely as possible. If the reference shows stained wood, keep visible natural wood grain. If the reference shows a smooth painted finish, do not add wood grain."
       : `Use ${color} for the main cabinets.`;
 
     const islandInstruction = usingCustomIsland
-      ? "If the kitchen has an island, match the island cabinets to the uploaded island reference image. If the reference appears to be a solid painted color, apply it as a smooth painted cabinet finish with no wood grain visible. If the reference appears to be stained wood or wood veneer, replicate the wood tone and natural grain pattern as a stained wood cabinet finish."
+      ? "If the kitchen has an island, use the uploaded island reference image as the exact finish reference for the island cabinetry. Match the tone, depth, warmth, and wood character as closely as possible. If the reference shows stained wood, keep visible natural wood grain. If the reference shows a smooth painted finish, do not add wood grain."
       : island
         ? `If the kitchen has an island, change only the island cabinetry to ${island}.`
         : "If the kitchen has an island, keep the island the same finish as the main cabinets.";
@@ -61,7 +73,35 @@ export default async function handler(req, res) {
       ? `Use ${hardware} hardware on visible cabinet doors and drawer fronts.`
       : "Keep the existing cabinet hardware.";
 
-    const prompt = `Edit this exact kitchen photo. Keep the same room layout, walls, windows, countertops, backsplash, flooring, appliances, sink, lighting, ceiling, and camera angle. Only change cabinet finish, island finish if applicable, cabinet door style, upper cabinets only if requested, and cabinet hardware. ${mainColorInstruction} Door style should be ${style}. ${upperHeightInstruction} ${islandInstruction} ${hardwareInstruction} If the reference image is a solid paint color, produce smooth painted cabinets. If the reference image shows wood grain, produce a stained wood cabinet finish that preserves visible grain texture. Make it photorealistic and keep it the same kitchen, not a different kitchen. Do not redesign the room. Do not move or replace appliances. Do not change floors, counters, backsplash, walls, or lighting.`;
+    const prompt = `
+Edit this exact kitchen photo.
+
+The first uploaded image is the kitchen to edit.
+If additional uploaded images are included, they are finish reference images for the cabinetry.
+
+Keep the same room layout, walls, windows, countertops, backsplash, flooring, appliances, sink, lighting, ceiling, and camera angle.
+Do not redesign the room.
+Do not move or replace appliances.
+Do not change floors, counters, backsplash, walls, or lighting.
+
+Only change:
+cabinet finish,
+island finish if applicable,
+cabinet door style,
+upper cabinets only if requested,
+and cabinet hardware.
+
+${mainColorInstruction}
+Door style should be ${style}.
+${upperHeightInstruction}
+${islandInstruction}
+${hardwareInstruction}
+
+Important:
+If a reference image shows dark stained rustic wood, apply that as a realistic stained wood cabinet finish, not paint.
+If a reference image shows smooth painted color, apply smooth painted cabinetry with no wood grain.
+Keep the result photorealistic and make it look like this same kitchen, just updated.
+`;
 
     const response = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
@@ -71,10 +111,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-image-1",
-        images: [
-          { image_url: image }
-        ],
-        prompt: prompt,
+        images,
+        prompt,
         size: "1536x1024"
       })
     });
