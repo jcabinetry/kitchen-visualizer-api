@@ -31,44 +31,37 @@ export default async function handler(req, res) {
     const usingCustomIsland = island === "custom island color reference";
 
     if (usingCustomMain && !mainCustomColorImage) {
-      return res.status(400).json({ error: "Missing main cabinet custom color reference image" });
+      return res.status(400).json({
+        error: "Missing main cabinet custom color reference image"
+      });
     }
 
     if (usingCustomIsland && !islandCustomColorImage) {
-      return res.status(400).json({ error: "Missing island custom color reference image" });
+      return res.status(400).json({
+        error: "Missing island custom color reference image"
+      });
     }
 
     const mainColorInstruction = usingCustomMain
-      ? "Match the main cabinet color to the uploaded main cabinet custom color reference image as closely as possible."
+      ? "Match the main cabinet color to the uploaded main cabinet custom color reference as closely as possible."
       : `Use ${color} for the main cabinets.`;
 
     const islandInstruction = usingCustomIsland
-      ? "If the kitchen has an island, match the island cabinetry to the uploaded island custom color reference image as closely as possible."
+      ? "If the kitchen has an island, match the island cabinetry to the uploaded island custom color reference as closely as possible."
       : island
         ? `If the kitchen has an island, change only the island cabinetry to ${island}.`
         : "If the kitchen has an island, keep the island the same finish as the main cabinets.";
 
-    const upperHeightInstruction = upperHeight === "extend upper cabinets to ceiling with full height doors"
-      ? "Extend the existing upper cabinets vertically to the ceiling and use full height doors. Keep the same kitchen layout and make the proportions realistic."
-      : "Keep the existing upper cabinet height the same.";
+    const upperHeightInstruction =
+      upperHeight === "extend upper cabinets to ceiling"
+        ? "Extend the existing upper cabinets vertically to the ceiling. Keep the same kitchen layout and make it look natural and realistic."
+        : "Keep the existing upper cabinets exactly as they are.";
 
     const hardwareInstruction = hardware
       ? `Use ${hardware} hardware on visible cabinet doors and drawer fronts.`
       : "Keep the existing cabinet hardware.";
 
-    const prompt = `Edit this exact kitchen photo. Keep the same room layout, walls, windows, countertops, backsplash, flooring, appliances, sink, lighting, ceiling, and camera angle. Only change cabinet color, island color if applicable, cabinet door style, upper cabinet height if requested, and cabinet hardware. ${mainColorInstruction} Door style should be ${style}. ${upperHeightInstruction} ${islandInstruction} ${hardwareInstruction} Make it photorealistic and keep it the same kitchen, not a different kitchen. Do not redesign the room. Do not move or replace appliances. Do not change floors, counters, backsplash, walls, or lighting.`;
-
-    const imagesArray = [
-      { image_url: image }
-    ];
-
-    if (mainCustomColorImage) {
-      imagesArray.push({ image_url: mainCustomColorImage });
-    }
-
-    if (islandCustomColorImage) {
-      imagesArray.push({ image_url: islandCustomColorImage });
-    }
+    const prompt = `Edit this exact kitchen photo. Keep the same room layout, walls, windows, countertops, backsplash, flooring, appliances, sink, lighting, ceiling, and camera angle. Only change cabinet color, island color if applicable, cabinet door style, upper cabinets only if requested, and cabinet hardware. ${mainColorInstruction} Door style should be ${style}. ${upperHeightInstruction} ${islandInstruction} ${hardwareInstruction} Make it photorealistic and keep it the same kitchen, not a different kitchen. Do not redesign the room. Do not move or replace appliances. Do not change floors, counters, backsplash, walls, or lighting.`;
 
     const response = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
@@ -78,10 +71,9 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-image-1",
-        images: imagesArray,
+        image: image,
         prompt: prompt,
-        size: "1536x1024",
-        input_fidelity: "high"
+        size: "1536x1024"
       })
     });
 
@@ -112,7 +104,9 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(500).json({ error: "Image response format not recognized" });
+    return res.status(500).json({
+      error: "Image response format not recognized"
+    });
   } catch (error) {
     return res.status(500).json({
       error: "Server error",
