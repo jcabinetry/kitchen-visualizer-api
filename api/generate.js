@@ -42,9 +42,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const images = [
-      { image_url: image }
-    ];
+    const images = [{ image_url: image }];
 
     if (usingCustomMain && mainCustomColorImage) {
       images.push({ image_url: mainCustomColorImage });
@@ -55,11 +53,11 @@ export default async function handler(req, res) {
     }
 
     const mainColorInstruction = usingCustomMain
-      ? "Use the uploaded main cabinet reference image as the exact finish reference for the main cabinets. Match the tone, depth, warmth, and wood character as closely as possible. If the reference shows stained wood, keep visible natural wood grain. If the reference shows a smooth painted finish, do not add wood grain."
+      ? "Use the uploaded main cabinet reference image as the exact finish reference for the main cabinets. Match the finish as closely as possible in darkness, richness, warmth or coolness, stain depth, contrast, and visible wood character. If the reference is dark stained wood, keep it dark stained wood. Do not lighten it. Do not wash it out. Do not turn it into paint. Preserve realistic natural grain and stain depth."
       : `Use ${color} for the main cabinets.`;
 
     const islandInstruction = usingCustomIsland
-      ? "If the kitchen has an island, use the uploaded island reference image as the exact finish reference for the island cabinetry. Match the tone, depth, warmth, and wood character as closely as possible. If the reference shows stained wood, keep visible natural wood grain. If the reference shows a smooth painted finish, do not add wood grain."
+      ? "If the kitchen has an island, use the uploaded island reference image as the exact finish reference for the island cabinetry. Match the finish as closely as possible in darkness, richness, warmth or coolness, stain depth, contrast, and visible wood character. If the reference is dark stained wood, keep it dark stained wood. Do not lighten it. Do not wash it out. Do not turn it into paint. Preserve realistic natural grain and stain depth."
       : island
         ? `If the kitchen has an island, change only the island cabinetry to ${island}.`
         : "If the kitchen has an island, keep the island the same finish as the main cabinets.";
@@ -77,19 +75,14 @@ export default async function handler(req, res) {
 Edit this exact kitchen photo.
 
 The first uploaded image is the kitchen to edit.
-If additional uploaded images are included, they are finish reference images for the cabinetry.
+Any additional uploaded images are cabinetry finish reference images.
 
 Keep the same room layout, walls, windows, countertops, backsplash, flooring, appliances, sink, lighting, ceiling, and camera angle.
 Do not redesign the room.
 Do not move or replace appliances.
 Do not change floors, counters, backsplash, walls, or lighting.
 
-Only change:
-cabinet finish,
-island finish if applicable,
-cabinet door style,
-upper cabinets only if requested,
-and cabinet hardware.
+Only change cabinet finish, island finish if applicable, cabinet door style, upper cabinets only if requested, and cabinet hardware.
 
 ${mainColorInstruction}
 Door style should be ${style}.
@@ -97,9 +90,13 @@ ${upperHeightInstruction}
 ${islandInstruction}
 ${hardwareInstruction}
 
-Important:
-If a reference image shows dark stained rustic wood, apply that as a realistic stained wood cabinet finish, not paint.
-If a reference image shows smooth painted color, apply smooth painted cabinetry with no wood grain.
+Important rules:
+If a reference image shows dark rustic stained wood, the finished cabinets must remain dark, rich, stained wood with visible grain.
+Do not lighten the finish.
+Do not turn stained wood into painted cabinets.
+Do not mute or soften strong stain depth unless the reference itself is muted.
+If a reference image shows smooth painted cabinetry, apply smooth painted cabinetry with no visible wood grain.
+Match the reference finish closely in overall tone, depth, saturation, grain visibility, and character.
 Keep the result photorealistic and make it look like this same kitchen, just updated.
 `;
 
