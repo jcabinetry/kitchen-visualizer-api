@@ -63,6 +63,12 @@ export default async function handler(req, res) {
 
     const prompt = `Edit this exact kitchen photo. Keep the same room layout, walls, windows, countertops, backsplash, flooring, appliances, sink, lighting, ceiling, and camera angle. Only change cabinet color, island color if applicable, cabinet door style, upper cabinets only if requested, and cabinet hardware. ${mainColorInstruction} Door style should be ${style}. ${upperHeightInstruction} ${islandInstruction} ${hardwareInstruction} Make it photorealistic and keep it the same kitchen, not a different kitchen. Do not redesign the room. Do not move or replace appliances. Do not change floors, counters, backsplash, walls, or lighting.`;
 
+    const imagesArray = [
+      {
+        image_url: image
+      }
+    ];
+
     const response = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
       headers: {
@@ -71,7 +77,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-image-1",
-        image: image,
+        images: imagesArray,
         prompt: prompt,
         size: "1536x1024"
       })
