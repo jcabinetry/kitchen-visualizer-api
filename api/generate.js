@@ -12,15 +12,16 @@ function stripDataUrl(dataUrl) {
   return parts.length > 1 ? parts[1] : null;
 }
 
-function base64ToBlob(base64, mimeType = "image/jpeg") {
-  const bytes = Buffer.from(base64, "base64");
-  return new Blob([bytes], { type: mimeType });
-}
-
-function pickMimeType(dataUrl, fallback = "image/jpeg") {
+function getMimeType(dataUrl, fallback = "image/jpeg") {
   if (!dataUrl || typeof dataUrl !== "string") return fallback;
   const match = dataUrl.match(/^data:(.*?);base64,/);
-  return match?.[1] || fallback;
+  return match ? match[1] : fallback;
+}
+
+function fileExtensionFromMime(mime) {
+  if (mime === "image/png") return "png";
+  if (mime === "image/webp") return "webp";
+  return "jpg";
 }
 
 export default async function handler(req, res) {
@@ -44,24 +45,32 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing kitchen image." });
     }
 
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel environment variables." });
+    }
+
     const kitchenBase64 = stripDataUrl(image);
     if (!kitchenBase64) {
       return res.status(400).json({ error: "Invalid kitchen image." });
     }
 
-    const kitchenMime = pickMimeType(image, "image/jpeg");
+    const kitchenMime = getMimeType(image, "image/jpeg");
+    const kitchenExt = fileExtensionFromMime(kitchenMime);
 
     const hasMainCustom =
       color === "custom main color reference" && !!mainCustomColorImage;
+
     const hasIslandCustom =
       island === "custom island color reference" && !!islandCustomColorImage;
 
-    const mainCustomBase64 = hasMainCustom
-      ? stripDataUrl(mainCustomColorImage)
-      : null;
-    const islandCustomBase64 = hasIslandCustom
-      ? stripDataUrl(islandCustomColorImage)
-      : null;
+    const mainCustomBase64 = hasMainCustom ? stripDataUrl(mainCustomColorImage) : null;
+    const islandCustomBase64 = hasIslandCustom ? stripDataUrl(islandCustomColorImage) : null;
+
+    const mainCustomMime = hasMainCustom ? getMimeType(mainCustomColorImage, "image/jpeg") : "image/jpeg";
+    const islandCustomMime = hasIslandCustom ? getMimeType(islandCustomColorImage, "image/jpeg") : "image/jpeg";
+
+    const mainCustomExt = fileExtensionFromMime(mainCustomMime);
+    const islandCustomExt = fileExtensionFromMime(islandCustomMime);
 
     const mainColorInstruction = hasMainCustom
       ? "Use the uploaded main cabinet reference image as the exact target color and finish for the main cabinets. Match that reference as closely as possible."
@@ -90,10 +99,10 @@ Edit this exact kitchen photo and keep the same room layout, cabinet layout, wal
 
 Do not redesign the room structure.
 Do not move appliances.
-Do not change the size or location of cabinets unless upper cabinet extension is selected.
 Do not change countertop layout.
 Do not change backsplash layout.
 Do not create a different kitchen.
+Do not change the size or location of cabinets unless upper cabinet extension is selected.
 
 Only change cabinet finish, island finish, cabinet door style, cabinet hardware, and upper cabinet height if selected.
 
@@ -113,34 +122,26 @@ Keep this the same kitchen, not a different kitchen.
     form.append("model", "gpt-image-1");
     form.append("prompt", prompt);
     form.append("size", "1536x1024");
-    form.append("quality", "high");
-    form.append("output_format", "png");
 
+    const kitchenBuffer = Buffer.from(kitchenBase64, "base64");
     form.append(
       "image[]",
-      base64ToBlob(kitchenBase64, kitchenMime),
-      "kitchen.jpg"
+      new File([kitchenBuffer], `kitchen.${kitchenExt}`, { type: kitchenMime })
     );
 
     if (hasMainCustom && mainCustomBase64) {
+      const mainBuffer = Buffer.from(mainCustomBase64, "base64");
       form.append(
         "image[]",
-        base64ToBlob(
-          mainCustomBase64,
-          pickMimeType(mainCustomColorImage, "image/jpeg")
-        ),
-        "main-reference.jpg"
+        new File([mainBuffer], `main-reference.${mainCustomExt}`, { type: mainCustomMime })
       );
     }
 
     if (hasIslandCustom && islandCustomBase64) {
+      const islandBuffer = Buffer.from(islandCustomBase64, "base64");
       form.append(
         "image[]",
-        base64ToBlob(
-          islandCustomBase64,
-          pickMimeType(islandCustomColorImage, "image/jpeg")
-        ),
-        "island-reference.jpg"
+        new File([islandBuffer], `island-reference.${islandCustomExt}`, { type: islandCustomMime })
       );
     }
 
@@ -156,21 +157,29 @@ Keep this the same kitchen, not a different kitchen.
 
     if (!openaiResponse.ok) {
       return res.status(openaiResponse.status).json({
-        error:
-          result?.error?.message ||
-          result?.message ||
-          "OpenAI image edit failed."
+        error: result?.error?.message || result?.message || "OpenAI image edit failed."
       });
     }
 
-    const b64 = result?.data?.[0]?.b64_json;
-    if (!b64) {
-      return res.status(500).json({ error: "No image returned from OpenAI." });
+    const imageUrl = result?.data?.[0]?.url;
+    const imageBase64 = result?.data?.[0]?.b64_json;
+
+    if (imageBase64) {
+      return res.status(200).json({
+        image: `data:image/png;base64,${imageBase64}`
+      });
     }
 
-    return res.status(200).json({
-      image: `data:image/png;base64,${b64}`
+    if (imageUrl) {
+      return res.status(200).json({
+        image: imageUrl
+      });
+    }
+
+    return res.status(500).json({
+      error: "No image returned from OpenAI."
     });
+
   } catch (error) {
     return res.status(500).json({
       error: error?.message || "Server error."
