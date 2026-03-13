@@ -1,12 +1,29 @@
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "25mb"
+    }
   }
+};
 
+function stripDataUrl(dataUrl) {
+  if (!dataUrl || typeof dataUrl !== "string") return null;
+  const parts = dataUrl.split(",");
+  return parts.length > 1 ? parts[1] : null;
+}
+
+function base64ToBlob(base64, mimeType = "image/jpeg") {
+  const bytes = Buffer.from(base64, "base64");
+  return new Blob([bytes], { type: mimeType });
+}
+
+function pickMimeType(dataUrl, fallback = "image/jpeg") {
+  if (!dataUrl || typeof dataUrl !== "string") return fallback;
+  const match = dataUrl.match(/^data:(.*?);base64,/);
+  return match?.[1] || fallback;
+}
+
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -17,137 +34,146 @@ export default async function handler(req, res) {
       mainCustomColorImage,
       islandCustomColorImage,
       color,
-      style,
       island,
+      style,
       upperHeight,
       hardware
     } = req.body || {};
 
     if (!image) {
-      return res.status(400).json({ error: "Missing kitchen image" });
+      return res.status(400).json({ error: "Missing kitchen image." });
     }
 
-    const usingCustomMain = color === "custom main color reference";
-    const usingCustomIsland = island === "custom island color reference";
-
-    if (usingCustomMain && !mainCustomColorImage) {
-      return res.status(400).json({
-        error: "Missing main cabinet finish reference image"
-      });
+    const kitchenBase64 = stripDataUrl(image);
+    if (!kitchenBase64) {
+      return res.status(400).json({ error: "Invalid kitchen image." });
     }
 
-    if (usingCustomIsland && !islandCustomColorImage) {
-      return res.status(400).json({
-        error: "Missing island finish reference image"
-      });
-    }
+    const kitchenMime = pickMimeType(image, "image/jpeg");
 
-    const images = [{ image_url: image }];
+    const hasMainCustom =
+      color === "custom main color reference" && !!mainCustomColorImage;
+    const hasIslandCustom =
+      island === "custom island color reference" && !!islandCustomColorImage;
 
-    if (usingCustomMain && mainCustomColorImage) {
-      images.push({ image_url: mainCustomColorImage });
-    }
+    const mainCustomBase64 = hasMainCustom
+      ? stripDataUrl(mainCustomColorImage)
+      : null;
+    const islandCustomBase64 = hasIslandCustom
+      ? stripDataUrl(islandCustomColorImage)
+      : null;
 
-    if (usingCustomIsland && islandCustomColorImage) {
-      images.push({ image_url: islandCustomColorImage });
-    }
+    const mainColorInstruction = hasMainCustom
+      ? "Use the uploaded main cabinet reference image as the exact target color and finish for the main cabinets. Match that reference as closely as possible."
+      : `Use ${color || "white painted cabinets"} for the main cabinets.`;
 
-    const mainColorInstruction = usingCustomMain
-      ? "Use the uploaded main cabinet reference image as the exact finish reference for the main cabinets. Match the finish as closely as possible in darkness, richness, warmth or coolness, stain depth, contrast, and visible wood character. If the reference is dark stained wood, keep it dark stained wood. Do not lighten it. Do not wash it out. Do not turn it into paint. Preserve realistic natural grain and stain depth."
-      : `Use ${color} for the main cabinets.`;
-
-    const islandInstruction = usingCustomIsland
-      ? "If the kitchen has an island, use the uploaded island reference image as the exact finish reference for the island cabinetry. Match the finish as closely as possible in darkness, richness, warmth or coolness, stain depth, contrast, and visible wood character. If the reference is dark stained wood, keep it dark stained wood. Do not lighten it. Do not wash it out. Do not turn it into paint. Preserve realistic natural grain and stain depth."
+    const islandColorInstruction = hasIslandCustom
+      ? "Use the uploaded island cabinet reference image as the exact target color and finish for the island cabinets. Match that reference as closely as possible."
       : island
-        ? `If the kitchen has an island, change only the island cabinetry to ${island}.`
-        : "If the kitchen has an island, keep the island the same finish as the main cabinets.";
+        ? `Use ${island} for the island cabinets.`
+        : "Use the same finish as the main cabinets for the island cabinets.";
 
-    const upperHeightInstruction =
-      upperHeight === "extend upper cabinets to ceiling"
-        ? "Extend the existing upper cabinets vertically to the ceiling. Keep the same kitchen layout and make it look natural and realistic."
-        : "Keep the existing upper cabinets exactly as they are.";
+    const doorInstruction = style
+      ? `Use ${style} for the cabinet doors.`
+      : "Use shaker cabinet doors.";
+
+    const upperInstruction = upperHeight
+      ? `${upperHeight}.`
+      : "Keep existing upper cabinets exactly as they are.";
 
     const hardwareInstruction = hardware
-      ? `Use ${hardware} hardware on visible cabinet doors and drawer fronts.`
-      : "Keep the existing cabinet hardware.";
+      ? `Use ${hardware}.`
+      : "Use matte black cabinet pulls.";
 
     const prompt = `
-Edit this exact kitchen photo.
+Edit this exact kitchen photo and keep the same room layout, cabinet layout, walls, windows, flooring, countertops, backsplash, sink, appliances, ceiling, lighting direction, and camera angle.
 
-The first uploaded image is the kitchen to edit.
-Any additional uploaded images are cabinetry finish reference images.
+Do not redesign the room structure.
+Do not move appliances.
+Do not change the size or location of cabinets unless upper cabinet extension is selected.
+Do not change countertop layout.
+Do not change backsplash layout.
+Do not create a different kitchen.
 
-Keep the same room layout, walls, windows, countertops, backsplash, flooring, appliances, sink, lighting, ceiling, and camera angle.
-Do not redesign the room.
-Do not move or replace appliances.
-Do not change floors, counters, backsplash, walls, or lighting.
-
-Only change cabinet finish, island finish if applicable, cabinet door style, upper cabinets only if requested, and cabinet hardware.
+Only change cabinet finish, island finish, cabinet door style, cabinet hardware, and upper cabinet height if selected.
 
 ${mainColorInstruction}
-Door style should be ${style}.
-${upperHeightInstruction}
-${islandInstruction}
+${islandColorInstruction}
+${doorInstruction}
+${upperInstruction}
 ${hardwareInstruction}
 
-Important rules:
-If a reference image shows dark rustic stained wood, the finished cabinets must remain dark, rich, stained wood with visible grain.
-Do not lighten the finish.
-Do not turn stained wood into painted cabinets.
-Do not mute or soften strong stain depth unless the reference itself is muted.
-If a reference image shows smooth painted cabinetry, apply smooth painted cabinetry with no visible wood grain.
-Match the reference finish closely in overall tone, depth, saturation, grain visibility, and character.
-Keep the result photorealistic and make it look like this same kitchen, just updated.
-`;
+If a natural wood finish is selected, preserve realistic wood grain, stain depth, and species character.
+If a custom reference image is provided, prioritize matching that uploaded reference image over generic color interpretation.
+Make the result photorealistic and believable as a real cabinet refacing or kitchen remodel preview.
+Keep this the same kitchen, not a different kitchen.
+`.trim();
 
-    const response = await fetch("https://api.openai.com/v1/images/edits", {
+    const form = new FormData();
+    form.append("model", "gpt-image-1");
+    form.append("prompt", prompt);
+    form.append("size", "1536x1024");
+    form.append("quality", "high");
+    form.append("output_format", "png");
+
+    form.append(
+      "image[]",
+      base64ToBlob(kitchenBase64, kitchenMime),
+      "kitchen.jpg"
+    );
+
+    if (hasMainCustom && mainCustomBase64) {
+      form.append(
+        "image[]",
+        base64ToBlob(
+          mainCustomBase64,
+          pickMimeType(mainCustomColorImage, "image/jpeg")
+        ),
+        "main-reference.jpg"
+      );
+    }
+
+    if (hasIslandCustom && islandCustomBase64) {
+      form.append(
+        "image[]",
+        base64ToBlob(
+          islandCustomBase64,
+          pickMimeType(islandCustomColorImage, "image/jpeg")
+        ),
+        "island-reference.jpg"
+      );
+    }
+
+    const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
       },
-      body: JSON.stringify({
-        model: "gpt-image-1",
-        images,
-        prompt,
-        size: "1536x1024"
-      })
+      body: form
     });
 
-    const data = await response.json();
+    const result = await openaiResponse.json();
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: data?.error?.message || "OpenAI image edit failed",
-        details: data
+    if (!openaiResponse.ok) {
+      return res.status(openaiResponse.status).json({
+        error:
+          result?.error?.message ||
+          result?.message ||
+          "OpenAI image edit failed."
       });
     }
 
-    const imageObject = data?.data?.[0];
-
-    if (!imageObject) {
-      return res.status(500).json({ error: "No image returned." });
+    const b64 = result?.data?.[0]?.b64_json;
+    if (!b64) {
+      return res.status(500).json({ error: "No image returned from OpenAI." });
     }
 
-    if (imageObject.b64_json) {
-      return res.status(200).json({
-        image: `data:image/png;base64,${imageObject.b64_json}`
-      });
-    }
-
-    if (imageObject.url) {
-      return res.status(200).json({
-        image: imageObject.url
-      });
-    }
-
-    return res.status(500).json({
-      error: "Image response format not recognized."
+    return res.status(200).json({
+      image: `data:image/png;base64,${b64}`
     });
   } catch (error) {
     return res.status(500).json({
-      error: "Server error.",
-      details: String(error)
+      error: error?.message || "Server error."
     });
   }
 }
