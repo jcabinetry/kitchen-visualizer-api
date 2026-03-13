@@ -18,13 +18,21 @@ function getMimeType(dataUrl, fallback = "image/jpeg") {
   return match ? match[1] : fallback;
 }
 
-function fileExtensionFromMime(mime) {
+function getExt(mime) {
   if (mime === "image/png") return "png";
   if (mime === "image/webp") return "webp";
   return "jpg";
 }
 
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -46,7 +54,7 @@ export default async function handler(req, res) {
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel environment variables." });
+      return res.status(500).json({ error: "Missing OPENAI_API_KEY." });
     }
 
     const kitchenBase64 = stripDataUrl(image);
@@ -55,7 +63,7 @@ export default async function handler(req, res) {
     }
 
     const kitchenMime = getMimeType(image, "image/jpeg");
-    const kitchenExt = fileExtensionFromMime(kitchenMime);
+    const kitchenExt = getExt(kitchenMime);
 
     const hasMainCustom =
       color === "custom main color reference" && !!mainCustomColorImage;
@@ -63,21 +71,21 @@ export default async function handler(req, res) {
     const hasIslandCustom =
       island === "custom island color reference" && !!islandCustomColorImage;
 
-    const mainCustomBase64 = hasMainCustom ? stripDataUrl(mainCustomColorImage) : null;
-    const islandCustomBase64 = hasIslandCustom ? stripDataUrl(islandCustomColorImage) : null;
+    const mainBase64 = hasMainCustom ? stripDataUrl(mainCustomColorImage) : null;
+    const islandBase64 = hasIslandCustom ? stripDataUrl(islandCustomColorImage) : null;
 
-    const mainCustomMime = hasMainCustom ? getMimeType(mainCustomColorImage, "image/jpeg") : "image/jpeg";
-    const islandCustomMime = hasIslandCustom ? getMimeType(islandCustomColorImage, "image/jpeg") : "image/jpeg";
+    const mainMime = hasMainCustom ? getMimeType(mainCustomColorImage, "image/jpeg") : "image/jpeg";
+    const islandMime = hasIslandCustom ? getMimeType(islandCustomColorImage, "image/jpeg") : "image/jpeg";
 
-    const mainCustomExt = fileExtensionFromMime(mainCustomMime);
-    const islandCustomExt = fileExtensionFromMime(islandCustomMime);
+    const mainExt = getExt(mainMime);
+    const islandExt = getExt(islandMime);
 
     const mainColorInstruction = hasMainCustom
-      ? "Use the uploaded main cabinet reference image as the exact target color and finish for the main cabinets. Match that reference as closely as possible."
+      ? "Use the uploaded main cabinet reference image as the exact target color and finish for the main cabinets. Match that uploaded reference as closely as possible. Prioritize the uploaded reference over any generic interpretation."
       : `Use ${color || "white painted cabinets"} for the main cabinets.`;
 
     const islandColorInstruction = hasIslandCustom
-      ? "Use the uploaded island cabinet reference image as the exact target color and finish for the island cabinets. Match that reference as closely as possible."
+      ? "Use the uploaded island cabinet reference image as the exact target color and finish for the island cabinets. Match that uploaded reference as closely as possible. Prioritize the uploaded reference over any generic interpretation."
       : island
         ? `Use ${island} for the island cabinets.`
         : "Use the same finish as the main cabinets for the island cabinets.";
@@ -91,8 +99,8 @@ export default async function handler(req, res) {
       : "Keep existing upper cabinets exactly as they are.";
 
     const hardwareInstruction = hardware
-      ? `Use ${hardware}.`
-      : "Use matte black cabinet pulls.";
+      ? `Use ${hardware} for the cabinet hardware.`
+      : "Use matte black cabinet pulls for the cabinet hardware.";
 
     const prompt = `
 Edit this exact kitchen photo and keep the same room layout, cabinet layout, walls, windows, flooring, countertops, backsplash, sink, appliances, ceiling, lighting direction, and camera angle.
@@ -102,7 +110,7 @@ Do not move appliances.
 Do not change countertop layout.
 Do not change backsplash layout.
 Do not create a different kitchen.
-Do not change the size or location of cabinets unless upper cabinet extension is selected.
+Do not change cabinet sizes or positions unless upper cabinet extension is selected.
 
 Only change cabinet finish, island finish, cabinet door style, cabinet hardware, and upper cabinet height if selected.
 
@@ -123,25 +131,34 @@ Keep this the same kitchen, not a different kitchen.
     form.append("prompt", prompt);
     form.append("size", "1536x1024");
 
-    const kitchenBuffer = Buffer.from(kitchenBase64, "base64");
     form.append(
       "image[]",
-      new File([kitchenBuffer], `kitchen.${kitchenExt}`, { type: kitchenMime })
+      new File(
+        [Buffer.from(kitchenBase64, "base64")],
+        `kitchen.${kitchenExt}`,
+        { type: kitchenMime }
+      )
     );
 
-    if (hasMainCustom && mainCustomBase64) {
-      const mainBuffer = Buffer.from(mainCustomBase64, "base64");
+    if (hasMainCustom && mainBase64) {
       form.append(
         "image[]",
-        new File([mainBuffer], `main-reference.${mainCustomExt}`, { type: mainCustomMime })
+        new File(
+          [Buffer.from(mainBase64, "base64")],
+          `main-reference.${mainExt}`,
+          { type: mainMime }
+        )
       );
     }
 
-    if (hasIslandCustom && islandCustomBase64) {
-      const islandBuffer = Buffer.from(islandCustomBase64, "base64");
+    if (hasIslandCustom && islandBase64) {
       form.append(
         "image[]",
-        new File([islandBuffer], `island-reference.${islandCustomExt}`, { type: islandCustomMime })
+        new File(
+          [Buffer.from(islandBase64, "base64")],
+          `island-reference.${islandExt}`,
+          { type: islandMime }
+        )
       );
     }
 
@@ -161,8 +178,8 @@ Keep this the same kitchen, not a different kitchen.
       });
     }
 
-    const imageUrl = result?.data?.[0]?.url;
     const imageBase64 = result?.data?.[0]?.b64_json;
+    const imageUrl = result?.data?.[0]?.url;
 
     if (imageBase64) {
       return res.status(200).json({
