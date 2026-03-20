@@ -80,12 +80,53 @@ export default async function handler(req, res) {
     const mainExt = getExt(mainMime);
     const islandExt = getExt(islandMime);
 
+    // 🔥 FIXED MAIN INSTRUCTION
     const mainColorInstruction = hasMainCustom
-      ? "Use the uploaded main cabinet reference image as the exact target color and finish for the main cabinets. Match that uploaded reference as closely as possible. Prioritize the uploaded reference over any generic interpretation."
+      ? `
+Use the uploaded main cabinet reference image as the exact required finish for the main cabinets.
+
+This is not a suggestion.
+
+Match the uploaded reference image exactly for:
+color,
+lightness,
+tone,
+texture,
+surface variation,
+pattern,
+and finish character.
+
+Do not reinterpret the reference.
+Do not approximate it.
+Do not replace it with a similar cabinet color.
+Do not convert it into wood unless the reference clearly contains wood grain.
+Do not introduce oak, maple, alder, honey, orange, or brown tones unless they exist in the reference.
+
+The cabinets must visually match the uploaded reference image, not a guessed version of it.
+`
       : `Use ${color || "white painted cabinets"} for the main cabinets.`;
 
+    // 🔥 FIXED ISLAND INSTRUCTION
     const islandColorInstruction = hasIslandCustom
-      ? "Use the uploaded island cabinet reference image as the exact target color and finish for the island cabinets. Match that uploaded reference as closely as possible. Prioritize the uploaded reference over any generic interpretation."
+      ? `
+Use the uploaded island cabinet reference image as the exact required finish for the island cabinets.
+
+Match the uploaded reference image exactly for:
+color,
+lightness,
+tone,
+texture,
+surface variation,
+pattern,
+and finish character.
+
+Do not reinterpret the reference.
+Do not approximate it.
+Do not replace it with a similar cabinet color.
+Do not convert it into wood unless the reference clearly contains wood grain.
+
+The island cabinets must visually match the uploaded reference image exactly.
+`
       : island
         ? `Use ${island} for the island cabinets.`
         : "Use the same finish as the main cabinets for the island cabinets.";
@@ -102,17 +143,32 @@ export default async function handler(req, res) {
       ? `Use ${hardware} for the cabinet hardware.`
       : "Use matte black cabinet pulls for the cabinet hardware.";
 
+    // 🔥 FIXED PROMPT
     const prompt = `
-Edit this exact kitchen photo and keep the same room layout, cabinet layout, walls, windows, flooring, countertops, backsplash, sink, appliances, ceiling, lighting direction, and camera angle.
+Edit this exact kitchen photo.
 
-Do not redesign the room structure.
-Do not move appliances.
-Do not change countertop layout.
-Do not change backsplash layout.
-Do not create a different kitchen.
-Do not change cabinet sizes or positions unless upper cabinet extension is selected.
+This is an image edit, not a redesign.
 
-Only change cabinet finish, island finish, cabinet door style, cabinet hardware, and upper cabinet height if selected.
+Keep EVERYTHING exactly the same:
+layout,
+cabinet structure,
+door shapes,
+walls,
+windows,
+flooring,
+countertops,
+backsplash,
+sink,
+appliances,
+lighting,
+shadows,
+reflections,
+and camera angle.
+
+DO NOT create a new kitchen.
+DO NOT change cabinet layout or proportions.
+
+Only change cabinet finishes and selected options.
 
 ${mainColorInstruction}
 ${islandColorInstruction}
@@ -120,10 +176,25 @@ ${doorInstruction}
 ${upperInstruction}
 ${hardwareInstruction}
 
-If a natural wood finish is selected, preserve realistic wood grain, stain depth, and species character.
-If a custom reference image is provided, prioritize matching that uploaded reference image over generic color interpretation.
-Make the result photorealistic and believable as a real cabinet refacing or kitchen remodel preview.
-Keep this the same kitchen, not a different kitchen.
+CRITICAL RULES:
+
+The uploaded reference image is the PRIMARY SOURCE OF TRUTH for cabinet appearance.
+
+The cabinets MUST match the uploaded reference image visually.
+
+Do not:
+guess a similar material,
+convert to wood,
+flatten into paint,
+or simplify the finish.
+
+If the reference is smooth keep it smooth.
+If the reference has variation keep that variation.
+If the reference is not wood DO NOT create wood grain.
+
+Preserve realistic lighting and shadows from the original image.
+
+The final result must look like this exact kitchen with only the cabinet finish changed to match the uploaded reference image as closely as possible.
 `.trim();
 
     const form = new FormData();
@@ -202,4 +273,4 @@ Keep this the same kitchen, not a different kitchen.
       error: error?.message || "Server error."
     });
   }
-}
+  }
