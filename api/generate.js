@@ -167,7 +167,12 @@ export default async function handler(req, res) {
     const usageKey = `visualizer:${safeCompanyKey}:${monthKey}:used`;
 
     const usedNow = Number((await redisGet(usageKey)) || 0);
-
+console.log({
+  companyKey: safeCompanyKey,
+  limit: safeMonthlyLimit,
+  usedNow
+});
+    
     if (usedNow >= safeMonthlyLimit) {
       await sendLimitEmail({
         companyKey: safeCompanyKey,
