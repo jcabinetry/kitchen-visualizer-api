@@ -1,42 +1,302 @@
-<div id="cvBox" style="max-width:1200px;margin:40px auto;padding:46px;font-family:Arial,sans-serif;background:white;border-radius:24px;box-shadow:0 25px 70px rgba(0,0,0,.08);">
-  <h1 style="font-size:52px;margin:0 0 30px;color:#6b625d;font-family:Georgia,serif;">Visualizer Dashboard</h1>
-  <div id="cvStatus">Loading...</div>
-</div>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Visualizer Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f6f7fb;
+      font-family: Arial, sans-serif;
+      color: #111827;
+    }
 
-<script>
-var cvStatus = document.getElementById("cvStatus");
-cvStatus.innerHTML = "Connecting...";
+    .wrap {
+      max-width: 1300px;
+      margin: 40px auto;
+      padding: 30px;
+    }
 
-fetch("https://kitchen-visualizer-api.vercel.app/api/admin-customers")
-.then(function(response) {
-  return response.text();
-})
-.then(function(text) {
-  var data = JSON.parse(text);
-  var c = data["customers"][0];
+    h1 {
+      font-family: Georgia, serif;
+      font-size: 52px;
+      color: #6b625d;
+      margin: 0 0 10px;
+    }
 
-  var used = Number(c["used"]);
-  var limit = Number(c["limit"]);
-  var remaining = Number(c["remaining"]);
-  var percent = 0;
+    .sub {
+      color: #6b7280;
+      font-size: 18px;
+      margin-bottom: 30px;
+    }
 
-  if (limit > 0) {
-    percent = used / limit * 100;
-  }
+    .top {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 28px;
+    }
 
-  cvStatus.innerHTML =
-    '<div style="font-size:28px;margin-bottom:34px;color:#333;">' + c["name"] + '</div>' +
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:30px;margin-bottom:45px;">' +
-    '<div style="background:#f7f7f7;border-radius:16px;padding:40px;text-align:center;"><div style="font-size:48px;font-weight:900;">' + used + '</div><div style="font-size:24px;">Used</div></div>' +
-    '<div style="background:#f7f7f7;border-radius:16px;padding:40px;text-align:center;"><div style="font-size:48px;font-weight:900;">' + remaining + '</div><div style="font-size:24px;">Remaining</div></div>' +
-    '<div style="background:#f7f7f7;border-radius:16px;padding:40px;text-align:center;"><div style="font-size:48px;font-weight:900;">' + limit + '</div><div style="font-size:24px;">Monthly Limit</div></div>' +
-    '</div>' +
-    '<div style="height:28px;background:#ddd;border-radius:999px;overflow:hidden;margin-bottom:42px;"><div style="height:100%;width:' + percent + '%;background:#111;border-radius:999px;"></div></div>' +
-    '<p style="font-size:24px;"><strong>Plan:</strong> ' + c["plan"] + '</p>' +
-    '<p style="font-size:24px;"><strong>Company ID:</strong> ' + c["id"] + '</p>' +
-    '<p style="font-size:24px;"><strong>Email:</strong> ' + c["email"] + '</p>';
-})
-.catch(function(error) {
-  cvStatus.innerHTML = "ERROR: " + error.message;
-});
-</script>
+    .card {
+      background: white;
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: 0 18px 45px rgba(15,23,42,.08);
+      border: 1px solid #e5e7eb;
+    }
+
+    .stat-title {
+      color: #6b7280;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .stat-number {
+      font-size: 38px;
+      font-weight: 900;
+      margin-top: 8px;
+    }
+
+    .customer-card {
+      background: white;
+      border-radius: 26px;
+      padding: 32px;
+      box-shadow: 0 20px 55px rgba(15,23,42,.09);
+      border: 1px solid #e5e7eb;
+      margin-bottom: 24px;
+    }
+
+    .customer-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .customer-name {
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .customer-id {
+      color: #6b7280;
+      margin-top: 6px;
+      font-size: 15px;
+    }
+
+    .badge {
+      background: #eef2ff;
+      color: #1e3a8a;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .numbers {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .mini {
+      background: #f8fafc;
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+      border: 1px solid #eef2f7;
+    }
+
+    .mini strong {
+      display: block;
+      font-size: 42px;
+      margin-bottom: 6px;
+    }
+
+    .mini span {
+      font-size: 18px;
+      color: #374151;
+    }
+
+    .bar {
+      height: 24px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 22px 0;
+    }
+
+    .fill {
+      height: 100%;
+      background: linear-gradient(90deg, #1e3a8a, #2563eb);
+      border-radius: 999px;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      color: #374151;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 13px 22px;
+      border: 0;
+      border-radius: 14px;
+      background: #111827;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    @media(max-width: 850px) {
+      .top, .numbers, .details {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .customer-head {
+        display: block;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:20px;">
+      <div>
+        <h1>Visualizer Dashboard</h1>
+        <div class="sub">Monitor customer usage and monthly limits.</div>
+      </div>
+      <button onclick="loadDashboard()">Refresh</button>
+    </div>
+
+    <div class="top">
+      <div class="card">
+        <div class="stat-title">Total Customers</div>
+        <div class="stat-number" id="totalCustomers">0</div>
+      </div>
+
+      <div class="card">
+        <div class="stat-title">Total Used</div>
+        <div class="stat-number" id="totalUsed">0</div>
+      </div>
+
+      <div class="card">
+        <div class="stat-title">Total Remaining</div>
+        <div class="stat-number" id="totalRemaining">0</div>
+      </div>
+
+      <div class="card">
+        <div class="stat-title">Total Monthly Limit</div>
+        <div class="stat-number" id="totalLimit">0</div>
+      </div>
+    </div>
+
+    <div id="customersBox" class="card">Loading...</div>
+  </div>
+
+  <script>
+    async function loadDashboard() {
+      const box = document.getElementById("customersBox");
+      box.innerHTML = "Loading...";
+
+      try {
+        const response = await fetch("https://kitchen-visualizer-api.vercel.app/api/admin-customers");
+        const data = await response.json();
+
+        const customers = data.customers || [];
+
+        let totalUsed = 0;
+        let totalLimit = 0;
+        let totalRemaining = 0;
+
+        customers.forEach(function(c) {
+          totalUsed += Number(c.used || 0);
+          totalLimit += Number(c.limit || 0);
+          totalRemaining += Number(c.remaining || 0);
+        });
+
+        document.getElementById("totalCustomers").innerText = customers.length;
+        document.getElementById("totalUsed").innerText = totalUsed;
+        document.getElementById("totalLimit").innerText = totalLimit;
+        document.getElementById("totalRemaining").innerText = totalRemaining;
+
+        if (!customers.length) {
+          box.innerHTML = "No customers found.";
+          return;
+        }
+
+        let html = "";
+
+        customers.forEach(function(c, index) {
+          const customerNumber = index + 1;
+          const used = Number(c.used || 0);
+          const limit = Number(c.limit || 0);
+          const remaining = Number(c.remaining || 0);
+          let percent = 0;
+
+          if (limit > 0) {
+            percent = (used / limit) * 100;
+            if (percent > 100) percent = 100;
+          }
+
+          html += `
+            <div class="customer-card">
+              <div class="customer-head">
+                <div>
+                  <div class="customer-name">#${customerNumber} — ${c.name || "-"}</div>
+                  <div class="customer-id">${c.id || "-"}</div>
+                </div>
+                <div class="badge">${c.plan || "Starter"}</div>
+              </div>
+
+              <div class="numbers">
+                <div class="mini">
+                  <strong>${used}</strong>
+                  <span>Used</span>
+                </div>
+
+                <div class="mini">
+                  <strong>${remaining}</strong>
+                  <span>Remaining</span>
+                </div>
+
+                <div class="mini">
+                  <strong>${limit}</strong>
+                  <span>Monthly Limit</span>
+                </div>
+              </div>
+
+              <div class="bar">
+                <div class="fill" style="width:${percent}%"></div>
+              </div>
+
+              <div class="details">
+                <div><strong>Email:</strong> ${c.email || "-"}</div>
+                <div><strong>Usage:</strong> ${Math.round(percent)}%</div>
+                <div><strong>Updated:</strong> ${c.updatedAt ? new Date(c.updatedAt).toLocaleString() : "-"}</div>
+              </div>
+            </div>
+          `;
+        });
+
+        box.innerHTML = html;
+
+      } catch (error) {
+        box.innerHTML = "Error loading dashboard: " + error.message;
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>
