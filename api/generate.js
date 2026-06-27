@@ -161,7 +161,10 @@ export default async function handler(req, res) {
 
     const safeCompanyKey = cleanKey(companyKey);
     const safeCompanyName = companyName || safeCompanyKey;
-    const safeMonthlyLimit = Number(monthlyLimit || DEFAULT_MONTHLY_LIMIT);
+    const safeMonthlyLimit = Math.max(
+  1,
+  parseInt(monthlyLimit ?? DEFAULT_MONTHLY_LIMIT, 10) || DEFAULT_MONTHLY_LIMIT
+);F
 
     const monthKey = getMonthKey();
     const usageKey = `visualizer:${safeCompanyKey}:${monthKey}:used`;
