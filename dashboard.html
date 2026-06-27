@@ -1,0 +1,42 @@
+<div id="cvBox" style="max-width:1200px;margin:40px auto;padding:46px;font-family:Arial,sans-serif;background:white;border-radius:24px;box-shadow:0 25px 70px rgba(0,0,0,.08);">
+  <h1 style="font-size:52px;margin:0 0 30px;color:#6b625d;font-family:Georgia,serif;">Visualizer Dashboard</h1>
+  <div id="cvStatus">Loading...</div>
+</div>
+
+<script>
+var cvStatus = document.getElementById("cvStatus");
+cvStatus.innerHTML = "Connecting...";
+
+fetch("https://kitchen-visualizer-api.vercel.app/api/admin-customers")
+.then(function(response) {
+  return response.text();
+})
+.then(function(text) {
+  var data = JSON.parse(text);
+  var c = data["customers"][0];
+
+  var used = Number(c["used"]);
+  var limit = Number(c["limit"]);
+  var remaining = Number(c["remaining"]);
+  var percent = 0;
+
+  if (limit > 0) {
+    percent = used / limit * 100;
+  }
+
+  cvStatus.innerHTML =
+    '<div style="font-size:28px;margin-bottom:34px;color:#333;">' + c["name"] + '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:30px;margin-bottom:45px;">' +
+    '<div style="background:#f7f7f7;border-radius:16px;padding:40px;text-align:center;"><div style="font-size:48px;font-weight:900;">' + used + '</div><div style="font-size:24px;">Used</div></div>' +
+    '<div style="background:#f7f7f7;border-radius:16px;padding:40px;text-align:center;"><div style="font-size:48px;font-weight:900;">' + remaining + '</div><div style="font-size:24px;">Remaining</div></div>' +
+    '<div style="background:#f7f7f7;border-radius:16px;padding:40px;text-align:center;"><div style="font-size:48px;font-weight:900;">' + limit + '</div><div style="font-size:24px;">Monthly Limit</div></div>' +
+    '</div>' +
+    '<div style="height:28px;background:#ddd;border-radius:999px;overflow:hidden;margin-bottom:42px;"><div style="height:100%;width:' + percent + '%;background:#111;border-radius:999px;"></div></div>' +
+    '<p style="font-size:24px;"><strong>Plan:</strong> ' + c["plan"] + '</p>' +
+    '<p style="font-size:24px;"><strong>Company ID:</strong> ' + c["id"] + '</p>' +
+    '<p style="font-size:24px;"><strong>Email:</strong> ' + c["email"] + '</p>';
+})
+.catch(function(error) {
+  cvStatus.innerHTML = "ERROR: " + error.message;
+});
+</script>
