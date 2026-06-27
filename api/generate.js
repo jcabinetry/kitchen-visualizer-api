@@ -196,13 +196,6 @@ if (usedNow >= safeMonthlyLimit) {
   });
 }
 
-      return res.status(403).json({
-        error:
-          "This account has reached its monthly preview limit. Please contact support to continue using the visualizer.",
-        used: usedNow,
-        limit: safeMonthlyLimit
-      });
-    }
 
     if (!image) {
       return res.status(400).json({ error: "Missing kitchen image." });
