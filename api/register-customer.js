@@ -1,15 +1,15 @@
-import { Redis } from "@upstash/redis";
-
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-});
-
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Method not allowed" });
     }
+
+    const { Redis } = await import("@upstash/redis");
+
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
 
     const { name, id, limit, plan, email } = req.body;
 
@@ -31,16 +31,15 @@ export default async function handler(req, res) {
     await redis.sadd("customers", id);
     await redis.set(`customer:${id}`, customer);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       customer,
     });
 
   } catch (error) {
     console.error("Register customer error:", error);
-
-    res.status(500).json({
-      error: "Could not register customer",
+    return res.status(500).json({
+      error: error.message || "Could not register customer",
     });
   }
 }
