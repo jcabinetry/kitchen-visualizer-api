@@ -176,16 +176,25 @@ console.log({
   usedNow
 });
     
-    if (usedNow >= safeMonthlyLimit) {
-      await sendLimitEmail({
-        companyKey: safeCompanyKey,
-        companyName: safeCompanyName,
-        used: usedNow,
-        limit: safeMonthlyLimit,
-        customerName,
-        customerEmail,
-        customerPhone
-      });
+if (usedNow >= safeMonthlyLimit) {
+  sendLimitEmail({
+    companyKey: safeCompanyKey,
+    companyName: safeCompanyName,
+    used: usedNow,
+    limit: safeMonthlyLimit,
+    customerName,
+    customerEmail,
+    customerPhone
+  }).catch(function(err) {
+    console.log("Limit email failed:", err?.message || err);
+  });
+
+  return res.status(403).json({
+    error: "This account has reached its monthly preview limit. Please contact support to continue using the visualizer.",
+    used: usedNow,
+    limit: safeMonthlyLimit
+  });
+}
 
       return res.status(403).json({
         error:
