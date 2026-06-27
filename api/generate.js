@@ -186,7 +186,7 @@ console.log({
 
       return res.status(403).json({
         error:
-          "This account has reached its monthly preview limit. Please contact the cabinet company to continue using the visualizer.",
+          "This account has reached its monthly preview limit. Please contact support to continue using the visualizer.",
         used: usedNow,
         limit: safeMonthlyLimit
       });
