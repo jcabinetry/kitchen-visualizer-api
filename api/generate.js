@@ -29,9 +29,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -68,133 +66,180 @@ export default async function handler(req, res) {
     const hasMainCustom =
       color === "custom main color reference" && !!mainCustomColorImage;
 
-    const hasIslandCustom =
-      island === "custom island color reference" && !!islandCustomColorImage;
+    const hasBaseCustom =
+      (island === "custom base cabinet color reference" ||
+        island === "custom island color reference") &&
+      !!islandCustomColorImage;
 
     const mainBase64 = hasMainCustom ? stripDataUrl(mainCustomColorImage) : null;
-    const islandBase64 = hasIslandCustom ? stripDataUrl(islandCustomColorImage) : null;
+    const baseBase64 = hasBaseCustom ? stripDataUrl(islandCustomColorImage) : null;
 
-    const mainMime = hasMainCustom ? getMimeType(mainCustomColorImage, "image/jpeg") : "image/jpeg";
-    const islandMime = hasIslandCustom ? getMimeType(islandCustomColorImage, "image/jpeg") : "image/jpeg";
+    const mainMime = hasMainCustom
+      ? getMimeType(mainCustomColorImage, "image/jpeg")
+      : "image/jpeg";
+
+    const baseMime = hasBaseCustom
+      ? getMimeType(islandCustomColorImage, "image/jpeg")
+      : "image/jpeg";
 
     const mainExt = getExt(mainMime);
-    const islandExt = getExt(islandMime);
+    const baseExt = getExt(baseMime);
 
-    // 🔥 FIXED MAIN INSTRUCTION
-    const mainColorInstruction = hasMainCustom
-      ? `
-Use the uploaded main cabinet reference image as the exact required finish for the main cabinets.
+    const upperColorText = hasMainCustom
+      ? "the uploaded upper cabinet reference image"
+      : color || "white painted cabinets";
 
-This is not a suggestion.
+    const baseColorText = hasBaseCustom
+      ? "the uploaded base/lower cabinet reference image"
+      : island || "the same finish as the upper cabinets";
 
-Match the uploaded reference image exactly for:
-color,
-lightness,
-tone,
-texture,
-surface variation,
-pattern,
-and finish character.
+    const selectedStyle = style || "shaker cabinet doors";
+    const selectedUpperHeight =
+      upperHeight || "Keep existing upper cabinets exactly as they are.";
+    const selectedHardware = hardware || "matte black cabinet pulls";
 
-Do not reinterpret the reference.
-Do not approximate it.
-Do not replace it with a similar cabinet color.
-Do not convert it into wood unless the reference clearly contains wood grain.
-Do not introduce oak, maple, alder, honey, orange, or brown tones unless they exist in the reference.
-
-The cabinets must visually match the uploaded reference image, not a guessed version of it.
-`
-      : `Use ${color || "white painted cabinets"} for the main cabinets.`;
-
-    // 🔥 FIXED ISLAND INSTRUCTION
-    const islandColorInstruction = hasIslandCustom
-      ? `
-Use the uploaded island cabinet reference image as the exact required finish for the island cabinets.
-
-Match the uploaded reference image exactly for:
-color,
-lightness,
-tone,
-texture,
-surface variation,
-pattern,
-and finish character.
-
-Do not reinterpret the reference.
-Do not approximate it.
-Do not replace it with a similar cabinet color.
-Do not convert it into wood unless the reference clearly contains wood grain.
-
-The island cabinets must visually match the uploaded reference image exactly.
-`
-      : island
-        ? `Use ${island} for the island cabinets.`
-        : "Use the same finish as the main cabinets for the island cabinets.";
-
-    const doorInstruction = style
-      ? `Use ${style} for the cabinet doors.`
-      : "Use shaker cabinet doors.";
-
-    const upperInstruction = upperHeight
-      ? `${upperHeight}.`
-      : "Keep existing upper cabinets exactly as they are.";
-
-    const hardwareInstruction = hardware
-      ? `Use ${hardware} for the cabinet hardware.`
-      : "Use matte black cabinet pulls for the cabinet hardware.";
-
-    // 🔥 FIXED PROMPT
     const prompt = `
 Edit this exact kitchen photo.
 
-This is an image edit, not a redesign.
+This is a cabinet refacing color preview, NOT a remodel.
 
-Keep EVERYTHING exactly the same:
-layout,
-cabinet structure,
-door shapes,
-walls,
-windows,
-flooring,
-countertops,
-backsplash,
-sink,
-appliances,
-lighting,
-shadows,
-reflections,
-and camera angle.
+The original uploaded kitchen photo is the source of truth.
 
-DO NOT create a new kitchen.
-DO NOT change cabinet layout or proportions.
+MOST IMPORTANT RULE:
+Preserve the exact existing cabinet layout and geometry.
 
-Only change cabinet finishes and selected options.
+Do NOT:
+- redesign the kitchen
+- change any door into a drawer
+- change any drawer into a door
+- add doors
+- add drawers
+- remove doors
+- remove drawers
+- change cabinet sizes
+- change cabinet positions
+- move seams
+- move rails
+- move stiles
+- move face-frame openings
+- change appliance openings
+- change the camera angle
+- change the perspective
+- change the room shape
 
-${mainColorInstruction}
-${islandColorInstruction}
-${doorInstruction}
-${upperInstruction}
-${hardwareInstruction}
+Only change cabinet finish colors and hardware appearance.
 
-CRITICAL RULES:
+CABINET GROUPS:
+Treat the cabinets as exactly two finish groups.
 
-The uploaded reference image is the PRIMARY SOURCE OF TRUTH for cabinet appearance.
+GROUP 1: UPPER / WALL CABINETS
+Upper cabinets means every cabinet mounted above the countertops.
 
-The cabinets MUST match the uploaded reference image visually.
+GROUP 2: BASE / LOWER CABINETS
+Base cabinets means every cabinet surface below the countertops across the entire kitchen.
 
-Do not:
-guess a similar material,
-convert to wood,
-flatten into paint,
-or simplify the finish.
+This does NOT mean island only.
+This does NOT mean peninsula only.
+This does NOT mean only the right-side cabinets.
+This means ALL lower cabinets from left to right.
 
-If the reference is smooth keep it smooth.
-If the reference has variation keep that variation.
-If the reference is not wood DO NOT create wood grain.
+UPPER CABINET FINISH:
+Apply this finish to every upper cabinet:
+${upperColorText}
 
-Preserve realistic lighting and shadows from the original image.
+This includes:
+- every upper cabinet door
+- every upper cabinet side panel
+- every upper face frame
+- every upper rail
+- every upper stile
+- every upper filler strip
+- every upper cabinet trim piece
 
-The final result must look like this exact kitchen with only the cabinet finish changed to match the uploaded reference image as closely as possible.
+BASE / LOWER CABINET FINISH:
+Apply this finish to every lower cabinet:
+${baseColorText}
+
+This includes:
+- every lower cabinet door
+- every lower drawer front
+- every drawer stack
+- every sink base door
+- every range-side lower cabinet
+- every dishwasher-side lower panel
+- every exposed side panel
+- every exposed end panel
+- every lower face frame
+- every lower rail
+- every lower stile
+- every lower filler strip
+- every toe kick
+- every island cabinet
+- every peninsula cabinet
+- every lower cabinet trim piece
+
+BASE CABINET CONSISTENCY:
+Every cabinet below the countertop must match the selected base/lower finish.
+
+Do not leave any lower cabinet door in the old finish.
+Do not leave any lower drawer front in the old finish.
+Do not leave any lower face frame in the old finish.
+Do not leave any toe kick in the old finish.
+Do not leave any exposed side panel in the old finish.
+Do not leave any left-side lower cabinet in the old finish.
+Do not leave any sink-base lower cabinet in the old finish.
+Do not leave any range-side lower cabinet in the old finish.
+Do not leave any dishwasher-side lower cabinet in the old finish.
+
+The entire lower cabinet run must look professionally refinished together as one continuous cabinet group.
+
+DOOR STYLE:
+The customer selected this door style:
+${selectedStyle}
+
+Use this only as a light visual/profile reference.
+
+Do NOT redraw or restructure the cabinet layout to force the door style.
+Do NOT change the number of cabinet doors.
+Do NOT change the number of drawer fronts.
+Do NOT change the size or position of doors or drawers.
+
+If applying the selected door style would change the original layout, preserve the original layout instead.
+
+UPPER CABINET HEIGHT:
+${selectedUpperHeight}
+
+Only follow this if it can be done without changing the rest of the kitchen layout.
+
+HARDWARE:
+Use this hardware style:
+${selectedHardware}
+
+Keep hardware placement close to the original layout.
+
+DO NOT CHANGE:
+- countertops
+- backsplash
+- appliances
+- flooring
+- walls
+- sink
+- faucet
+- windows
+- trim
+- decor
+- lighting
+- ceiling
+- room dimensions
+- camera angle
+- perspective
+
+FINAL SELF-CHECK:
+Before final output, inspect every cabinet below the countertop from left to right.
+
+If any lower cabinet door, drawer front, panel, frame, filler, toe kick, or exposed side is still the original finish, recolor it to the selected base/lower finish before finalizing.
+
+The result must look like the exact same kitchen photo with the existing cabinets professionally refinished.
 `.trim();
 
     const form = new FormData();
@@ -216,19 +261,19 @@ The final result must look like this exact kitchen with only the cabinet finish 
         "image[]",
         new File(
           [Buffer.from(mainBase64, "base64")],
-          `main-reference.${mainExt}`,
+          `upper-reference.${mainExt}`,
           { type: mainMime }
         )
       );
     }
 
-    if (hasIslandCustom && islandBase64) {
+    if (hasBaseCustom && baseBase64) {
       form.append(
         "image[]",
         new File(
-          [Buffer.from(islandBase64, "base64")],
-          `island-reference.${islandExt}`,
-          { type: islandMime }
+          [Buffer.from(baseBase64, "base64")],
+          `base-reference.${baseExt}`,
+          { type: baseMime }
         )
       );
     }
@@ -245,7 +290,10 @@ The final result must look like this exact kitchen with only the cabinet finish 
 
     if (!openaiResponse.ok) {
       return res.status(openaiResponse.status).json({
-        error: result?.error?.message || result?.message || "OpenAI image edit failed."
+        error:
+          result?.error?.message ||
+          result?.message ||
+          "OpenAI image edit failed."
       });
     }
 
@@ -267,10 +315,9 @@ The final result must look like this exact kitchen with only the cabinet finish 
     return res.status(500).json({
       error: "No image returned from OpenAI."
     });
-
   } catch (error) {
     return res.status(500).json({
       error: error?.message || "Server error."
     });
   }
-  }
+}
