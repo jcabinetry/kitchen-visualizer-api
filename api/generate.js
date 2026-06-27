@@ -6,6 +6,11 @@ export const config = {
   }
 };
 
+const MONTHLY_LIMIT = 200;
+const COMPANY_KEY = "johnson-cabinetry";
+const COMPANY_NAME = "Johnson Cabinetry & Refacing";
+const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
+
 function stripDataUrl(dataUrl) {
   if (!dataUrl || typeof dataUrl !== "string") return null;
   const parts = dataUrl.split(",");
@@ -22,6 +27,76 @@ function getExt(mime) {
   if (mime === "image/png") return "png";
   if (mime === "image/webp") return "webp";
   return "jpg";
+}
+
+function getMonthKey() {
+  return new Date().toISOString().slice(0, 7);
+}
+
+async function redisGet(key) {
+  const response = await fetch(
+    `${process.env.KV_REST_API_URL}/get/${encodeURIComponent(key)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`
+      }
+    }
+  );
+  const data = await response.json();
+  return data.result;
+}
+
+async function redisSet(key, value) {
+  await fetch(
+    `${process.env.KV_REST_API_URL}/set/${encodeURIComponent(key)}/${encodeURIComponent(value)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`
+      }
+    }
+  );
+}
+
+async function redisIncr(key) {
+  const response = await fetch(
+    `${process.env.KV_REST_API_URL}/incr/${encodeURIComponent(key)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`
+      }
+    }
+  );
+  const data = await response.json();
+  return Number(data.result || 0);
+}
+
+async function sendLimitEmail({ used, limit, customerName, customerEmail }) {
+  const alertSentKey = `visualizer:${COMPANY_KEY}:${getMonthKey()}:limitEmailSent`;
+  const alreadySent = await redisGet(alertSentKey);
+
+  if (alreadySent === "yes") return;
+
+  await fetch(ALERT_EMAIL_FORM, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify({
+      subject: "Visualizer monthly limit reached",
+      company: COMPANY_NAME,
+      companyKey: COMPANY_KEY,
+      used,
+      limit,
+      customerName: customerName || "-",
+      customerEmail: customerEmail || "-",
+      message: `${COMPANY_NAME} has reached the monthly visualizer limit of ${limit} previews.`
+    })
+  });
+
+  await redisSet(alertSentKey, "yes");
 }
 
 export default async function handler(req, res) {
@@ -44,8 +119,34 @@ export default async function handler(req, res) {
       island,
       style,
       upperHeight,
-      hardware
+      hardware,
+      customerName,
+      customerEmail
     } = req.body || {};
+
+    if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+      return res.status(500).json({ error: "Missing Redis environment variables." });
+    }
+
+    const monthKey = getMonthKey();
+    const usageKey = `visualizer:${COMPANY_KEY}:${monthKey}:used`;
+
+    const usedNow = Number((await redisGet(usageKey)) || 0);
+
+    if (usedNow >= MONTHLY_LIMIT) {
+      await sendLimitEmail({
+        used: usedNow,
+        limit: MONTHLY_LIMIT,
+        customerName,
+        customerEmail
+      });
+
+      return res.status(403).json({
+        error: "This account has reached its monthly preview limit. Please contact Johnson Cabinetry & Refacing to continue using the visualizer.",
+        used: usedNow,
+        limit: MONTHLY_LIMIT
+      });
+    }
 
     if (!image) {
       return res.status(400).json({ error: "Missing kitchen image." });
@@ -147,97 +248,27 @@ UPPER CABINET FINISH:
 Apply this finish to every upper cabinet:
 ${upperColorText}
 
-This includes:
-- every upper cabinet door
-- every upper cabinet side panel
-- every upper face frame
-- every upper rail
-- every upper stile
-- every upper filler strip
-- every upper cabinet trim piece
-
 BASE / LOWER CABINET FINISH:
 Apply this finish to every lower cabinet:
 ${baseColorText}
 
-This includes:
-- every lower cabinet door
-- every lower drawer front
-- every drawer stack
-- every sink base door
-- every range-side lower cabinet
-- every dishwasher-side lower panel
-- every exposed side panel
-- every exposed end panel
-- every lower face frame
-- every lower rail
-- every lower stile
-- every lower filler strip
-- every toe kick
-- every island cabinet
-- every peninsula cabinet
-- every lower cabinet trim piece
-
-BASE CABINET CONSISTENCY:
 Every cabinet below the countertop must match the selected base/lower finish.
-
-Do not leave any lower cabinet door in the old finish.
-Do not leave any lower drawer front in the old finish.
-Do not leave any lower face frame in the old finish.
-Do not leave any toe kick in the old finish.
-Do not leave any exposed side panel in the old finish.
-Do not leave any left-side lower cabinet in the old finish.
-Do not leave any sink-base lower cabinet in the old finish.
-Do not leave any range-side lower cabinet in the old finish.
-Do not leave any dishwasher-side lower cabinet in the old finish.
-
-The entire lower cabinet run must look professionally refinished together as one continuous cabinet group.
 
 DOOR STYLE:
 The customer selected this door style:
 ${selectedStyle}
 
 Use this only as a light visual/profile reference.
-
 Do NOT redraw or restructure the cabinet layout to force the door style.
-Do NOT change the number of cabinet doors.
-Do NOT change the number of drawer fronts.
-Do NOT change the size or position of doors or drawers.
-
-If applying the selected door style would change the original layout, preserve the original layout instead.
 
 UPPER CABINET HEIGHT:
 ${selectedUpperHeight}
-
-Only follow this if it can be done without changing the rest of the kitchen layout.
 
 HARDWARE:
 Use this hardware style:
 ${selectedHardware}
 
-Keep hardware placement close to the original layout.
-
-DO NOT CHANGE:
-- countertops
-- backsplash
-- appliances
-- flooring
-- walls
-- sink
-- faucet
-- windows
-- trim
-- decor
-- lighting
-- ceiling
-- room dimensions
-- camera angle
-- perspective
-
-FINAL SELF-CHECK:
-Before final output, inspect every cabinet below the countertop from left to right.
-
-If any lower cabinet door, drawer front, panel, frame, filler, toe kick, or exposed side is still the original finish, recolor it to the selected base/lower finish before finalizing.
+DO NOT CHANGE countertops, backsplash, appliances, flooring, walls, sink, faucet, windows, trim, decor, lighting, ceiling, room dimensions, camera angle, or perspective.
 
 The result must look like the exact same kitchen photo with the existing cabinets professionally refinished.
 `.trim();
@@ -300,15 +331,30 @@ The result must look like the exact same kitchen photo with the existing cabinet
     const imageBase64 = result?.data?.[0]?.b64_json;
     const imageUrl = result?.data?.[0]?.url;
 
+    const updatedUsed = await redisIncr(usageKey);
+
+    if (updatedUsed >= MONTHLY_LIMIT) {
+      await sendLimitEmail({
+        used: updatedUsed,
+        limit: MONTHLY_LIMIT,
+        customerName,
+        customerEmail
+      });
+    }
+
     if (imageBase64) {
       return res.status(200).json({
-        image: `data:image/png;base64,${imageBase64}`
+        image: `data:image/png;base64,${imageBase64}`,
+        used: updatedUsed,
+        limit: MONTHLY_LIMIT
       });
     }
 
     if (imageUrl) {
       return res.status(200).json({
-        image: imageUrl
+        image: imageUrl,
+        used: updatedUsed,
+        limit: MONTHLY_LIMIT
       });
     }
 
