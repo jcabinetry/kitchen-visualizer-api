@@ -31,9 +31,22 @@ async function redisSmembers(key) {
 }
 
 export default async function handler(req, res) {
+
+  // ---------- CORS ----------
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  // --------------------------
+
   try {
     if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
-      return res.status(500).json({ error: "Missing Redis environment variables." });
+      return res.status(500).json({
+        error: "Missing Redis environment variables."
+      });
     }
 
     const customerIds = await redisSmembers("customers");
@@ -43,10 +56,14 @@ export default async function handler(req, res) {
 
     for (const id of customerIds) {
       const customerRaw = await redisGet(`customer:${id}`);
+
       let customer = {};
 
       try {
-        customer = typeof customerRaw === "string" ? JSON.parse(customerRaw) : customerRaw || {};
+        customer =
+          typeof customerRaw === "string"
+            ? JSON.parse(customerRaw)
+            : customerRaw || {};
       } catch {
         customer = {};
       }
@@ -55,7 +72,7 @@ export default async function handler(req, res) {
         (await redisGet(`visualizer:${id}:${monthKey}:used`)) || 0
       );
 
-      const limit = Number(customer?.limit || 50);
+      const limit = Number(customer.limit || 50);
 
       customers.push({
         ...customer,
@@ -71,7 +88,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     return res.status(500).json({
-      error: error?.message || "Could not load customers"
+      error: error.message || "Could not load customers"
     });
   }
 }
