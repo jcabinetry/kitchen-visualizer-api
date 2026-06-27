@@ -6,9 +6,7 @@ export const config = {
   }
 };
 
-const MONTHLY_LIMIT = 200;
-const COMPANY_KEY = "johnson-cabinetry";
-const COMPANY_NAME = "Johnson Cabinetry & Refacing";
+const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 
 function stripDataUrl(dataUrl) {
@@ -33,6 +31,14 @@ function getMonthKey() {
   return new Date().toISOString().slice(0, 7);
 }
 
+function cleanKey(value) {
+  return String(value || "default-company")
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 80);
+}
+
 async function redisGet(key) {
   const response = await fetch(
     `${process.env.KV_REST_API_URL}/get/${encodeURIComponent(key)}`,
@@ -42,6 +48,7 @@ async function redisGet(key) {
       }
     }
   );
+
   const data = await response.json();
   return data.result;
 }
@@ -68,12 +75,21 @@ async function redisIncr(key) {
       }
     }
   );
+
   const data = await response.json();
   return Number(data.result || 0);
 }
 
-async function sendLimitEmail({ used, limit, customerName, customerEmail }) {
-  const alertSentKey = `visualizer:${COMPANY_KEY}:${getMonthKey()}:limitEmailSent`;
+async function sendLimitEmail({
+  companyKey,
+  companyName,
+  used,
+  limit,
+  customerName,
+  customerEmail,
+  customerPhone
+}) {
+  const alertSentKey = `visualizer:${companyKey}:${getMonthKey()}:limitEmailSent`;
   const alreadySent = await redisGet(alertSentKey);
 
   if (alreadySent === "yes") return;
@@ -86,13 +102,14 @@ async function sendLimitEmail({ used, limit, customerName, customerEmail }) {
     },
     body: JSON.stringify({
       subject: "Visualizer monthly limit reached",
-      company: COMPANY_NAME,
-      companyKey: COMPANY_KEY,
+      company: companyName,
+      companyKey,
       used,
       limit,
       customerName: customerName || "-",
       customerEmail: customerEmail || "-",
-      message: `${COMPANY_NAME} has reached the monthly visualizer limit of ${limit} previews.`
+      customerPhone: customerPhone || "-",
+      message: `${companyName} has reached the monthly visualizer limit of ${limit} previews.`
     })
   });
 
@@ -120,31 +137,53 @@ export default async function handler(req, res) {
       style,
       upperHeight,
       hardware,
+
+      companyKey,
+      companyName,
+      monthlyLimit,
+
       customerName,
-      customerEmail
+      customerEmail,
+      customerPhone
     } = req.body || {};
 
     if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
-      return res.status(500).json({ error: "Missing Redis environment variables." });
+      return res.status(500).json({
+        error: "Missing Redis environment variables."
+      });
     }
 
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        error: "Missing OPENAI_API_KEY."
+      });
+    }
+
+    const safeCompanyKey = cleanKey(companyKey);
+    const safeCompanyName = companyName || safeCompanyKey;
+    const safeMonthlyLimit = Number(monthlyLimit || DEFAULT_MONTHLY_LIMIT);
+
     const monthKey = getMonthKey();
-    const usageKey = `visualizer:${COMPANY_KEY}:${monthKey}:used`;
+    const usageKey = `visualizer:${safeCompanyKey}:${monthKey}:used`;
 
     const usedNow = Number((await redisGet(usageKey)) || 0);
 
-    if (usedNow >= MONTHLY_LIMIT) {
+    if (usedNow >= safeMonthlyLimit) {
       await sendLimitEmail({
+        companyKey: safeCompanyKey,
+        companyName: safeCompanyName,
         used: usedNow,
-        limit: MONTHLY_LIMIT,
+        limit: safeMonthlyLimit,
         customerName,
-        customerEmail
+        customerEmail,
+        customerPhone
       });
 
       return res.status(403).json({
-        error: "This account has reached its monthly preview limit. Please contact Johnson Cabinetry & Refacing to continue using the visualizer.",
+        error:
+          "This account has reached its monthly preview limit. Please contact the cabinet company to continue using the visualizer.",
         used: usedNow,
-        limit: MONTHLY_LIMIT
+        limit: safeMonthlyLimit
       });
     }
 
@@ -152,11 +191,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing kitchen image." });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: "Missing OPENAI_API_KEY." });
-    }
-
     const kitchenBase64 = stripDataUrl(image);
+
     if (!kitchenBase64) {
       return res.status(400).json({ error: "Invalid kitchen image." });
     }
@@ -172,8 +208,13 @@ export default async function handler(req, res) {
         island === "custom island color reference") &&
       !!islandCustomColorImage;
 
-    const mainBase64 = hasMainCustom ? stripDataUrl(mainCustomColorImage) : null;
-    const baseBase64 = hasBaseCustom ? stripDataUrl(islandCustomColorImage) : null;
+    const mainBase64 = hasMainCustom
+      ? stripDataUrl(mainCustomColorImage)
+      : null;
+
+    const baseBase64 = hasBaseCustom
+      ? stripDataUrl(islandCustomColorImage)
+      : null;
 
     const mainMime = hasMainCustom
       ? getMimeType(mainCustomColorImage, "image/jpeg")
@@ -195,8 +236,10 @@ export default async function handler(req, res) {
       : island || "the same finish as the upper cabinets";
 
     const selectedStyle = style || "shaker cabinet doors";
+
     const selectedUpperHeight =
       upperHeight || "Keep existing upper cabinets exactly as they are.";
+
     const selectedHardware = hardware || "matte black cabinet pulls";
 
     const prompt = `
@@ -248,27 +291,97 @@ UPPER CABINET FINISH:
 Apply this finish to every upper cabinet:
 ${upperColorText}
 
+This includes:
+- every upper cabinet door
+- every upper cabinet side panel
+- every upper face frame
+- every upper rail
+- every upper stile
+- every upper filler strip
+- every upper cabinet trim piece
+
 BASE / LOWER CABINET FINISH:
 Apply this finish to every lower cabinet:
 ${baseColorText}
 
+This includes:
+- every lower cabinet door
+- every lower drawer front
+- every drawer stack
+- every sink base door
+- every range-side lower cabinet
+- every dishwasher-side lower panel
+- every exposed side panel
+- every exposed end panel
+- every lower face frame
+- every lower rail
+- every lower stile
+- every lower filler strip
+- every toe kick
+- every island cabinet
+- every peninsula cabinet
+- every lower cabinet trim piece
+
+BASE CABINET CONSISTENCY:
 Every cabinet below the countertop must match the selected base/lower finish.
+
+Do not leave any lower cabinet door in the old finish.
+Do not leave any lower drawer front in the old finish.
+Do not leave any lower face frame in the old finish.
+Do not leave any toe kick in the old finish.
+Do not leave any exposed side panel in the old finish.
+Do not leave any left-side lower cabinet in the old finish.
+Do not leave any sink-base lower cabinet in the old finish.
+Do not leave any range-side lower cabinet in the old finish.
+Do not leave any dishwasher-side lower cabinet in the old finish.
+
+The entire lower cabinet run must look professionally refinished together as one continuous cabinet group.
 
 DOOR STYLE:
 The customer selected this door style:
 ${selectedStyle}
 
 Use this only as a light visual/profile reference.
+
 Do NOT redraw or restructure the cabinet layout to force the door style.
+Do NOT change the number of cabinet doors.
+Do NOT change the number of drawer fronts.
+Do NOT change the size or position of doors or drawers.
+
+If applying the selected door style would change the original layout, preserve the original layout instead.
 
 UPPER CABINET HEIGHT:
 ${selectedUpperHeight}
+
+Only follow this if it can be done without changing the rest of the kitchen layout.
 
 HARDWARE:
 Use this hardware style:
 ${selectedHardware}
 
-DO NOT CHANGE countertops, backsplash, appliances, flooring, walls, sink, faucet, windows, trim, decor, lighting, ceiling, room dimensions, camera angle, or perspective.
+Keep hardware placement close to the original layout.
+
+DO NOT CHANGE:
+- countertops
+- backsplash
+- appliances
+- flooring
+- walls
+- sink
+- faucet
+- windows
+- trim
+- decor
+- lighting
+- ceiling
+- room dimensions
+- camera angle
+- perspective
+
+FINAL SELF-CHECK:
+Before final output, inspect every cabinet below the countertop from left to right.
+
+If any lower cabinet door, drawer front, panel, frame, filler, toe kick, or exposed side is still the original finish, recolor it to the selected base/lower finish before finalizing.
 
 The result must look like the exact same kitchen photo with the existing cabinets professionally refinished.
 `.trim();
@@ -333,12 +446,15 @@ The result must look like the exact same kitchen photo with the existing cabinet
 
     const updatedUsed = await redisIncr(usageKey);
 
-    if (updatedUsed >= MONTHLY_LIMIT) {
+    if (updatedUsed >= safeMonthlyLimit) {
       await sendLimitEmail({
+        companyKey: safeCompanyKey,
+        companyName: safeCompanyName,
         used: updatedUsed,
-        limit: MONTHLY_LIMIT,
+        limit: safeMonthlyLimit,
         customerName,
-        customerEmail
+        customerEmail,
+        customerPhone
       });
     }
 
@@ -346,7 +462,7 @@ The result must look like the exact same kitchen photo with the existing cabinet
       return res.status(200).json({
         image: `data:image/png;base64,${imageBase64}`,
         used: updatedUsed,
-        limit: MONTHLY_LIMIT
+        limit: safeMonthlyLimit
       });
     }
 
@@ -354,7 +470,7 @@ The result must look like the exact same kitchen photo with the existing cabinet
       return res.status(200).json({
         image: imageUrl,
         used: updatedUsed,
-        limit: MONTHLY_LIMIT
+        limit: safeMonthlyLimit
       });
     }
 
