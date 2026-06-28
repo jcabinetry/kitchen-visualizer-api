@@ -137,6 +137,9 @@ export default async function handler(req, res) {
       style,
       upperHeight,
       hardware,
+      countertop,
+      backsplash,
+      flooring,
 
       companyKey,
       companyName,
@@ -162,40 +165,40 @@ export default async function handler(req, res) {
     const safeCompanyKey = cleanKey(companyKey);
     const safeCompanyName = companyName || safeCompanyKey;
     const safeMonthlyLimit = Math.max(
-  1,
-  parseInt(monthlyLimit ?? DEFAULT_MONTHLY_LIMIT, 10) || DEFAULT_MONTHLY_LIMIT
-);
+      1,
+      parseInt(monthlyLimit ?? DEFAULT_MONTHLY_LIMIT, 10) || DEFAULT_MONTHLY_LIMIT
+    );
 
     const monthKey = getMonthKey();
     const usageKey = `visualizer:${safeCompanyKey}:${monthKey}:used`;
 
     const usedNow = Number((await redisGet(usageKey)) || 0);
-console.log({
-  companyKey: safeCompanyKey,
-  limit: safeMonthlyLimit,
-  usedNow
-});
-    
-if (usedNow >= safeMonthlyLimit) {
-  sendLimitEmail({
-    companyKey: safeCompanyKey,
-    companyName: safeCompanyName,
-    used: usedNow,
-    limit: safeMonthlyLimit,
-    customerName,
-    customerEmail,
-    customerPhone
-  }).catch(function(err) {
-    console.log("Limit email failed:", err?.message || err);
-  });
 
-  return res.status(403).json({
-    error: "This account has reached its monthly preview limit. Please contact support to continue using the visualizer.",
-    used: usedNow,
-    limit: safeMonthlyLimit
-  });
-}
+    console.log({
+      companyKey: safeCompanyKey,
+      limit: safeMonthlyLimit,
+      usedNow
+    });
 
+    if (usedNow >= safeMonthlyLimit) {
+      sendLimitEmail({
+        companyKey: safeCompanyKey,
+        companyName: safeCompanyName,
+        used: usedNow,
+        limit: safeMonthlyLimit,
+        customerName,
+        customerEmail,
+        customerPhone
+      }).catch(function(err) {
+        console.log("Limit email failed:", err?.message || err);
+      });
+
+      return res.status(403).json({
+        error: "This account has reached its monthly preview limit. Please contact support to continue using the visualizer.",
+        used: usedNow,
+        limit: safeMonthlyLimit
+      });
+    }
 
     if (!image) {
       return res.status(400).json({ error: "Missing kitchen image." });
@@ -252,6 +255,22 @@ if (usedNow >= safeMonthlyLimit) {
 
     const selectedHardware = hardware || "matte black cabinet pulls";
 
+    const selectedCountertop = countertop || "";
+    const selectedBacksplash = backsplash || "";
+    const selectedFlooring = flooring || "";
+
+    const countertopInstruction = selectedCountertop
+      ? `Replace only the visible countertop surfaces with ${selectedCountertop}. Preserve the exact countertop shape, edge, thickness, overhang, sink cutout, appliance openings, seams, shadows, and layout.`
+      : "Keep the existing countertops unchanged.";
+
+    const backsplashInstruction = selectedBacksplash
+      ? `Replace only the visible backsplash area with ${selectedBacksplash}. Preserve outlets, windows, trim, cabinets, countertops, wall layout, shadows, and perspective.`
+      : "Keep the existing backsplash unchanged.";
+
+    const flooringInstruction = selectedFlooring
+      ? `Replace only the visible flooring with ${selectedFlooring}. Preserve the floor perspective, plank or tile scale, shadows, cabinets, appliances, furniture, rugs, walls, and room layout.`
+      : "Keep the existing flooring unchanged.";
+
     const prompt = `
 Edit this exact kitchen photo.
 
@@ -281,7 +300,7 @@ Do NOT:
 - change the perspective
 - change the room shape
 
-Only change cabinet finish colors and hardware appearance.
+Only change cabinet finish colors, hardware appearance, and the countertop, backsplash, or flooring only when those options are selected.
 
 CABINET GROUPS:
 Treat the cabinets as exactly two finish groups.
@@ -371,12 +390,22 @@ ${selectedHardware}
 
 Keep hardware placement close to the original layout.
 
+COUNTERTOP INSTRUCTION:
+${countertopInstruction}
+
+BACKSPLASH INSTRUCTION:
+${backsplashInstruction}
+
+FLOORING INSTRUCTION:
+${flooringInstruction}
+
+IMPORTANT MATERIAL RULE:
+If countertops, backsplash, or flooring are set to Keep Existing or are blank, leave that surface unchanged.
+If a new countertop, backsplash, or flooring option is selected, change only that selected surface and preserve everything else.
+
 DO NOT CHANGE:
-- countertops
-- backsplash
 - appliances
-- flooring
-- walls
+- walls except the selected backsplash area if backsplash is selected
 - sink
 - faucet
 - windows
