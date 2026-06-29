@@ -9,6 +9,13 @@ export const config = {
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 
+function getRedisConfig() {
+  return {
+    url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
+  };
+}
+
 function stripDataUrl(dataUrl) {
   if (!dataUrl || typeof dataUrl !== "string") return null;
   const parts = dataUrl.split(",");
@@ -40,11 +47,12 @@ function cleanKey(value) {
 }
 
 async function redisGet(key) {
+  const redis = getRedisConfig();
   const response = await fetch(
-    `${process.env.KV_REST_API_URL}/get/${encodeURIComponent(key)}`,
+    `${redis.url}/get/${encodeURIComponent(key)}`,
     {
       headers: {
-        Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`
+        Authorization: `Bearer ${redis.token}`
       }
     }
   );
@@ -54,24 +62,26 @@ async function redisGet(key) {
 }
 
 async function redisSet(key, value) {
+  const redis = getRedisConfig();
   await fetch(
-    `${process.env.KV_REST_API_URL}/set/${encodeURIComponent(key)}/${encodeURIComponent(value)}`,
+    `${redis.url}/set/${encodeURIComponent(key)}/${encodeURIComponent(value)}`,
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`
+        Authorization: `Bearer ${redis.token}`
       }
     }
   );
 }
 
 async function redisIncr(key) {
+  const redis = getRedisConfig();
   const response = await fetch(
-    `${process.env.KV_REST_API_URL}/incr/${encodeURIComponent(key)}`,
+    `${redis.url}/incr/${encodeURIComponent(key)}`,
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`
+        Authorization: `Bearer ${redis.token}`
       }
     }
   );
@@ -150,9 +160,11 @@ export default async function handler(req, res) {
       customerPhone
     } = req.body || {};
 
-    if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+    const redis = getRedisConfig();
+
+    if (!redis.url || !redis.token) {
       return res.status(500).json({
-        error: "Missing Redis environment variables."
+        error: "Missing Redis environment variables. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel."
       });
     }
 

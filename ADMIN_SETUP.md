@@ -14,9 +14,14 @@ This repo includes an owner admin dashboard for managing cabinet visualizer cust
 
 ## Required Vercel Environment Variables
 
-Keep the existing variables already used by `api/generate.js`:
+Keep the existing variables already used by the visualizer:
 
 - `OPENAI_API_KEY`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+The code also supports these older Vercel KV names as fallbacks:
+
 - `KV_REST_API_URL`
 - `KV_REST_API_TOKEN`
 
