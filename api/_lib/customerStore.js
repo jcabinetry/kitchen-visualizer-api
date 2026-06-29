@@ -120,6 +120,16 @@ function normalizeCustomer(input = {}, existing = null) {
   };
 }
 
+function scanCursor(result) {
+  if (Array.isArray(result)) return Number(result[0] || 0);
+  return Number(result?.cursor || result?.[0] || 0);
+}
+
+function scanResultKeys(result) {
+  if (Array.isArray(result)) return result[1] || [];
+  return result?.keys || result?.result || [];
+}
+
 async function scanKeys(redis, match) {
   const keys = [];
   let cursor = 0;
@@ -128,29 +138,40 @@ async function scanKeys(redis, match) {
     const result = await redis.scan(cursor, { match, count: 100 }).catch(function() {
       return [0, []];
     });
-    cursor = Number(result?.[0] || 0);
-    keys.push(...(result?.[1] || []));
+    cursor = scanCursor(result);
+    keys.push(...scanResultKeys(result));
   } while (cursor !== 0);
 
   return keys;
 }
 
+async function keysMatching(redis, match) {
+  return redis.keys(match).catch(function() {
+    return [];
+  });
+}
+
 async function readIndex(redis) {
-  const [existingKeys, v2Keys, scannedExistingKeys, scannedV2Keys] = await Promise.all([
+  const [existingKeys, v2Keys, scannedExistingKeys, scannedV2Keys, directExistingKeys, directV2Keys] = await Promise.all([
     redis.smembers(CUSTOMER_INDEX_KEY).catch(function() { return []; }),
     redis.smembers(CUSTOMER_INDEX_KEY_V2).catch(function() { return []; }),
     scanKeys(redis, "customer:*"),
-    scanKeys(redis, "visualizer:customer:*")
+    scanKeys(redis, "visualizer:customer:*"),
+    keysMatching(redis, "customer:*"),
+    keysMatching(redis, "visualizer:customer:*")
   ]);
 
   return Array.from(new Set([
     ...(existingKeys || []),
     ...(v2Keys || []),
     ...(scannedExistingKeys || []).map(companyKeyFromRedisKey),
-    ...(scannedV2Keys || []).map(companyKeyFromRedisKey)
+    ...(scannedV2Keys || []).map(companyKeyFromRedisKey),
+    ...(directExistingKeys || []).map(companyKeyFromRedisKey),
+    ...(directV2Keys || []).map(companyKeyFromRedisKey)
   ]))
     .map(function(value) { return String(value || "").trim(); })
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(function(value) { return value !== CUSTOMER_INDEX_KEY && value !== CUSTOMER_INDEX_KEY_V2; });
 }
 
 async function readCustomerByKey(redis, companyKey) {
@@ -178,6 +199,19 @@ async function writeCustomer(redis, customer) {
   ]);
 }
 
+async function repairCustomerIndexes(redis, customers) {
+  const keys = customers.map(function(customer) {
+    return customer.companyKey;
+  }).filter(Boolean);
+
+  if (!keys.length) return;
+
+  await Promise.all([
+    redis.sadd(CUSTOMER_INDEX_KEY, ...keys),
+    redis.sadd(CUSTOMER_INDEX_KEY_V2, ...keys)
+  ]).catch(function() {});
+}
+
 export async function listCustomers() {
   const redis = getRedis();
   const keys = await readIndex(redis);
@@ -192,10 +226,14 @@ export async function listCustomers() {
     uniqueCustomers.set(customer.companyKey, customer);
   });
 
-  return Array.from(uniqueCustomers.values())
+  const customerList = Array.from(uniqueCustomers.values())
     .sort(function(a, b) {
       return a.companyName.localeCompare(b.companyName);
     });
+
+  await repairCustomerIndexes(redis, customerList);
+
+  return customerList;
 }
 
 export async function getCustomer(companyKey) {
