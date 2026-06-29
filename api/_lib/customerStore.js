@@ -26,6 +26,12 @@ function customerKeyV2(companyKey) {
   return `visualizer:customer:${companyKey}`;
 }
 
+function companyKeyFromRedisKey(key) {
+  return String(key || "")
+    .replace(/^visualizer:customer:/, "")
+    .replace(/^customer:/, "");
+}
+
 export function usageKey(companyKey, monthKey = getMonthKey()) {
   return `visualizer:${companyKey}:${monthKey}:used`;
 }
@@ -114,24 +120,51 @@ function normalizeCustomer(input = {}, existing = null) {
   };
 }
 
+async function scanKeys(redis, match) {
+  const keys = [];
+  let cursor = 0;
+
+  do {
+    const result = await redis.scan(cursor, { match, count: 100 }).catch(function() {
+      return [0, []];
+    });
+    cursor = Number(result?.[0] || 0);
+    keys.push(...(result?.[1] || []));
+  } while (cursor !== 0);
+
+  return keys;
+}
+
 async function readIndex(redis) {
-  const [existingKeys, v2Keys] = await Promise.all([
+  const [existingKeys, v2Keys, scannedExistingKeys, scannedV2Keys] = await Promise.all([
     redis.smembers(CUSTOMER_INDEX_KEY).catch(function() { return []; }),
-    redis.smembers(CUSTOMER_INDEX_KEY_V2).catch(function() { return []; })
+    redis.smembers(CUSTOMER_INDEX_KEY_V2).catch(function() { return []; }),
+    scanKeys(redis, "customer:*"),
+    scanKeys(redis, "visualizer:customer:*")
   ]);
 
-  return Array.from(new Set([...(existingKeys || []), ...(v2Keys || [])]))
-    .map(cleanCompanyKey)
+  return Array.from(new Set([
+    ...(existingKeys || []),
+    ...(v2Keys || []),
+    ...(scannedExistingKeys || []).map(companyKeyFromRedisKey),
+    ...(scannedV2Keys || []).map(companyKeyFromRedisKey)
+  ]))
+    .map(function(value) { return String(value || "").trim(); })
     .filter(Boolean);
 }
 
 async function readCustomerByKey(redis, companyKey) {
-  const safeCompanyKey = cleanCompanyKey(companyKey);
-  const existing = await redis.get(customerKey(safeCompanyKey));
-  if (existing) return normalizeCustomer(existing);
+  const rawCompanyKey = String(companyKey || "").trim();
+  const safeCompanyKey = cleanCompanyKey(rawCompanyKey);
+  const candidates = Array.from(new Set([safeCompanyKey, rawCompanyKey].filter(Boolean)));
 
-  const v2 = await redis.get(customerKeyV2(safeCompanyKey));
-  if (v2) return normalizeCustomer(v2);
+  for (const candidate of candidates) {
+    const existing = await redis.get(customerKey(candidate));
+    if (existing) return normalizeCustomer(existing);
+
+    const v2 = await redis.get(customerKeyV2(candidate));
+    if (v2) return normalizeCustomer(v2);
+  }
 
   return null;
 }
@@ -153,9 +186,13 @@ export async function listCustomers() {
       return readCustomerByKey(redis, companyKey);
     })
   );
+  const uniqueCustomers = new Map();
 
-  return customers
-    .filter(Boolean)
+  customers.filter(Boolean).forEach(function(customer) {
+    uniqueCustomers.set(customer.companyKey, customer);
+  });
+
+  return Array.from(uniqueCustomers.values())
     .sort(function(a, b) {
       return a.companyName.localeCompare(b.companyName);
     });
