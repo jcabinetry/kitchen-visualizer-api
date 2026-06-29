@@ -520,6 +520,7 @@
       const token = getToken();
       const response = await fetch(path, {
         ...options,
+        cache: "no-store",
         headers: {
           "Content-Type": "application/json",
           "X-Admin-Token": token,
@@ -680,7 +681,8 @@
       setStatus("Loading...");
       try {
         const month = elements.monthInput.value || thisMonth();
-        const data = await api(`/api/admin/customers?month=${encodeURIComponent(month)}`);
+        const stamp = Date.now();
+        const data = await api(`/api/admin/customers?month=${encodeURIComponent(month)}&_=${stamp}`);
         state.customers = data.customers || [];
         render();
         setStatus("Loaded.");
@@ -696,10 +698,18 @@
       setBusy(true);
       setStatus("Saving...");
       try {
-        await api("/api/admin/customers", {
+        const data = await api("/api/admin/customers", {
           method: state.selectedKey ? "PATCH" : "POST",
           body: JSON.stringify(formPayload())
         });
+        if (data.customer) {
+          const withoutSaved = state.customers.filter(function(customer) {
+            return customer.companyKey !== data.customer.companyKey;
+          });
+          state.customers = [...withoutSaved, { ...data.customer, usage: { used: 0 } }];
+          render();
+        }
+        resetForm();
         await loadCustomers();
         setStatus("Saved.");
       } catch (error) {

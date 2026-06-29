@@ -9,8 +9,13 @@ import {
   saveCustomer
 } from "../_lib/customerStore.js";
 
+function setNoStore(res) {
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+}
+
 export default async function handler(req, res) {
   if (setCorsHeaders(req, res)) return;
+  setNoStore(res);
   if (!requireAdmin(req, res)) return;
 
   try {
