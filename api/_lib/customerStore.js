@@ -1,6 +1,7 @@
 import { getRedis } from "./redisClient.js";
 
-const CUSTOMER_INDEX_KEY = "visualizer:customers:index";
+const CUSTOMER_INDEX_KEY = "customers";
+const CUSTOMER_INDEX_KEY_V2 = "visualizer:customers:index";
 const DEFAULT_MONTHLY_LIMIT = 200;
 
 export function getMonthKey(date = new Date()) {
@@ -18,6 +19,10 @@ export function cleanCompanyKey(value) {
 }
 
 function customerKey(companyKey) {
+  return `customer:${companyKey}`;
+}
+
+function customerKeyV2(companyKey) {
   return `visualizer:customer:${companyKey}`;
 }
 
@@ -35,41 +40,90 @@ function toPositiveInteger(value, fallback = DEFAULT_MONTHLY_LIMIT) {
   return parsed;
 }
 
+function parseMaybeJson(value) {
+  if (!value || typeof value !== "string") return value;
+
+  try {
+    return JSON.parse(value);
+  } catch (_error) {
+    return value;
+  }
+}
+
 function normalizeCustomer(input = {}, existing = null) {
-  const companyKey = cleanCompanyKey(input.companyKey || existing?.companyKey);
+  const source = parseMaybeJson(input) || {};
+  const existingSource = parseMaybeJson(existing) || null;
+  const existingBranding = existingSource?.branding || {};
+
+  const companyKey = cleanCompanyKey(source.companyKey || existingSource?.companyKey);
 
   if (!companyKey) {
     throw new Error("companyKey is required.");
   }
 
   const now = new Date().toISOString();
-  const status = input.status === "archived" ? "archived" : "active";
+  const status = source.status === "archived" ? "archived" : "active";
+  const branding = source.branding || {};
 
   return {
     companyKey,
-    companyName: String(input.companyName || existing?.companyName || companyKey).trim(),
+    companyName: String(source.companyName || existingSource?.companyName || companyKey).trim(),
     status,
-    monthlyLimit: toPositiveInteger(input.monthlyLimit ?? existing?.monthlyLimit),
+    monthlyLimit: toPositiveInteger(source.monthlyLimit ?? existingSource?.monthlyLimit),
+    plan: String(source.plan || existingSource?.plan || "").trim(),
     branding: {
-      logoUrl: String(input.branding?.logoUrl ?? existing?.branding?.logoUrl ?? "").trim(),
-      primaryColor: String(input.branding?.primaryColor ?? existing?.branding?.primaryColor ?? "#1f2937").trim(),
-      accentColor: String(input.branding?.accentColor ?? existing?.branding?.accentColor ?? "#f59e0b").trim(),
-      websiteUrl: String(input.branding?.websiteUrl ?? existing?.branding?.websiteUrl ?? "").trim(),
-      contactEmail: String(input.branding?.contactEmail ?? existing?.branding?.contactEmail ?? "").trim()
+      logoUrl: String(branding.logoUrl ?? source.logoUrl ?? existingBranding.logoUrl ?? existingSource?.logoUrl ?? "").trim(),
+      primaryColor: String(branding.primaryColor ?? source.primaryColor ?? existingBranding.primaryColor ?? existingSource?.primaryColor ?? "#1f2937").trim(),
+      accentColor: String(branding.accentColor ?? source.accentColor ?? existingBranding.accentColor ?? "#f59e0b").trim(),
+      websiteUrl: String(branding.websiteUrl ?? source.website ?? source.websiteUrl ?? existingBranding.websiteUrl ?? existingSource?.website ?? "").trim(),
+      estimateUrl: String(branding.estimateUrl ?? source.estimateUrl ?? existingBranding.estimateUrl ?? existingSource?.estimateUrl ?? "").trim(),
+      contactEmail: String(branding.contactEmail ?? source.email ?? source.contactEmail ?? existingBranding.contactEmail ?? existingSource?.email ?? "").trim(),
+      phone: String(branding.phone ?? source.phone ?? existingBranding.phone ?? existingSource?.phone ?? "").trim()
     },
-    notes: String(input.notes ?? existing?.notes ?? "").trim(),
-    createdAt: existing?.createdAt || now,
+    notes: String(source.notes ?? existingSource?.notes ?? "").trim(),
+    createdAt: existingSource?.createdAt || now,
     updatedAt: now,
-    archivedAt: status === "archived" ? existing?.archivedAt || now : null
+    archivedAt: status === "archived" ? existingSource?.archivedAt || now : null
   };
+}
+
+async function readIndex(redis) {
+  const [existingKeys, v2Keys] = await Promise.all([
+    redis.smembers(CUSTOMER_INDEX_KEY).catch(function() { return []; }),
+    redis.smembers(CUSTOMER_INDEX_KEY_V2).catch(function() { return []; })
+  ]);
+
+  return Array.from(new Set([...(existingKeys || []), ...(v2Keys || [])]))
+    .map(cleanCompanyKey)
+    .filter(Boolean);
+}
+
+async function readCustomerByKey(redis, companyKey) {
+  const safeCompanyKey = cleanCompanyKey(companyKey);
+  const existing = await redis.get(customerKey(safeCompanyKey));
+  if (existing) return normalizeCustomer(existing);
+
+  const v2 = await redis.get(customerKeyV2(safeCompanyKey));
+  if (v2) return normalizeCustomer(v2);
+
+  return null;
+}
+
+async function writeCustomer(redis, customer) {
+  await Promise.all([
+    redis.sadd(CUSTOMER_INDEX_KEY, customer.companyKey),
+    redis.sadd(CUSTOMER_INDEX_KEY_V2, customer.companyKey),
+    redis.set(customerKey(customer.companyKey), customer),
+    redis.set(customerKeyV2(customer.companyKey), customer)
+  ]);
 }
 
 export async function listCustomers() {
   const redis = getRedis();
-  const keys = await redis.smembers(CUSTOMER_INDEX_KEY);
+  const keys = await readIndex(redis);
   const customers = await Promise.all(
-    keys.map(async function(companyKey) {
-      return redis.get(customerKey(companyKey));
+    keys.map(function(companyKey) {
+      return readCustomerByKey(redis, companyKey);
     })
   );
 
@@ -82,7 +136,7 @@ export async function listCustomers() {
 
 export async function getCustomer(companyKey) {
   const redis = getRedis();
-  return redis.get(customerKey(cleanCompanyKey(companyKey)));
+  return readCustomerByKey(redis, companyKey);
 }
 
 export async function saveCustomer(input) {
@@ -90,8 +144,7 @@ export async function saveCustomer(input) {
   const existing = input.companyKey ? await getCustomer(input.companyKey) : null;
   const customer = normalizeCustomer(input, existing);
 
-  await redis.sadd(CUSTOMER_INDEX_KEY, customer.companyKey);
-  await redis.set(customerKey(customer.companyKey), customer);
+  await writeCustomer(redis, customer);
 
   return customer;
 }
