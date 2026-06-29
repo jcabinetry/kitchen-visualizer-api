@@ -1,6 +1,6 @@
 # Admin Dashboard Setup
 
-This repo now includes a first-pass owner admin dashboard for managing cabinet visualizer customers.
+This repo includes an owner admin dashboard for managing cabinet visualizer customers.
 
 ## Files
 
@@ -20,7 +20,7 @@ Keep the existing variables already used by `api/generate.js`:
 - `KV_REST_API_URL`
 - `KV_REST_API_TOKEN`
 
-Add this new admin variable:
+Add this admin variable:
 
 - `ADMIN_API_TOKEN` - a strong private token used to open and use the admin dashboard.
 
@@ -36,9 +36,14 @@ Optional:
 4. Create or edit customer records.
 5. Reset monthly usage when needed.
 
-## Redis Keys Added
+## Redis Keys
 
-Customer records are stored under new keys so existing usage tracking remains unchanged:
+The admin dashboard supports the existing Upstash customer keys already used by the project:
+
+- `customers`
+- `customer:{companyKey}`
+
+For forward compatibility, customer saves also mirror data to these names:
 
 - `visualizer:customers:index`
 - `visualizer:customer:{companyKey}`
