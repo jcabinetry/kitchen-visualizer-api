@@ -65,8 +65,19 @@ function textValue(...values) {
 }
 
 function normalizeCustomer(input = {}, existing = null) {
-  const source = parseMaybeJson(input) || {};
-  const existingSource = parseMaybeJson(existing) || null;
+  let source = parseMaybeJson(input) || {};
+  let existingSource = parseMaybeJson(existing) || null;
+
+  // Some early/manual Redis records stored only a plain string like "0333".
+  // Treat that string as the company key instead of crashing the customer list.
+  if (typeof source !== "object") {
+    source = { companyKey: String(source || "") };
+  }
+
+  if (existingSource && typeof existingSource !== "object") {
+    existingSource = { companyKey: String(existingSource || "") };
+  }
+
   const branding = source.branding || {};
   const existingBranding = existingSource?.branding || {};
 
@@ -187,10 +198,10 @@ async function readCustomerByKey(redis, companyKey) {
 
   for (const candidate of candidates) {
     const existing = await redis.get(customerKey(candidate));
-    if (existing) return normalizeCustomer(existing);
+    if (existing) return normalizeCustomer(existing, { companyKey: candidate });
 
     const v2 = await redis.get(customerKeyV2(candidate));
-    if (v2) return normalizeCustomer(v2);
+    if (v2) return normalizeCustomer(v2, { companyKey: candidate });
   }
 
   return null;
