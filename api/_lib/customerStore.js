@@ -80,7 +80,7 @@ function normalizeCustomer(input = {}, existing = null) {
   const accentColor = textValue(source.accentColor, branding.accentColor, existingSource?.accentColor, existingBranding.accentColor, "#f59e0b");
   const websiteUrl = textValue(source.websiteUrl, source.website, branding.websiteUrl, branding.website, existingSource?.websiteUrl, existingSource?.website, existingBranding.websiteUrl, existingBranding.website);
   const estimateUrl = textValue(source.estimateUrl, branding.estimateUrl, existingSource?.estimateUrl, existingBranding.estimateUrl);
-  const ctaText = textValue(source.ctaText, branding.ctaText, existingSource?.ctaText, existingBranding.ctaText, "Request My Free Cabinet Estimate");
+  const ctaText = textValue(source.ctaText, branding.ctaText, existingSource?.ctaText, existingBranding.ctaText, "Request an Estimate");
 
   return {
     companyKey,
