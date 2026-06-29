@@ -45,7 +45,7 @@
 
     button:disabled { cursor: wait; opacity: 0.7; }
 
-    .shell { width: min(1240px, calc(100vw - 32px)); margin: 0 auto; padding: 24px 0 48px; }
+    .shell { width: min(1320px, calc(100vw - 32px)); margin: 0 auto; padding: 24px 0 48px; }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
     h1 { margin: 0; font-size: 26px; line-height: 1.2; letter-spacing: 0; }
     .month-picker { display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 700; white-space: nowrap; }
@@ -55,20 +55,20 @@
     .metric { padding: 16px; }
     .metric span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
     .metric strong { display: block; margin-top: 8px; font-size: 26px; line-height: 1; }
-    .layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.8fr); gap: 16px; align-items: start; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(390px, 0.85fr); gap: 16px; align-items: start; }
     .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
     .panel-header h2 { margin: 0; font-size: 16px; letter-spacing: 0; }
     .toolbar { display: flex; align-items: center; gap: 8px; }
     .toolbar input, .toolbar select { width: 180px; }
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 900px; }
+    table { width: 100%; border-collapse: collapse; min-width: 1120px; }
     th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
     th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0; background: #fafbfe; }
     tbody tr { transition: background 120ms ease; }
     tbody tr:hover { background: #f9fbff; }
-    .company-name { display: flex; flex-direction: column; gap: 3px; }
+    .company-name, .contact-stack { display: flex; flex-direction: column; gap: 3px; }
     .company-name b { font-size: 14px; }
-    .company-name small { color: var(--muted); }
+    .company-name small, .contact-stack small { color: var(--muted); }
     .badge { display: inline-flex; align-items: center; min-height: 24px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 800; background: #edf8f4; color: var(--green); }
     .badge.archived { background: #f2f4f7; color: #596276; }
     .usage-bar { width: 150px; height: 8px; overflow: hidden; border-radius: 999px; background: #e7ebf2; }
@@ -86,14 +86,14 @@
     label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
     input, select, textarea { width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--ink); padding: 8px 10px; outline: none; }
     input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(36, 87, 166, 0.14); }
-    textarea { min-height: 86px; resize: vertical; }
+    textarea { min-height: 76px; resize: vertical; }
     .full { grid-column: 1 / -1; }
     .form-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 16px; }
     .status-line { min-height: 22px; padding: 0 16px 16px; color: var(--muted); font-size: 13px; }
     .status-line.error { color: var(--red); }
     .empty { padding: 24px 16px; color: var(--muted); text-align: center; }
 
-    @media (max-width: 920px) {
+    @media (max-width: 980px) {
       .summary-grid, .layout { grid-template-columns: 1fr; }
       .topbar { align-items: flex-start; flex-direction: column; }
       .toolbar { align-items: stretch; flex-direction: column; width: 100%; }
@@ -132,7 +132,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Company</th><th>Status</th><th>Usage</th><th>Limit</th><th>Brand</th><th></th></tr>
+              <tr><th>Company</th><th>Status</th><th>Usage</th><th>Limit</th><th>Contact</th><th>City</th><th></th></tr>
             </thead>
             <tbody id="customerRows"></tbody>
           </table>
@@ -147,15 +147,17 @@
         </div>
         <form id="customerForm">
           <div class="form-grid">
-            <label>Company key<input id="companyKey" name="companyKey" required autocomplete="off" placeholder="acme-cabinets"></label>
+            <label>Company key<input id="companyKey" name="companyKey" required autocomplete="off" placeholder="tabby-cabs"></label>
             <label>Monthly limit<input id="monthlyLimit" name="monthlyLimit" type="number" min="1" step="1" value="200" required></label>
-            <label class="full">Company name<input id="companyName" name="companyName" required autocomplete="organization" placeholder="Acme Cabinets"></label>
+            <label class="full">Company name<input id="companyName" name="companyName" required autocomplete="organization" placeholder="Tabby Cabs"></label>
             <label>Status<select id="status" name="status"><option value="active">Active</option><option value="archived">Inactive</option></select></label>
-            <label>Contact email<input id="contactEmail" name="contactEmail" type="email" autocomplete="email"></label>
-            <label>Primary color<input id="primaryColor" name="primaryColor" type="color" value="#1f2937"></label>
-            <label>Accent color<input id="accentColor" name="accentColor" type="color" value="#f59e0b"></label>
-            <label class="full">Website URL<input id="websiteUrl" name="websiteUrl" type="url" autocomplete="url"></label>
+            <label>Phone<input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="555-555-1111"></label>
+            <label>Email<input id="email" name="email" type="email" autocomplete="email" placeholder="test@test.test"></label>
+            <label>City<input id="city" name="city" autocomplete="address-level2" placeholder="Greeley, CO"></label>
+            <label>Primary color<input id="primaryColor" name="primaryColor" type="color" value="#1e3a8a"></label>
+            <label class="full">Estimate URL<input id="estimateUrl" name="estimateUrl" placeholder="https://dannycabs.com"></label>
             <label class="full">Logo URL<input id="logoUrl" name="logoUrl" type="url"></label>
+            <label class="full">Button text<input id="ctaText" name="ctaText" placeholder="Request My Free Cabinet Estimate"></label>
             <label class="full">Notes<textarea id="notes" name="notes"></textarea></label>
           </div>
           <div class="form-actions">
@@ -187,6 +189,7 @@
     };
 
     function thisMonth() { return new Date().toISOString().slice(0, 7); }
+    function field(id) { return document.getElementById(id); }
     function setBusy(isBusy) { elements.refreshButton.disabled = isBusy; elements.saveButton.disabled = isBusy; elements.archiveButton.disabled = isBusy; }
     function setStatus(message, isError = false) { elements.statusLine.textContent = message || ""; elements.statusLine.classList.toggle("error", isError); }
     function getToken() { if (state.token) return state.token; state.token = window.prompt("Admin token") || ""; if (state.token) window.localStorage.setItem("cabinetAdminToken", state.token); return state.token; }
@@ -206,6 +209,13 @@
       return data;
     }
 
+    function customerEmail(customer) { return customer.email || customer.contactEmail || customer.branding?.email || customer.branding?.contactEmail || ""; }
+    function customerPhone(customer) { return customer.phone || customer.branding?.phone || ""; }
+    function customerCity(customer) { return customer.city || customer.branding?.city || ""; }
+    function customerEstimateUrl(customer) { return customer.estimateUrl || customer.branding?.estimateUrl || customer.branding?.websiteUrl || customer.websiteUrl || ""; }
+    function customerLogoUrl(customer) { return customer.logoUrl || customer.branding?.logoUrl || ""; }
+    function customerPrimaryColor(customer) { return customer.primaryColor || customer.branding?.primaryColor || "#1e3a8a"; }
+    function customerCtaText(customer) { return customer.ctaText || customer.branding?.ctaText || "Request My Free Cabinet Estimate"; }
     function usagePercent(customer) { const used = Number(customer.usage?.used || 0); const limit = Number(customer.monthlyLimit || 1); return Math.min(100, Math.round((used / limit) * 100)); }
     function isActive(customer) { return customer.status !== "archived"; }
 
@@ -214,7 +224,7 @@
       const status = elements.statusFilter.value;
       return state.customers.filter(function(customer) {
         const matchesStatus = status === "all" || customer.status === status;
-        const haystack = `${customer.companyName} ${customer.companyKey}`.toLowerCase();
+        const haystack = `${customer.companyName} ${customer.companyKey} ${customerEmail(customer)} ${customerPhone(customer)} ${customerCity(customer)}`.toLowerCase();
         return matchesStatus && (!query || haystack.includes(query));
       });
     }
@@ -247,7 +257,8 @@
           <td><span class="badge ${active ? "" : "archived"}">${active ? "active" : "inactive"}</span></td>
           <td><div>${used} used</div><div class="usage-bar ${barClass}" style="--value: ${percent}%"><span></span></div></td>
           <td>${customer.monthlyLimit}</td>
-          <td>${escapeHtml(customer.branding?.contactEmail || customer.branding?.websiteUrl || "-")}</td>
+          <td><span class="contact-stack"><b>${escapeHtml(customerEmail(customer) || "-")}</b><small>${escapeHtml(customerPhone(customer) || "")}</small></span></td>
+          <td>${escapeHtml(customerCity(customer) || "-")}</td>
           <td><div class="row-actions">
             <button class="link-button" type="button" data-action="edit" data-key="${escapeAttr(customer.companyKey)}">Edit</button>
             <button class="neutral" type="button" data-action="reset" data-key="${escapeAttr(customer.companyKey)}">Reset</button>
@@ -267,10 +278,10 @@
       elements.editorTitle.textContent = "Create Customer";
       elements.archiveButton.hidden = true;
       elements.customerForm.reset();
-      elements.companyKey.disabled = false;
-      document.getElementById("monthlyLimit").value = "200";
-      document.getElementById("primaryColor").value = "#1f2937";
-      document.getElementById("accentColor").value = "#f59e0b";
+      field("companyKey").disabled = false;
+      field("monthlyLimit").value = "200";
+      field("primaryColor").value = "#1e3a8a";
+      field("ctaText").value = "Request My Free Cabinet Estimate";
       setStatus("");
     }
 
@@ -280,34 +291,53 @@
       state.selectedKey = companyKey;
       elements.editorTitle.textContent = "Edit Customer";
       elements.archiveButton.hidden = !isActive(customer);
-      elements.companyKey.disabled = true;
-      document.getElementById("companyKey").value = customer.companyKey;
-      document.getElementById("companyName").value = customer.companyName || "";
-      document.getElementById("monthlyLimit").value = customer.monthlyLimit || 200;
-      document.getElementById("status").value = customer.status || "active";
-      document.getElementById("contactEmail").value = customer.branding?.contactEmail || "";
-      document.getElementById("primaryColor").value = customer.branding?.primaryColor || "#1f2937";
-      document.getElementById("accentColor").value = customer.branding?.accentColor || "#f59e0b";
-      document.getElementById("websiteUrl").value = customer.branding?.websiteUrl || "";
-      document.getElementById("logoUrl").value = customer.branding?.logoUrl || "";
-      document.getElementById("notes").value = customer.notes || "";
+      field("companyKey").disabled = true;
+      field("companyKey").value = customer.companyKey;
+      field("companyName").value = customer.companyName || "";
+      field("monthlyLimit").value = customer.monthlyLimit || 200;
+      field("status").value = customer.status || "active";
+      field("phone").value = customerPhone(customer);
+      field("email").value = customerEmail(customer);
+      field("city").value = customerCity(customer);
+      field("primaryColor").value = customerPrimaryColor(customer);
+      field("estimateUrl").value = customerEstimateUrl(customer);
+      field("logoUrl").value = customerLogoUrl(customer);
+      field("ctaText").value = customerCtaText(customer);
+      field("notes").value = customer.notes || "";
       setStatus("");
     }
 
     function formPayload() {
+      const email = field("email").value;
+      const phone = field("phone").value;
+      const city = field("city").value;
+      const logoUrl = field("logoUrl").value;
+      const primaryColor = field("primaryColor").value;
+      const estimateUrl = field("estimateUrl").value;
+      const ctaText = field("ctaText").value;
       return {
-        companyKey: document.getElementById("companyKey").value,
-        companyName: document.getElementById("companyName").value,
-        monthlyLimit: document.getElementById("monthlyLimit").value,
-        status: document.getElementById("status").value,
+        companyKey: field("companyKey").value,
+        companyName: field("companyName").value,
+        monthlyLimit: field("monthlyLimit").value,
+        status: field("status").value,
+        phone,
+        email,
+        city,
+        estimateUrl,
+        logoUrl,
+        primaryColor,
+        ctaText,
         branding: {
-          contactEmail: document.getElementById("contactEmail").value,
-          primaryColor: document.getElementById("primaryColor").value,
-          accentColor: document.getElementById("accentColor").value,
-          websiteUrl: document.getElementById("websiteUrl").value,
-          logoUrl: document.getElementById("logoUrl").value
+          phone,
+          email,
+          contactEmail: email,
+          city,
+          estimateUrl,
+          logoUrl,
+          primaryColor,
+          ctaText
         },
-        notes: document.getElementById("notes").value
+        notes: field("notes").value
       };
     }
 
@@ -333,7 +363,7 @@
         const data = await api("/api/admin/customers", { method: state.selectedKey ? "PATCH" : "POST", body: JSON.stringify(formPayload()) });
         if (data.customer) {
           const withoutSaved = state.customers.filter(function(customer) { return customer.companyKey !== data.customer.companyKey; });
-          state.customers = [...withoutSaved, { ...data.customer, usage: { used: 0 } }];
+          state.customers = [...withoutSaved, { ...data.customer, usage: data.customer.usage || { used: 0 } }];
           render();
         }
         resetForm();
@@ -381,6 +411,7 @@
     }
 
     elements.monthInput.value = thisMonth();
+    field("ctaText").value = "Request My Free Cabinet Estimate";
     elements.refreshButton.addEventListener("click", loadCustomers);
     elements.monthInput.addEventListener("change", loadCustomers);
     elements.searchInput.addEventListener("input", renderRows);

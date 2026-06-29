@@ -50,9 +50,18 @@ function parseMaybeJson(value) {
   }
 }
 
+function textValue(...values) {
+  const found = values.find(function(value) {
+    return value !== undefined && value !== null && String(value).trim() !== "";
+  });
+
+  return String(found || "").trim();
+}
+
 function normalizeCustomer(input = {}, existing = null) {
   const source = parseMaybeJson(input) || {};
   const existingSource = parseMaybeJson(existing) || null;
+  const branding = source.branding || {};
   const existingBranding = existingSource?.branding || {};
 
   const companyKey = cleanCompanyKey(source.companyKey || existingSource?.companyKey);
@@ -63,22 +72,40 @@ function normalizeCustomer(input = {}, existing = null) {
 
   const now = new Date().toISOString();
   const status = source.status === "archived" ? "archived" : "active";
-  const branding = source.branding || {};
+  const email = textValue(source.email, source.contactEmail, branding.email, branding.contactEmail, existingSource?.email, existingSource?.contactEmail, existingBranding.email, existingBranding.contactEmail);
+  const phone = textValue(source.phone, branding.phone, existingSource?.phone, existingBranding.phone);
+  const city = textValue(source.city, branding.city, existingSource?.city, existingBranding.city);
+  const logoUrl = textValue(source.logoUrl, branding.logoUrl, existingSource?.logoUrl, existingBranding.logoUrl);
+  const primaryColor = textValue(source.primaryColor, branding.primaryColor, existingSource?.primaryColor, existingBranding.primaryColor, "#1f2937");
+  const accentColor = textValue(source.accentColor, branding.accentColor, existingSource?.accentColor, existingBranding.accentColor, "#f59e0b");
+  const websiteUrl = textValue(source.websiteUrl, source.website, branding.websiteUrl, branding.website, existingSource?.websiteUrl, existingSource?.website, existingBranding.websiteUrl, existingBranding.website);
+  const estimateUrl = textValue(source.estimateUrl, branding.estimateUrl, existingSource?.estimateUrl, existingBranding.estimateUrl);
+  const ctaText = textValue(source.ctaText, branding.ctaText, existingSource?.ctaText, existingBranding.ctaText, "Request My Free Cabinet Estimate");
 
   return {
     companyKey,
-    companyName: String(source.companyName || existingSource?.companyName || companyKey).trim(),
+    companyName: textValue(source.companyName, existingSource?.companyName, companyKey),
     status,
     monthlyLimit: toPositiveInteger(source.monthlyLimit ?? existingSource?.monthlyLimit),
-    plan: String(source.plan || existingSource?.plan || "").trim(),
+    plan: textValue(source.plan, existingSource?.plan),
+    phone,
+    email,
+    city,
+    estimateUrl,
+    logoUrl,
+    primaryColor,
+    ctaText,
     branding: {
-      logoUrl: String(branding.logoUrl ?? source.logoUrl ?? existingBranding.logoUrl ?? existingSource?.logoUrl ?? "").trim(),
-      primaryColor: String(branding.primaryColor ?? source.primaryColor ?? existingBranding.primaryColor ?? existingSource?.primaryColor ?? "#1f2937").trim(),
-      accentColor: String(branding.accentColor ?? source.accentColor ?? existingBranding.accentColor ?? "#f59e0b").trim(),
-      websiteUrl: String(branding.websiteUrl ?? source.website ?? source.websiteUrl ?? existingBranding.websiteUrl ?? existingSource?.website ?? "").trim(),
-      estimateUrl: String(branding.estimateUrl ?? source.estimateUrl ?? existingBranding.estimateUrl ?? existingSource?.estimateUrl ?? "").trim(),
-      contactEmail: String(branding.contactEmail ?? source.email ?? source.contactEmail ?? existingBranding.contactEmail ?? existingSource?.email ?? "").trim(),
-      phone: String(branding.phone ?? source.phone ?? existingBranding.phone ?? existingSource?.phone ?? "").trim()
+      logoUrl,
+      primaryColor,
+      accentColor,
+      websiteUrl,
+      estimateUrl,
+      contactEmail: email,
+      email,
+      phone,
+      city,
+      ctaText
     },
     notes: String(source.notes ?? existingSource?.notes ?? "").trim(),
     createdAt: existingSource?.createdAt || now,
