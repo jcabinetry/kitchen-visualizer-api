@@ -131,6 +131,8 @@ function scanResultKeys(result) {
 }
 
 async function scanKeys(redis, match) {
+  if (typeof redis.scan !== "function") return [];
+
   const keys = [];
   let cursor = 0;
 
@@ -146,9 +148,13 @@ async function scanKeys(redis, match) {
 }
 
 async function keysMatching(redis, match) {
-  return redis.keys(match).catch(function() {
+  if (typeof redis.keys !== "function") return [];
+
+  try {
+    return await redis.keys(match);
+  } catch (_error) {
     return [];
-  });
+  }
 }
 
 async function readIndex(redis) {
