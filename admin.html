@@ -6,7 +6,6 @@
   <title>Cabinet Visualizer Admin</title>
   <style>
     :root {
-      color-scheme: light;
       --ink: #172033;
       --muted: #647084;
       --line: #d9dee8;
@@ -32,23 +31,40 @@
     button,
     input,
     textarea,
-    select {
-      font: inherit;
-    }
+    select { font: inherit; }
 
     button {
+      min-height: 38px;
+      padding: 0 14px;
       border: 0;
       border-radius: 6px;
       cursor: pointer;
-      min-height: 38px;
-      padding: 0 14px;
       font-weight: 700;
     }
 
-    button:disabled {
-      cursor: wait;
-      opacity: 0.7;
+    button:disabled { cursor: wait; opacity: 0.7; }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
     }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(36, 87, 166, 0.14);
+    }
+
+    textarea { min-height: 86px; resize: vertical; }
 
     .shell {
       width: min(1240px, calc(100vw - 32px));
@@ -56,33 +72,42 @@
       padding: 24px 0 48px;
     }
 
-    .topbar {
+    .topbar,
+    .panel-header,
+    .auth-actions,
+    .form-actions,
+    .row-actions {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 20px;
+      gap: 12px;
     }
 
-    h1 {
-      margin: 0;
-      font-size: 26px;
-      line-height: 1.2;
-      letter-spacing: 0;
+    .topbar,
+    .panel-header,
+    .form-actions { justify-content: space-between; }
+
+    .topbar { margin-bottom: 20px; }
+
+    h1 { margin: 0; font-size: 26px; line-height: 1.2; letter-spacing: 0; }
+    h2 { margin: 0; font-size: 16px; letter-spacing: 0; }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
     }
 
     .month-picker {
-      display: flex;
+      flex-direction: row;
       align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-weight: 700;
       white-space: nowrap;
     }
 
-    .month-picker input {
-      width: 150px;
-    }
+    .month-picker input { width: 150px; }
 
     .summary-grid {
       display: grid;
@@ -92,31 +117,32 @@
     }
 
     .metric,
-    .panel {
+    .panel,
+    .auth-panel {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
       box-shadow: var(--shadow);
     }
 
-    .metric {
-      padding: 16px;
+    .metric { padding: 16px; }
+    .metric span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+    .metric strong { display: block; margin-top: 8px; font-size: 26px; line-height: 1; }
+
+    .auth-panel {
+      max-width: 560px;
+      margin: 80px auto 0;
+      padding: 22px;
     }
 
-    .metric span {
-      display: block;
+    .auth-panel p {
+      margin: 8px 0 18px;
       color: var(--muted);
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
+      line-height: 1.5;
     }
 
-    .metric strong {
-      display: block;
-      margin-top: 8px;
-      font-size: 26px;
-      line-height: 1;
-    }
+    .auth-actions { align-items: end; }
+    .auth-actions label { flex: 1; }
 
     .layout {
       display: grid;
@@ -125,20 +151,7 @@
       align-items: start;
     }
 
-    .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .panel-header h2 {
-      margin: 0;
-      font-size: 16px;
-      letter-spacing: 0;
-    }
+    .panel-header { padding: 14px 16px; border-bottom: 1px solid var(--line); }
 
     .toolbar {
       display: flex;
@@ -147,19 +160,10 @@
     }
 
     .toolbar input,
-    .toolbar select {
-      width: 180px;
-    }
+    .toolbar select { width: 180px; }
 
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 760px;
-    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; min-width: 760px; border-collapse: collapse; }
 
     th,
     td {
@@ -173,31 +177,13 @@
       color: var(--muted);
       font-size: 12px;
       text-transform: uppercase;
-      letter-spacing: 0;
       background: #fafbfe;
     }
 
-    tbody tr {
-      transition: background 120ms ease;
-    }
+    tbody tr:hover { background: #f9fbff; }
 
-    tbody tr:hover {
-      background: #f9fbff;
-    }
-
-    .company-name {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .company-name b {
-      font-size: 14px;
-    }
-
-    .company-name small {
-      color: var(--muted);
-    }
+    .company-name { display: flex; flex-direction: column; gap: 3px; }
+    .company-name small { color: var(--muted); }
 
     .badge {
       display: inline-flex;
@@ -211,10 +197,7 @@
       color: var(--green);
     }
 
-    .badge.archived {
-      background: #f2f4f7;
-      color: #596276;
-    }
+    .badge.archived { background: #f2f4f7; color: #596276; }
 
     .usage-bar {
       width: 150px;
@@ -226,43 +209,20 @@
 
     .usage-bar span {
       display: block;
-      height: 100%;
       width: var(--value, 0%);
+      height: 100%;
       background: var(--green);
     }
 
     .usage-bar.warn span { background: var(--amber); }
     .usage-bar.over span { background: var(--red); }
 
-    .row-actions {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-    }
+    .primary { background: var(--blue); color: #fff; }
+    .danger { background: #fff0ee; color: var(--red); }
+    .neutral { background: #eef1f6; color: var(--ink); }
+    .link-button { background: #edf3ff; color: var(--blue); }
 
-    .link-button {
-      background: #edf3ff;
-      color: var(--blue);
-    }
-
-    .primary {
-      background: var(--blue);
-      color: white;
-    }
-
-    .danger {
-      background: #fff0ee;
-      color: var(--red);
-    }
-
-    .neutral {
-      background: #eef1f6;
-      color: var(--ink);
-    }
-
-    form {
-      padding: 16px;
-    }
+    form { padding: 16px; }
 
     .form-grid {
       display: grid;
@@ -270,51 +230,7 @@
       gap: 12px;
     }
 
-    label {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      min-height: 38px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: white;
-      color: var(--ink);
-      padding: 8px 10px;
-      outline: none;
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(36, 87, 166, 0.14);
-    }
-
-    textarea {
-      min-height: 86px;
-      resize: vertical;
-    }
-
-    .full {
-      grid-column: 1 / -1;
-    }
-
-    .form-actions {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      margin-top: 16px;
-    }
+    .full { grid-column: 1 / -1; }
 
     .status-line {
       min-height: 22px;
@@ -323,43 +239,37 @@
       font-size: 13px;
     }
 
-    .status-line.error {
-      color: var(--red);
-    }
-
-    .empty {
-      padding: 24px 16px;
-      color: var(--muted);
-      text-align: center;
-    }
+    .status-line.error { color: var(--red); }
+    .empty { padding: 24px 16px; color: var(--muted); text-align: center; }
+    [hidden] { display: none !important; }
 
     @media (max-width: 920px) {
       .summary-grid,
-      .layout {
-        grid-template-columns: 1fr;
-      }
-
-      .topbar {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .toolbar {
-        align-items: stretch;
-        flex-direction: column;
-        width: 100%;
-      }
-
+      .layout { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .toolbar,
+      .auth-actions { align-items: stretch; flex-direction: column; width: 100%; }
       .toolbar input,
       .toolbar select,
-      .toolbar button {
-        width: 100%;
-      }
+      .toolbar button { width: 100%; }
     }
   </style>
 </head>
 <body>
-  <main class="shell">
+  <section id="authPanel" class="auth-panel">
+    <h1>Admin Access</h1>
+    <p>Enter the private admin token from Vercel to manage customers, limits, branding, and monthly usage.</p>
+    <div class="auth-actions">
+      <label>
+        Admin token
+        <input id="tokenInput" type="password" autocomplete="current-password">
+      </label>
+      <button class="primary" id="tokenButton" type="button">Continue</button>
+    </div>
+    <p id="authStatus" class="status-line error"></p>
+  </section>
+
+  <main id="adminApp" class="shell" hidden>
     <header class="topbar">
       <h1>Cabinet Visualizer Admin</h1>
       <label class="month-picker">
@@ -414,49 +324,16 @@
         </div>
         <form id="customerForm">
           <div class="form-grid">
-            <label>
-              Company key
-              <input id="companyKey" name="companyKey" required autocomplete="off" placeholder="acme-cabinets">
-            </label>
-            <label>
-              Monthly limit
-              <input id="monthlyLimit" name="monthlyLimit" type="number" min="1" step="1" value="200" required>
-            </label>
-            <label class="full">
-              Company name
-              <input id="companyName" name="companyName" required autocomplete="organization" placeholder="Acme Cabinets">
-            </label>
-            <label>
-              Status
-              <select id="status" name="status">
-                <option value="active">Active</option>
-                <option value="archived">Archived</option>
-              </select>
-            </label>
-            <label>
-              Contact email
-              <input id="contactEmail" name="contactEmail" type="email" autocomplete="email">
-            </label>
-            <label>
-              Primary color
-              <input id="primaryColor" name="primaryColor" type="color" value="#1f2937">
-            </label>
-            <label>
-              Accent color
-              <input id="accentColor" name="accentColor" type="color" value="#f59e0b">
-            </label>
-            <label class="full">
-              Website URL
-              <input id="websiteUrl" name="websiteUrl" type="url" autocomplete="url">
-            </label>
-            <label class="full">
-              Logo URL
-              <input id="logoUrl" name="logoUrl" type="url">
-            </label>
-            <label class="full">
-              Notes
-              <textarea id="notes" name="notes"></textarea>
-            </label>
+            <label>Company key<input id="companyKey" name="companyKey" required autocomplete="off" placeholder="acme-cabinets"></label>
+            <label>Monthly limit<input id="monthlyLimit" name="monthlyLimit" type="number" min="1" step="1" value="200" required></label>
+            <label class="full">Company name<input id="companyName" name="companyName" required autocomplete="organization" placeholder="Acme Cabinets"></label>
+            <label>Status<select id="status" name="status"><option value="active">Active</option><option value="archived">Archived</option></select></label>
+            <label>Contact email<input id="contactEmail" name="contactEmail" type="email" autocomplete="email"></label>
+            <label>Primary color<input id="primaryColor" name="primaryColor" type="color" value="#1f2937"></label>
+            <label>Accent color<input id="accentColor" name="accentColor" type="color" value="#f59e0b"></label>
+            <label class="full">Website URL<input id="websiteUrl" name="websiteUrl" type="url" autocomplete="url"></label>
+            <label class="full">Logo URL<input id="logoUrl" name="logoUrl" type="url"></label>
+            <label class="full">Notes<textarea id="notes" name="notes"></textarea></label>
           </div>
           <div class="form-actions">
             <button class="danger" id="archiveButton" type="button" hidden>Archive</button>
@@ -476,6 +353,11 @@
     };
 
     const elements = {
+      authPanel: document.getElementById("authPanel"),
+      adminApp: document.getElementById("adminApp"),
+      tokenInput: document.getElementById("tokenInput"),
+      tokenButton: document.getElementById("tokenButton"),
+      authStatus: document.getElementById("authStatus"),
       monthInput: document.getElementById("monthInput"),
       totalCustomers: document.getElementById("totalCustomers"),
       activeCustomers: document.getElementById("activeCustomers"),
@@ -498,10 +380,24 @@
       return new Date().toISOString().slice(0, 7);
     }
 
+    function showAuth(message = "") {
+      elements.adminApp.hidden = true;
+      elements.authPanel.hidden = false;
+      elements.authStatus.textContent = message;
+      elements.tokenInput.value = state.token;
+      elements.tokenInput.focus();
+    }
+
+    function showApp() {
+      elements.authPanel.hidden = true;
+      elements.adminApp.hidden = false;
+    }
+
     function setBusy(isBusy) {
       elements.refreshButton.disabled = isBusy;
       elements.saveButton.disabled = isBusy;
       elements.archiveButton.disabled = isBusy;
+      elements.tokenButton.disabled = isBusy;
     }
 
     function setStatus(message, isError = false) {
@@ -509,20 +405,12 @@
       elements.statusLine.classList.toggle("error", isError);
     }
 
-    function getToken() {
-      if (state.token) return state.token;
-      state.token = window.prompt("Admin token") || "";
-      if (state.token) window.localStorage.setItem("cabinetAdminToken", state.token);
-      return state.token;
-    }
-
     async function api(path, options = {}) {
-      const token = getToken();
       const response = await fetch(path, {
         ...options,
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Token": token,
+          "X-Admin-Token": state.token,
           ...(options.headers || {})
         }
       });
@@ -532,11 +420,22 @@
         if (response.status === 401) {
           window.localStorage.removeItem("cabinetAdminToken");
           state.token = "";
+          showAuth("That token was not accepted. Check the value in Vercel and try again.");
         }
         throw new Error(data.error || "Request failed.");
       }
 
       return data;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"]/g, function(char) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[char];
+      });
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/'/g, "&#39;");
     }
 
     function usagePercent(customer) {
@@ -557,15 +456,11 @@
     }
 
     function renderSummary() {
-      const active = state.customers.filter(function(customer) {
-        return customer.status !== "archived";
-      });
+      const active = state.customers.filter(function(customer) { return customer.status !== "archived"; });
       const totalPreviews = state.customers.reduce(function(sum, customer) {
         return sum + Number(customer.usage?.used || 0);
       }, 0);
-      const nearLimit = active.filter(function(customer) {
-        return usagePercent(customer) >= 80;
-      }).length;
+      const nearLimit = active.filter(function(customer) { return usagePercent(customer) >= 80; }).length;
 
       elements.totalCustomers.textContent = state.customers.length;
       elements.activeCustomers.textContent = active.length;
@@ -584,38 +479,15 @@
         const barClass = percent >= 100 ? "over" : percent >= 80 ? "warn" : "";
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>
-            <span class="company-name">
-              <b>${escapeHtml(customer.companyName)}</b>
-              <small>${escapeHtml(customer.companyKey)}</small>
-            </span>
-          </td>
+          <td><span class="company-name"><b>${escapeHtml(customer.companyName)}</b><small>${escapeHtml(customer.companyKey)}</small></span></td>
           <td><span class="badge ${customer.status === "archived" ? "archived" : ""}">${escapeHtml(customer.status)}</span></td>
-          <td>
-            <div>${used} used</div>
-            <div class="usage-bar ${barClass}" style="--value: ${percent}%"><span></span></div>
-          </td>
+          <td><div>${used} used</div><div class="usage-bar ${barClass}" style="--value: ${percent}%"><span></span></div></td>
           <td>${customer.monthlyLimit}</td>
           <td>${escapeHtml(customer.branding?.contactEmail || customer.branding?.websiteUrl || "-")}</td>
-          <td>
-            <div class="row-actions">
-              <button class="link-button" type="button" data-action="edit" data-key="${escapeAttr(customer.companyKey)}">Edit</button>
-              <button class="neutral" type="button" data-action="reset" data-key="${escapeAttr(customer.companyKey)}">Reset</button>
-            </div>
-          </td>
+          <td><div class="row-actions"><button class="link-button" type="button" data-action="edit" data-key="${escapeAttr(customer.companyKey)}">Edit</button><button class="neutral" type="button" data-action="reset" data-key="${escapeAttr(customer.companyKey)}">Reset</button></div></td>
         `;
         elements.customerRows.appendChild(tr);
       });
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? "").replace(/[&<>"]/g, function(char) {
-        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[char];
-      });
-    }
-
-    function escapeAttr(value) {
-      return escapeHtml(value).replace(/'/g, "&#39;");
     }
 
     function render() {
@@ -636,9 +508,7 @@
     }
 
     function editCustomer(companyKey) {
-      const customer = state.customers.find(function(item) {
-        return item.companyKey === companyKey;
-      });
+      const customer = state.customers.find(function(item) { return item.companyKey === companyKey; });
       if (!customer) return;
 
       state.selectedKey = companyKey;
@@ -682,6 +552,7 @@
         const month = elements.monthInput.value || thisMonth();
         const data = await api(`/api/admin/customers?month=${encodeURIComponent(month)}`);
         state.customers = data.customers || [];
+        showApp();
         render();
         setStatus("Loaded.");
       } catch (error) {
@@ -689,6 +560,17 @@
       } finally {
         setBusy(false);
       }
+    }
+
+    async function submitToken() {
+      state.token = elements.tokenInput.value.trim();
+      if (!state.token) {
+        elements.authStatus.textContent = "Enter the admin token from Vercel.";
+        return;
+      }
+      window.localStorage.setItem("cabinetAdminToken", state.token);
+      elements.authStatus.textContent = "Checking token...";
+      await loadCustomers();
     }
 
     async function saveCustomer(event) {
@@ -736,11 +618,7 @@
       try {
         await api("/api/admin/usage", {
           method: "POST",
-          body: JSON.stringify({
-            action: "reset",
-            companyKey,
-            month: elements.monthInput.value || thisMonth()
-          })
+          body: JSON.stringify({ action: "reset", companyKey, month: elements.monthInput.value || thisMonth() })
         });
         await loadCustomers();
         setStatus("Usage reset.");
@@ -752,6 +630,10 @@
     }
 
     elements.monthInput.value = thisMonth();
+    elements.tokenButton.addEventListener("click", submitToken);
+    elements.tokenInput.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") submitToken();
+    });
     elements.refreshButton.addEventListener("click", loadCustomers);
     elements.monthInput.addEventListener("change", loadCustomers);
     elements.searchInput.addEventListener("input", renderRows);
@@ -767,7 +649,7 @@
       if (button.getAttribute("data-action") === "reset") resetUsage(companyKey);
     });
 
-    loadCustomers();
+    showAuth();
   </script>
 </body>
 </html>
