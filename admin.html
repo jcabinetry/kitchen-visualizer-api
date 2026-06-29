@@ -147,17 +147,17 @@
         </div>
         <form id="customerForm">
           <div class="form-grid">
-            <label>Company key<input id="companyKey" name="companyKey" required autocomplete="off" placeholder="tabby-cabs"></label>
+            <label>Company key<input id="companyKey" name="companyKey" required autocomplete="off" placeholder="company-name"></label>
             <label>Monthly limit<input id="monthlyLimit" name="monthlyLimit" type="number" min="1" step="1" value="200" required></label>
-            <label class="full">Company name<input id="companyName" name="companyName" required autocomplete="organization" placeholder="Tabby Cabs"></label>
+            <label class="full">Company name<input id="companyName" name="companyName" required autocomplete="organization" placeholder="Company Name"></label>
             <label>Status<select id="status" name="status"><option value="active">Active</option><option value="archived">Inactive</option></select></label>
-            <label>Phone<input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="555-555-1111"></label>
-            <label>Email<input id="email" name="email" type="email" autocomplete="email" placeholder="test@test.test"></label>
-            <label>City<input id="city" name="city" autocomplete="address-level2" placeholder="Greeley, CO"></label>
-            <label>Primary color<input id="primaryColor" name="primaryColor" type="color" value="#1e3a8a"></label>
-            <label class="full">Estimate URL<input id="estimateUrl" name="estimateUrl" placeholder="https://dannycabs.com"></label>
+            <label>Phone<input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="(555) 555-5555"></label>
+            <label>Email<input id="email" name="email" type="email" autocomplete="email" placeholder="email@example.com"></label>
+            <label>City<input id="city" name="city" autocomplete="address-level2" placeholder="City, ST"></label>
+            <label>Primary color<input id="primaryColor" name="primaryColor" type="color" value="#1f2937"></label>
+            <label class="full">Estimate URL<input id="estimateUrl" name="estimateUrl" placeholder="https://example.com/estimate"></label>
             <label class="full">Logo URL<input id="logoUrl" name="logoUrl" type="url"></label>
-            <label class="full">Button text<input id="ctaText" name="ctaText" placeholder="Request My Free Cabinet Estimate"></label>
+            <label class="full">Button text<input id="ctaText" name="ctaText" placeholder="Request an Estimate"></label>
             <label class="full">Notes<textarea id="notes" name="notes"></textarea></label>
           </div>
           <div class="form-actions">
@@ -214,8 +214,8 @@
     function customerCity(customer) { return customer.city || customer.branding?.city || ""; }
     function customerEstimateUrl(customer) { return customer.estimateUrl || customer.branding?.estimateUrl || customer.branding?.websiteUrl || customer.websiteUrl || ""; }
     function customerLogoUrl(customer) { return customer.logoUrl || customer.branding?.logoUrl || ""; }
-    function customerPrimaryColor(customer) { return customer.primaryColor || customer.branding?.primaryColor || "#1e3a8a"; }
-    function customerCtaText(customer) { return customer.ctaText || customer.branding?.ctaText || "Request My Free Cabinet Estimate"; }
+    function customerPrimaryColor(customer) { return customer.primaryColor || customer.branding?.primaryColor || "#1f2937"; }
+    function customerCtaText(customer) { return customer.ctaText || customer.branding?.ctaText || "Request an Estimate"; }
     function usagePercent(customer) { const used = Number(customer.usage?.used || 0); const limit = Number(customer.monthlyLimit || 1); return Math.min(100, Math.round((used / limit) * 100)); }
     function isActive(customer) { return customer.status !== "archived"; }
 
@@ -280,8 +280,8 @@
       elements.customerForm.reset();
       field("companyKey").disabled = false;
       field("monthlyLimit").value = "200";
-      field("primaryColor").value = "#1e3a8a";
-      field("ctaText").value = "Request My Free Cabinet Estimate";
+      field("primaryColor").value = "#1f2937";
+      field("ctaText").value = "Request an Estimate";
       setStatus("");
     }
 
@@ -411,7 +411,7 @@
     }
 
     elements.monthInput.value = thisMonth();
-    field("ctaText").value = "Request My Free Cabinet Estimate";
+    field("ctaText").value = "Request an Estimate";
     elements.refreshButton.addEventListener("click", loadCustomers);
     elements.monthInput.addEventListener("change", loadCustomers);
     elements.searchInput.addEventListener("input", renderRows);
