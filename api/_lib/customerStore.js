@@ -131,6 +131,13 @@ function normalizeCustomer(input = {}, existing = null) {
   };
 }
 
+function fallbackCustomer(companyKey) {
+  const safeCompanyKey = cleanCompanyKey(companyKeyFromRedisKey(companyKey));
+  if (!safeCompanyKey) return null;
+
+  return normalizeCustomer({ companyKey: safeCompanyKey }, { companyKey: safeCompanyKey });
+}
+
 function scanCursor(result) {
   if (Array.isArray(result)) return Number(result[0] || 0);
   return Number(result?.cursor || result?.[0] || 0);
@@ -179,8 +186,8 @@ async function readIndex(redis) {
   ]);
 
   return Array.from(new Set([
-    ...(existingKeys || []),
-    ...(v2Keys || []),
+    ...(existingKeys || []).map(companyKeyFromRedisKey),
+    ...(v2Keys || []).map(companyKeyFromRedisKey),
     ...(scannedExistingKeys || []).map(companyKeyFromRedisKey),
     ...(scannedV2Keys || []).map(companyKeyFromRedisKey),
     ...(directExistingKeys || []).map(companyKeyFromRedisKey),
@@ -193,8 +200,14 @@ async function readIndex(redis) {
 
 async function readCustomerByKey(redis, companyKey) {
   const rawCompanyKey = String(companyKey || "").trim();
-  const safeCompanyKey = cleanCompanyKey(rawCompanyKey);
-  const candidates = Array.from(new Set([safeCompanyKey, rawCompanyKey].filter(Boolean)));
+  const indexCompanyKey = companyKeyFromRedisKey(rawCompanyKey);
+  const safeCompanyKey = cleanCompanyKey(indexCompanyKey);
+  const candidates = Array.from(new Set([safeCompanyKey, indexCompanyKey, rawCompanyKey].filter(Boolean)));
+
+  if (rawCompanyKey.startsWith("customer:") || rawCompanyKey.startsWith("visualizer:customer:")) {
+    const direct = await redis.get(rawCompanyKey);
+    if (direct) return normalizeCustomer(direct, { companyKey: indexCompanyKey });
+  }
 
   for (const candidate of candidates) {
     const existing = await redis.get(customerKey(candidate));
@@ -233,8 +246,8 @@ export async function listCustomers() {
   const redis = getRedis();
   const keys = await readIndex(redis);
   const customers = await Promise.all(
-    keys.map(function(companyKey) {
-      return readCustomerByKey(redis, companyKey);
+    keys.map(async function(companyKey) {
+      return (await readCustomerByKey(redis, companyKey)) || fallbackCustomer(companyKey);
     })
   );
   const uniqueCustomers = new Map();
