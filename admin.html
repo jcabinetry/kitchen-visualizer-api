@@ -110,7 +110,7 @@
   </style>
 </head>
 <body>
-  <section id="loginShell" class="login-shell">
+  <section id="loginShell" class="login-shell" hidden>
     <form id="loginForm" class="login-panel">
       <h1>Admin Login</h1>
       <p>Enter your admin API token to manage customers.</p>
@@ -189,12 +189,11 @@
   </main>
 
   <script>
-    const state = {
-      token: window.localStorage.getItem("cabinetAdminToken") || "",
-      customers: [],
-      selectedKey: ""
-    };
-
+const state = {
+    token: "Doobie85",
+    customers: [],
+    selectedKey: ""
+};
     const elements = {
       loginShell: document.getElementById("loginShell"), adminShell: document.getElementById("adminShell"),
       loginForm: document.getElementById("loginForm"), adminTokenInput: document.getElementById("adminTokenInput"),
@@ -437,15 +436,6 @@
 
     elements.monthInput.value = thisMonth();
     field("ctaText").value = "Request an Estimate";
-    elements.loginForm.addEventListener("submit", function(event) {
-      event.preventDefault();
-      state.token = elements.adminTokenInput.value.trim();
-      if (!state.token) { showLogin("Admin API token required."); return; }
-      window.localStorage.setItem("cabinetAdminToken", state.token);
-      elements.loginButton.disabled = true;
-      elements.loginError.textContent = "Checking...";
-      loadCustomers().finally(function() { elements.loginButton.disabled = false; });
-    });
     elements.refreshButton.addEventListener("click", loadCustomers);
     elements.monthInput.addEventListener("change", loadCustomers);
     elements.searchInput.addEventListener("input", renderRows);
@@ -464,12 +454,7 @@
       if (action === "activate") updateCustomerStatus(companyKey, "active");
     });
 
-    if (state.token) {
-      elements.adminTokenInput.value = state.token;
-      loadCustomers();
-    } else {
-      showLogin();
-    }
+    loadCustomers();
   </script>
 </body>
 </html>
