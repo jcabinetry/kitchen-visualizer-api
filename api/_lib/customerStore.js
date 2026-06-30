@@ -3,6 +3,7 @@ import { getRedis } from "./redisClient.js";
 const CUSTOMER_INDEX_KEY = "customers";
 const CUSTOMER_INDEX_KEY_V2 = "visualizer:customers:index";
 const DEFAULT_MONTHLY_LIMIT = 200;
+const DEFAULT_MONTHLY_PRICE = 199;
 
 export function getMonthKey(date = new Date()) {
   return date.toISOString().slice(0, 7);
@@ -82,6 +83,12 @@ function toPositiveInteger(value, fallback = DEFAULT_MONTHLY_LIMIT) {
   return parsed;
 }
 
+function toMoneyNumber(value, fallback = DEFAULT_MONTHLY_PRICE) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return Math.round(parsed * 100) / 100;
+}
+
 function parseMaybeJson(value) {
   if (!value || typeof value !== "string") return value;
 
@@ -149,6 +156,7 @@ function normalizeCustomer(input = {}, existing = null) {
     companyName: textValue(source.companyName, existingSource?.companyName, companyKey),
     status,
     monthlyLimit: toPositiveInteger(source.monthlyLimit ?? existingSource?.monthlyLimit),
+    monthlyPrice: toMoneyNumber(source.monthlyPrice ?? existingSource?.monthlyPrice),
     plan: textValue(source.plan, existingSource?.plan),
     phone,
     email,
