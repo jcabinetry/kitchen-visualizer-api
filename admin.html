@@ -20,6 +20,7 @@
     }
 
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
 
     body {
       margin: 0;
@@ -113,7 +114,7 @@
     <form id="loginForm" class="login-panel">
       <h1>Admin Login</h1>
       <p>Enter your admin password to manage customers.</p>
-      <label>Admin password<input id="adminTokenInput" type="password" autocomplete="current-password" required></label>
+      <label>Admin password<input id="adminTokenInput" type="password" autocomplete="off" required></label>
       <div class="login-actions"><button class="primary" id="loginButton" type="submit">Continue</button></div>
       <div id="loginError" class="login-error"></div>
     </form>
@@ -189,7 +190,7 @@
 
   <script>
     const state = {
-      token: window.localStorage.getItem("cabinetAdminToken") || "",
+      token: "",
       customers: [],
       selectedKey: ""
     };
@@ -212,7 +213,7 @@
     function field(id) { return document.getElementById(id); }
     function setBusy(isBusy) { elements.refreshButton.disabled = isBusy; elements.saveButton.disabled = isBusy; elements.archiveButton.disabled = isBusy; }
     function setStatus(message, isError = false) { elements.statusLine.textContent = message || ""; elements.statusLine.classList.toggle("error", isError); }
-    function showLogin(message = "") { elements.adminShell.hidden = true; elements.loginShell.hidden = false; elements.loginError.textContent = message; elements.adminTokenInput.focus(); }
+    function showLogin(message = "") { elements.adminShell.hidden = true; elements.loginShell.hidden = false; elements.loginError.textContent = message; elements.adminTokenInput.value = ""; elements.adminTokenInput.focus(); }
     function showAdmin() { elements.loginShell.hidden = true; elements.adminShell.hidden = false; elements.loginError.textContent = ""; }
     function getToken() { return state.token || ""; }
 
@@ -226,7 +227,7 @@
       });
       const data = await response.json().catch(function() { return {}; });
       if (!response.ok) {
-        if (response.status === 401) { window.localStorage.removeItem("cabinetAdminToken"); state.token = ""; showLogin("Wrong admin password."); }
+        if (response.status === 401) { state.token = ""; showLogin("Wrong admin password."); }
         throw new Error(data.error || "Request failed.");
       }
       return data;
@@ -440,7 +441,6 @@
       event.preventDefault();
       state.token = elements.adminTokenInput.value.trim();
       if (!state.token) { showLogin("Admin password required."); return; }
-      window.localStorage.setItem("cabinetAdminToken", state.token);
       elements.loginButton.disabled = true;
       elements.loginError.textContent = "Checking...";
       loadCustomers().finally(function() { elements.loginButton.disabled = false; });
@@ -463,12 +463,7 @@
       if (action === "activate") updateCustomerStatus(companyKey, "active");
     });
 
-    if (state.token) {
-      elements.adminTokenInput.value = state.token;
-      loadCustomers();
-    } else {
-      showLogin();
-    }
+    showLogin();
   </script>
 </body>
 </html>
