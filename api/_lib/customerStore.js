@@ -64,15 +64,6 @@ function textValue(...values) {
   return String(found || "").trim();
 }
 
-function toList(value) {
-  if (!value) return [];
-  if (Array.isArray(value)) return value;
-  if (value instanceof Set) return Array.from(value);
-  if (typeof value === "object" && Array.isArray(value.result)) return value.result;
-  if (typeof value === "object" && Array.isArray(value.keys)) return value.keys;
-  return [value];
-}
-
 function normalizeCustomer(input = {}, existing = null) {
   let source = parseMaybeJson(input) || {};
   let existingSource = parseMaybeJson(existing) || null;
@@ -140,21 +131,14 @@ function normalizeCustomer(input = {}, existing = null) {
   };
 }
 
-function fallbackCustomer(companyKey) {
-  const safeCompanyKey = cleanCompanyKey(companyKeyFromRedisKey(companyKey));
-  if (!safeCompanyKey) return null;
-
-  return normalizeCustomer({ companyKey: safeCompanyKey }, { companyKey: safeCompanyKey });
-}
-
 function scanCursor(result) {
   if (Array.isArray(result)) return Number(result[0] || 0);
   return Number(result?.cursor || result?.[0] || 0);
 }
 
 function scanResultKeys(result) {
-  if (Array.isArray(result)) return toList(result[1]);
-  return toList(result?.keys || result?.result);
+  if (Array.isArray(result)) return result[1] || [];
+  return result?.keys || result?.result || [];
 }
 
 async function scanKeys(redis, match) {
@@ -178,7 +162,7 @@ async function keysMatching(redis, match) {
   if (typeof redis.keys !== "function") return [];
 
   try {
-    return toList(await redis.keys(match));
+    return await redis.keys(match);
   } catch (_error) {
     return [];
   }
@@ -195,12 +179,12 @@ async function readIndex(redis) {
   ]);
 
   return Array.from(new Set([
-    ...toList(existingKeys).map(companyKeyFromRedisKey),
-    ...toList(v2Keys).map(companyKeyFromRedisKey),
-    ...toList(scannedExistingKeys).map(companyKeyFromRedisKey),
-    ...toList(scannedV2Keys).map(companyKeyFromRedisKey),
-    ...toList(directExistingKeys).map(companyKeyFromRedisKey),
-    ...toList(directV2Keys).map(companyKeyFromRedisKey)
+    ...(existingKeys || []),
+    ...(v2Keys || []),
+    ...(scannedExistingKeys || []).map(companyKeyFromRedisKey),
+    ...(scannedV2Keys || []).map(companyKeyFromRedisKey),
+    ...(directExistingKeys || []).map(companyKeyFromRedisKey),
+    ...(directV2Keys || []).map(companyKeyFromRedisKey)
   ]))
     .map(function(value) { return String(value || "").trim(); })
     .filter(Boolean)
@@ -209,14 +193,8 @@ async function readIndex(redis) {
 
 async function readCustomerByKey(redis, companyKey) {
   const rawCompanyKey = String(companyKey || "").trim();
-  const indexCompanyKey = companyKeyFromRedisKey(rawCompanyKey);
-  const safeCompanyKey = cleanCompanyKey(indexCompanyKey);
-  const candidates = Array.from(new Set([safeCompanyKey, indexCompanyKey, rawCompanyKey].filter(Boolean)));
-
-  if (rawCompanyKey.startsWith("customer:") || rawCompanyKey.startsWith("visualizer:customer:")) {
-    const direct = await redis.get(rawCompanyKey);
-    if (direct) return normalizeCustomer(direct, { companyKey: indexCompanyKey });
-  }
+  const safeCompanyKey = cleanCompanyKey(rawCompanyKey);
+  const candidates = Array.from(new Set([safeCompanyKey, rawCompanyKey].filter(Boolean)));
 
   for (const candidate of candidates) {
     const existing = await redis.get(customerKey(candidate));
@@ -255,8 +233,8 @@ export async function listCustomers() {
   const redis = getRedis();
   const keys = await readIndex(redis);
   const customers = await Promise.all(
-    keys.map(async function(companyKey) {
-      return (await readCustomerByKey(redis, companyKey)) || fallbackCustomer(companyKey);
+    keys.map(function(companyKey) {
+      return readCustomerByKey(redis, companyKey);
     })
   );
   const uniqueCustomers = new Map();
