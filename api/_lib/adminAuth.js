@@ -1,9 +1,9 @@
 export function requireAdmin(req, res) {
-  const expectedToken = process.env.ADMIN_PASSWORD_LOG_IN_API_TOKEN || process.env.ADMIN_API_TOKEN || process.env.ADMIN_TOKEN;
+  const expectedToken = process.env.ADMIN_API_TOKEN || process.env.ADMIN_TOKEN;
 
   if (!expectedToken) {
     res.status(500).json({
-      error: "Admin password is not configured. Set ADMIN_PASSWORD_LOG_IN_API_TOKEN in Vercel."
+      error: "Admin API token is not configured. Set ADMIN_API_TOKEN in Vercel."
     });
     return false;
   }
