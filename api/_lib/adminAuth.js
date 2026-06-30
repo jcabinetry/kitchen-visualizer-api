@@ -33,6 +33,8 @@ function isValidAdminSession(sessionToken) {
   if (Date.now() - timestamp > SESSION_TTL_MS) return false;
 
   const expectedSignature = signSession(timestamp, secret);
+  if (signature.length !== expectedSignature.length) return false;
+
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
 }
 
