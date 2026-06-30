@@ -32,19 +32,25 @@ export default async function handler(req, res) {
           return [item.companyKey, item];
         })
       );
+      const customerRows = customers.map(function(customer) {
+        return {
+          ...customer,
+          usage: usageByCompany[customer.companyKey] || {
+            companyKey: customer.companyKey,
+            monthKey,
+            used: 0
+          }
+        };
+      });
+
+      console.log("Admin customers returned", customerRows.length);
 
       return res.status(200).json({
         monthKey,
-        customers: customers.map(function(customer) {
-          return {
-            ...customer,
-            usage: usageByCompany[customer.companyKey] || {
-              companyKey: customer.companyKey,
-              monthKey,
-              used: 0
-            }
-          };
-        })
+        customers: customerRows,
+        debug: {
+          customersReturned: customerRows.length
+        }
       });
     }
 
