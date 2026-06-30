@@ -43,7 +43,7 @@ export function limitEmailSentKey(companyKey, monthKey = getMonthKey()) {
 function cleanEnvValue(value) {
   return String(value || "")
     .trim()
-    .replace(/^['\"]|['\"]$/g, "");
+    .replace(/^["']|["']$/g, "");
 }
 
 function redisRestConfig() {
