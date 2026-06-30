@@ -202,7 +202,23 @@ export default async function handler(req, res) {
       1,
       parseInt(monthlyLimit ?? DEFAULT_MONTHLY_LIMIT, 10) || DEFAULT_MONTHLY_LIMIT
     );
+const customerRecord =
+  (await redisGet(`visualizer:customer:${safeCompanyKey}`)) ||
+  (await redisGet(`customer:${safeCompanyKey}`));
 
+if (customerRecord) {
+  try {
+    const customer = JSON.parse(customerRecord);
+    if (customer.status === "archived") {
+      return res.status(403).json({
+        error: "This account has been deactivated. Please contact your administrator."
+      });
+    }
+  } catch (_error) {
+    console.log("Could not parse customer record for status check.");
+  }
+}
+    
     const monthKey = getMonthKey();
     const usageKey = `visualizer:${safeCompanyKey}:${monthKey}:used`;
 
