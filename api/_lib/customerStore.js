@@ -64,6 +64,25 @@ function textValue(...values) {
   return String(found || "").trim();
 }
 
+function toList(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (value instanceof Set) return Array.from(value);
+  if (typeof value === "object" && Array.isArray(value.result)) return value.result;
+  if (typeof value === "object" && Array.isArray(value.keys)) return value.keys;
+  return [value];
+}
+
+async function sendCommand(redis, command) {
+  if (typeof redis.sendCommand !== "function") return [];
+
+  try {
+    return toList(await redis.sendCommand(command));
+  } catch (_error) {
+    return [];
+  }
+}
+
 function normalizeCustomer(input = {}, existing = null) {
   let source = parseMaybeJson(input) || {};
   let existingSource = parseMaybeJson(existing) || null;
@@ -137,41 +156,62 @@ function scanCursor(result) {
 }
 
 function scanResultKeys(result) {
-  if (Array.isArray(result)) return result[1] || [];
-  return result?.keys || result?.result || [];
+  if (Array.isArray(result)) return toList(result[1]);
+  return toList(result?.keys || result?.result);
 }
 
 async function scanKeys(redis, match) {
-  if (typeof redis.scan !== "function") return [];
-
   const keys = [];
-  let cursor = 0;
 
-  do {
-    const result = await redis.scan(cursor, { match, count: 100 }).catch(function() {
-      return [0, []];
-    });
-    cursor = scanCursor(result);
-    keys.push(...scanResultKeys(result));
-  } while (cursor !== 0);
+  if (typeof redis.scan === "function") {
+    let cursor = 0;
 
-  return keys;
+    do {
+      const result = await redis.scan(cursor, { match, count: 100 }).catch(function() {
+        return [0, []];
+      });
+      cursor = scanCursor(result);
+      keys.push(...scanResultKeys(result));
+    } while (cursor !== 0);
+  }
+
+  keys.push(...await sendCommand(redis, ["KEYS", match]));
+
+  return Array.from(new Set(keys));
 }
 
 async function keysMatching(redis, match) {
-  if (typeof redis.keys !== "function") return [];
+  const keys = [];
 
-  try {
-    return await redis.keys(match);
-  } catch (_error) {
-    return [];
+  if (typeof redis.keys === "function") {
+    try {
+      keys.push(...toList(await redis.keys(match)));
+    } catch (_error) {}
   }
+
+  keys.push(...await sendCommand(redis, ["KEYS", match]));
+
+  return Array.from(new Set(keys));
+}
+
+async function membersOf(redis, key) {
+  const members = [];
+
+  if (typeof redis.smembers === "function") {
+    try {
+      members.push(...toList(await redis.smembers(key)));
+    } catch (_error) {}
+  }
+
+  members.push(...await sendCommand(redis, ["SMEMBERS", key]));
+
+  return Array.from(new Set(members));
 }
 
 async function readIndex(redis) {
   const [existingKeys, v2Keys, scannedExistingKeys, scannedV2Keys, directExistingKeys, directV2Keys] = await Promise.all([
-    redis.smembers(CUSTOMER_INDEX_KEY).catch(function() { return []; }),
-    redis.smembers(CUSTOMER_INDEX_KEY_V2).catch(function() { return []; }),
+    membersOf(redis, CUSTOMER_INDEX_KEY),
+    membersOf(redis, CUSTOMER_INDEX_KEY_V2),
     scanKeys(redis, "customer:*"),
     scanKeys(redis, "visualizer:customer:*"),
     keysMatching(redis, "customer:*"),
