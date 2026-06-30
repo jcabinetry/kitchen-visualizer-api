@@ -40,6 +40,42 @@ export function limitEmailSentKey(companyKey, monthKey = getMonthKey()) {
   return `visualizer:${companyKey}:${monthKey}:limitEmailSent`;
 }
 
+function cleanEnvValue(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^['\"]|['\"]$/g, "");
+}
+
+function redisRestConfig() {
+  const url = cleanEnvValue(process.env.UPSTASH_REDIS_REST_URL);
+  const token = cleanEnvValue(process.env.UPSTASH_REDIS_REST_TOKEN);
+
+  if (!url || !url.startsWith("https://") || !token) {
+    throw new Error("Missing Upstash Redis REST URL or token.");
+  }
+
+  return { url, token };
+}
+
+async function upstashCommand(command) {
+  const { url, token } = redisRestConfig();
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(command)
+  });
+  const data = await response.json().catch(function() { return {}; });
+
+  if (!response.ok || data.error) {
+    throw new Error(data.error || "Upstash Redis command failed.");
+  }
+
+  return data.result;
+}
+
 function toPositiveInteger(value, fallback = DEFAULT_MONTHLY_LIMIT) {
   const parsed = parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed < 1) return fallback;
@@ -71,16 +107,6 @@ function toList(value) {
   if (typeof value === "object" && Array.isArray(value.result)) return value.result;
   if (typeof value === "object" && Array.isArray(value.keys)) return value.keys;
   return [value];
-}
-
-async function sendCommand(redis, command) {
-  if (typeof redis.sendCommand !== "function") return [];
-
-  try {
-    return toList(await redis.sendCommand(command));
-  } catch (_error) {
-    return [];
-  }
 }
 
 function normalizeCustomer(input = {}, existing = null) {
@@ -150,97 +176,32 @@ function normalizeCustomer(input = {}, existing = null) {
   };
 }
 
-function scanCursor(result) {
-  if (Array.isArray(result)) return Number(result[0] || 0);
-  return Number(result?.cursor || result?.[0] || 0);
-}
-
-function scanResultKeys(result) {
-  if (Array.isArray(result)) return toList(result[1]);
-  return toList(result?.keys || result?.result);
-}
-
-async function scanKeys(redis, match) {
-  const keys = [];
-
-  if (typeof redis.scan === "function") {
-    let cursor = 0;
-
-    do {
-      const result = await redis.scan(cursor, { match, count: 100 }).catch(function() {
-        return [0, []];
-      });
-      cursor = scanCursor(result);
-      keys.push(...scanResultKeys(result));
-    } while (cursor !== 0);
-  }
-
-  keys.push(...await sendCommand(redis, ["KEYS", match]));
-
-  return Array.from(new Set(keys));
-}
-
-async function keysMatching(redis, match) {
-  const keys = [];
-
-  if (typeof redis.keys === "function") {
-    try {
-      keys.push(...toList(await redis.keys(match)));
-    } catch (_error) {}
-  }
-
-  keys.push(...await sendCommand(redis, ["KEYS", match]));
-
-  return Array.from(new Set(keys));
-}
-
-async function membersOf(redis, key) {
-  const members = [];
-
-  if (typeof redis.smembers === "function") {
-    try {
-      members.push(...toList(await redis.smembers(key)));
-    } catch (_error) {}
-  }
-
-  members.push(...await sendCommand(redis, ["SMEMBERS", key]));
-
-  return Array.from(new Set(members));
-}
-
-async function readIndex(redis) {
-  const [existingKeys, v2Keys, scannedExistingKeys, scannedV2Keys, directExistingKeys, directV2Keys] = await Promise.all([
-    membersOf(redis, CUSTOMER_INDEX_KEY),
-    membersOf(redis, CUSTOMER_INDEX_KEY_V2),
-    scanKeys(redis, "customer:*"),
-    scanKeys(redis, "visualizer:customer:*"),
-    keysMatching(redis, "customer:*"),
-    keysMatching(redis, "visualizer:customer:*")
+async function readIndex() {
+  const [existingKeys, v2Keys] = await Promise.all([
+    upstashCommand(["SMEMBERS", CUSTOMER_INDEX_KEY]).catch(function() { return []; }),
+    upstashCommand(["SMEMBERS", CUSTOMER_INDEX_KEY_V2]).catch(function() { return []; })
   ]);
 
   return Array.from(new Set([
-    ...(existingKeys || []),
-    ...(v2Keys || []),
-    ...(scannedExistingKeys || []).map(companyKeyFromRedisKey),
-    ...(scannedV2Keys || []).map(companyKeyFromRedisKey),
-    ...(directExistingKeys || []).map(companyKeyFromRedisKey),
-    ...(directV2Keys || []).map(companyKeyFromRedisKey)
+    ...toList(existingKeys),
+    ...toList(v2Keys)
   ]))
     .map(function(value) { return String(value || "").trim(); })
+    .map(companyKeyFromRedisKey)
     .filter(Boolean)
     .filter(function(value) { return value !== CUSTOMER_INDEX_KEY && value !== CUSTOMER_INDEX_KEY_V2; });
 }
 
-async function readCustomerByKey(redis, companyKey) {
+async function readCustomerByKey(companyKey) {
   const rawCompanyKey = String(companyKey || "").trim();
-  const safeCompanyKey = cleanCompanyKey(rawCompanyKey);
-  const candidates = Array.from(new Set([safeCompanyKey, rawCompanyKey].filter(Boolean)));
+  const safeCompanyKey = cleanCompanyKey(companyKeyFromRedisKey(rawCompanyKey));
+  const candidates = Array.from(new Set([safeCompanyKey, companyKeyFromRedisKey(rawCompanyKey), rawCompanyKey].filter(Boolean)));
 
   for (const candidate of candidates) {
-    const existing = await redis.get(customerKey(candidate));
+    const existing = await upstashCommand(["GET", customerKey(candidate)]).catch(function() { return null; });
     if (existing) return normalizeCustomer(existing, { companyKey: candidate });
 
-    const v2 = await redis.get(customerKeyV2(candidate));
+    const v2 = await upstashCommand(["GET", customerKeyV2(candidate)]).catch(function() { return null; });
     if (v2) return normalizeCustomer(v2, { companyKey: candidate });
   }
 
@@ -271,10 +232,10 @@ async function repairCustomerIndexes(redis, customers) {
 
 export async function listCustomers() {
   const redis = getRedis();
-  const keys = await readIndex(redis);
+  const keys = await readIndex();
   const customers = await Promise.all(
     keys.map(function(companyKey) {
-      return readCustomerByKey(redis, companyKey);
+      return readCustomerByKey(companyKey);
     })
   );
   const uniqueCustomers = new Map();
@@ -294,8 +255,7 @@ export async function listCustomers() {
 }
 
 export async function getCustomer(companyKey) {
-  const redis = getRedis();
-  return readCustomerByKey(redis, companyKey);
+  return readCustomerByKey(companyKey);
 }
 
 export async function saveCustomer(input) {
