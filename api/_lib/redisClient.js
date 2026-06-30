@@ -1,48 +1,46 @@
 import { Redis } from "@upstash/redis";
 
-let redis;
+let redis = null;
 
-function cleanEnvValue(value) {
+function clean(value) {
   return String(value || "")
     .trim()
-    .replace(/^['\"]|['\"]$/g, "");
-}
-
-function firstValidUrl(...values) {
-  return values.map(cleanEnvValue).find(function(value) {
-    return value.startsWith("https://");
-  });
-}
-
-function firstValidToken(...values) {
-  return values.map(cleanEnvValue).find(function(value) {
-    return value && !value.startsWith("https://") && !value.startsWith("rediss://");
-  });
+    .replace(/^['"]|['"]$/g, "");
 }
 
 export function getRedisConfig() {
-  const url = firstValidUrl(
-    process.env.UPSTASH_REDIS_REST_URL,
-    process.env.KV_REST_API_URL,
-    process.env.KV_URL
-  );
+  const url = clean(process.env.UPSTASH_REDIS_REST_URL);
+  const token = clean(process.env.UPSTASH_REDIS_REST_TOKEN);
 
-  const token = firstValidToken(
-    process.env.UPSTASH_REDIS_REST_TOKEN,
-    process.env.KV_REST_API_TOKEN,
-    process.env.KV_REST_API_READ_ONLY_TOKEN
-  );
-
-  if (!url || !token) {
-    throw new Error("Missing valid Upstash Redis REST credentials. Set an https:// REST URL and REST token in Vercel.");
+  if (!url.startsWith("https://")) {
+    throw new Error(
+      "UPSTASH_REDIS_REST_URL is missing or invalid."
+    );
   }
 
-  return { url, token };
+  if (!token) {
+    throw new Error(
+      "UPSTASH_REDIS_REST_TOKEN is missing."
+    );
+  }
+
+  return {
+    url,
+    token
+  };
 }
 
 export function getRedis() {
-  if (redis) return redis;
+  if (redis) {
+    return redis;
+  }
 
-  redis = new Redis(getRedisConfig());
+  const config = getRedisConfig();
+
+  redis = new Redis({
+    url: config.url,
+    token: config.token
+  });
+
   return redis;
 }
