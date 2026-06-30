@@ -94,7 +94,7 @@
     .status-line.error { color: var(--red); }
     .empty { padding: 24px 16px; color: var(--muted); text-align: center; }
     .login-shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-    .login-panel { width: min(460px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 24px; }
+    .login-panel { width: min(420px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 24px; }
     .login-panel h1 { font-size: 24px; margin-bottom: 8px; }
     .login-panel p { margin: 0 0 18px; color: var(--muted); line-height: 1.5; }
     .login-panel label { margin-bottom: 14px; }
@@ -115,7 +115,6 @@
       <h1>Admin Login</h1>
       <p>Enter your admin password to manage customers.</p>
       <label>Admin password<input id="adminPasswordInput" type="password" autocomplete="off" required></label>
-      <label>Admin API token<input id="adminApiTokenInput" type="password" autocomplete="off" required></label>
       <div class="login-actions"><button class="primary" id="loginButton" type="submit">Continue</button></div>
       <div id="loginError" class="login-error"></div>
     </form>
@@ -191,7 +190,7 @@
 
   <script>
     const state = {
-      token: window.localStorage.getItem("cabinetAdminToken") || "",
+      sessionToken: "",
       customers: [],
       selectedKey: ""
     };
@@ -199,7 +198,6 @@
     const elements = {
       loginShell: document.getElementById("loginShell"), adminShell: document.getElementById("adminShell"),
       loginForm: document.getElementById("loginForm"), adminPasswordInput: document.getElementById("adminPasswordInput"),
-      adminApiTokenInput: document.getElementById("adminApiTokenInput"),
       loginButton: document.getElementById("loginButton"), loginError: document.getElementById("loginError"),
       monthInput: document.getElementById("monthInput"), totalCustomers: document.getElementById("totalCustomers"),
       activeCustomers: document.getElementById("activeCustomers"), totalPreviews: document.getElementById("totalPreviews"),
@@ -215,21 +213,21 @@
     function field(id) { return document.getElementById(id); }
     function setBusy(isBusy) { elements.refreshButton.disabled = isBusy; elements.saveButton.disabled = isBusy; elements.archiveButton.disabled = isBusy; }
     function setStatus(message, isError = false) { elements.statusLine.textContent = message || ""; elements.statusLine.classList.toggle("error", isError); }
-    function showLogin(message = "") { elements.adminShell.hidden = true; elements.loginShell.hidden = false; elements.loginError.textContent = message; elements.adminPasswordInput.value = ""; elements.adminApiTokenInput.value = state.token || ""; elements.adminPasswordInput.focus(); }
+    function showLogin(message = "") { elements.adminShell.hidden = true; elements.loginShell.hidden = false; elements.loginError.textContent = message; elements.adminPasswordInput.value = ""; elements.adminPasswordInput.focus(); }
     function showAdmin() { elements.loginShell.hidden = true; elements.adminShell.hidden = false; elements.loginError.textContent = ""; }
-    function getToken() { return state.token || ""; }
+    function getSessionToken() { return state.sessionToken || ""; }
 
     async function api(path, options = {}) {
-      const token = getToken();
-      if (!token) throw new Error("Admin API token required.");
+      const sessionToken = getSessionToken();
+      if (!sessionToken) throw new Error("Admin login required.");
       const response = await fetch(path, {
         ...options,
         cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-Admin-Token": token, ...(options.headers || {}) }
+        headers: { "Content-Type": "application/json", "X-Admin-Session": sessionToken, ...(options.headers || {}) }
       });
       const data = await response.json().catch(function() { return {}; });
       if (!response.ok) {
-        if (response.status === 401) { window.localStorage.removeItem("cabinetAdminToken"); state.token = ""; showLogin("Wrong admin API token."); }
+        if (response.status === 401) { state.sessionToken = ""; showLogin("Please log in again."); }
         throw new Error(data.error || "Request failed.");
       }
       return data;
@@ -243,9 +241,9 @@
         body: JSON.stringify({ password })
       });
       const data = await response.json().catch(function() { return {}; });
-      if (!response.ok || !data.success) throw new Error(data.error || "Wrong admin password.");
+      if (!response.ok || !data.success || !data.sessionToken) throw new Error(data.error || "Wrong admin password.");
       console.log("Admin login success");
-      return data;
+      return data.sessionToken;
     }
 
     function customerEmail(customer) { return customer.email || customer.contactEmail || customer.branding?.email || customer.branding?.contactEmail || ""; }
@@ -457,15 +455,12 @@
     elements.loginForm.addEventListener("submit", function(event) {
       event.preventDefault();
       const password = elements.adminPasswordInput.value.trim();
-      const apiToken = elements.adminApiTokenInput.value.trim();
       if (!password) { showLogin("Admin password required."); return; }
-      if (!apiToken) { showLogin("Admin API token required."); return; }
       elements.loginButton.disabled = true;
       elements.loginError.textContent = "Checking...";
       verifyLogin(password)
-        .then(function() {
-          state.token = apiToken;
-          window.localStorage.setItem("cabinetAdminToken", state.token);
+        .then(function(sessionToken) {
+          state.sessionToken = sessionToken;
           return loadCustomers();
         })
         .catch(function(error) { showLogin(error.message); })
