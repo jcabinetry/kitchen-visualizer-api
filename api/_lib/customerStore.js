@@ -64,6 +64,15 @@ function textValue(...values) {
   return String(found || "").trim();
 }
 
+function toList(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (value instanceof Set) return Array.from(value);
+  if (typeof value === "object" && Array.isArray(value.result)) return value.result;
+  if (typeof value === "object" && Array.isArray(value.keys)) return value.keys;
+  return [value];
+}
+
 function normalizeCustomer(input = {}, existing = null) {
   let source = parseMaybeJson(input) || {};
   let existingSource = parseMaybeJson(existing) || null;
@@ -144,8 +153,8 @@ function scanCursor(result) {
 }
 
 function scanResultKeys(result) {
-  if (Array.isArray(result)) return result[1] || [];
-  return result?.keys || result?.result || [];
+  if (Array.isArray(result)) return toList(result[1]);
+  return toList(result?.keys || result?.result);
 }
 
 async function scanKeys(redis, match) {
@@ -169,7 +178,7 @@ async function keysMatching(redis, match) {
   if (typeof redis.keys !== "function") return [];
 
   try {
-    return await redis.keys(match);
+    return toList(await redis.keys(match));
   } catch (_error) {
     return [];
   }
@@ -186,12 +195,12 @@ async function readIndex(redis) {
   ]);
 
   return Array.from(new Set([
-    ...(existingKeys || []).map(companyKeyFromRedisKey),
-    ...(v2Keys || []).map(companyKeyFromRedisKey),
-    ...(scannedExistingKeys || []).map(companyKeyFromRedisKey),
-    ...(scannedV2Keys || []).map(companyKeyFromRedisKey),
-    ...(directExistingKeys || []).map(companyKeyFromRedisKey),
-    ...(directV2Keys || []).map(companyKeyFromRedisKey)
+    ...toList(existingKeys).map(companyKeyFromRedisKey),
+    ...toList(v2Keys).map(companyKeyFromRedisKey),
+    ...toList(scannedExistingKeys).map(companyKeyFromRedisKey),
+    ...toList(scannedV2Keys).map(companyKeyFromRedisKey),
+    ...toList(directExistingKeys).map(companyKeyFromRedisKey),
+    ...toList(directV2Keys).map(companyKeyFromRedisKey)
   ]))
     .map(function(value) { return String(value || "").trim(); })
     .filter(Boolean)
