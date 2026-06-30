@@ -1,3 +1,4 @@
+import { createAdminSession } from "../_lib/adminAuth.js";
 import { setCorsHeaders } from "../_lib/cors.js";
 
 function setNoStore(res) {
@@ -20,11 +21,19 @@ export default async function handler(req, res) {
     });
   }
 
+  const sessionToken = createAdminSession();
+
+  if (!sessionToken) {
+    return res.status(500).json({
+      error: "Admin API token is not configured. Set ADMIN_API_TOKEN in Vercel."
+    });
+  }
+
   const providedPassword = String(req.body?.password || "").trim();
 
   if (providedPassword !== expectedPassword) {
     return res.status(401).json({ error: "Wrong admin password." });
   }
 
-  return res.status(200).json({ success: true });
+  return res.status(200).json({ success: true, sessionToken });
 }
