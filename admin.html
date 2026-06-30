@@ -51,18 +51,18 @@
     h1 { margin: 0; font-size: 26px; line-height: 1.2; letter-spacing: 0; }
     .month-picker { display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 700; white-space: nowrap; }
     .month-picker input { width: 150px; }
-    .summary-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
     .metric, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
     .metric { padding: 16px; }
     .metric span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
-    .metric strong { display: block; margin-top: 8px; font-size: 24px; line-height: 1; }
+    .metric strong { display: block; margin-top: 8px; font-size: 26px; line-height: 1; }
     .layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(390px, 0.85fr); gap: 16px; align-items: start; }
     .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
     .panel-header h2 { margin: 0; font-size: 16px; letter-spacing: 0; }
     .toolbar { display: flex; align-items: center; gap: 8px; }
     .toolbar input, .toolbar select { width: 180px; }
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 1480px; }
+    table { width: 100%; border-collapse: collapse; min-width: 1120px; }
     th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
     th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0; background: #fafbfe; }
     tbody tr { transition: background 120ms ease; }
@@ -76,7 +76,6 @@
     .usage-bar span { display: block; height: 100%; width: var(--value, 0%); background: var(--green); }
     .usage-bar.warn span { background: var(--amber); }
     .usage-bar.over span { background: var(--red); }
-    .money-cell { font-weight: 800; white-space: nowrap; }
     .row-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; min-width: 270px; }
     .link-button { background: #edf3ff; color: var(--blue); }
     .primary { background: var(--blue); color: white; }
@@ -101,10 +100,6 @@
     .login-panel label { margin-bottom: 14px; }
     .login-actions { display: flex; justify-content: flex-end; }
     .login-error { min-height: 22px; margin-top: 12px; color: var(--red); font-size: 13px; }
-
-    @media (max-width: 1180px) {
-      .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    }
 
     @media (max-width: 980px) {
       .summary-grid, .layout { grid-template-columns: 1fr; }
@@ -136,8 +131,6 @@
       <div class="metric"><span>Active</span><strong id="activeCustomers">0</strong></div>
       <div class="metric"><span>Previews</span><strong id="totalPreviews">0</strong></div>
       <div class="metric"><span>Near Limit</span><strong id="nearLimit">0</strong></div>
-      <div class="metric"><span>AI Spend This Month</span><strong id="aiSpend">$0.00</strong></div>
-      <div class="metric"><span>Estimated Profit</span><strong id="estimatedProfit">$0.00</strong></div>
     </section>
 
     <section class="layout">
@@ -157,7 +150,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Company</th><th>Status</th><th>Usage</th><th>Limit</th><th>AI Cost</th><th>Monthly Price</th><th>Profit</th><th>Contact</th><th>City</th><th>Visualizer</th><th></th></tr>
+              <tr><th>Company</th><th>Status</th><th>Usage</th><th>Limit</th><th>Contact</th><th>City</th><th></th></tr>
             </thead>
             <tbody id="customerRows"></tbody>
           </table>
@@ -176,7 +169,6 @@
             <label>Monthly limit<input id="monthlyLimit" name="monthlyLimit" type="number" min="1" step="1" value="200" required></label>
             <label class="full">Company name<input id="companyName" name="companyName" required autocomplete="organization" placeholder="Company Name"></label>
             <label>Status<select id="status" name="status"><option value="active">Active</option><option value="archived">Inactive</option></select></label>
-            <label>Monthly price<input id="monthlyPrice" name="monthlyPrice" type="number" min="0" step="0.01" value="199" required></label>
             <label>Phone<input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="(555) 555-5555"></label>
             <label>Email<input id="email" name="email" type="email" autocomplete="email" placeholder="email@example.com"></label>
             <label>City<input id="city" name="city" autocomplete="address-level2" placeholder="City, ST"></label>
@@ -197,10 +189,6 @@
   </main>
 
   <script>
-    const AI_PREVIEW_COST = 0.02;
-    const DEFAULT_MONTHLY_PRICE = 199;
-    const VISUALIZER_BASE_URL = "https://www.cabinetvisualizer.com/";
-
     const state = {
       token: window.localStorage.getItem("cabinetAdminToken") || "",
       customers: [],
@@ -213,8 +201,7 @@
       loginButton: document.getElementById("loginButton"), loginError: document.getElementById("loginError"),
       monthInput: document.getElementById("monthInput"), totalCustomers: document.getElementById("totalCustomers"),
       activeCustomers: document.getElementById("activeCustomers"), totalPreviews: document.getElementById("totalPreviews"),
-      nearLimit: document.getElementById("nearLimit"), aiSpend: document.getElementById("aiSpend"),
-      estimatedProfit: document.getElementById("estimatedProfit"), customerRows: document.getElementById("customerRows"),
+      nearLimit: document.getElementById("nearLimit"), customerRows: document.getElementById("customerRows"),
       emptyState: document.getElementById("emptyState"), searchInput: document.getElementById("searchInput"),
       statusFilter: document.getElementById("statusFilter"), refreshButton: document.getElementById("refreshButton"),
       newButton: document.getElementById("newButton"), editorTitle: document.getElementById("editorTitle"),
@@ -253,11 +240,6 @@
     function customerLogoUrl(customer) { return customer.logoUrl || customer.branding?.logoUrl || ""; }
     function customerPrimaryColor(customer) { return customer.primaryColor || customer.branding?.primaryColor || "#1f2937"; }
     function customerCtaText(customer) { return customer.ctaText || customer.branding?.ctaText || "Request an Estimate"; }
-    function customerMonthlyPrice(customer) { const price = Number(customer.monthlyPrice); return Number.isFinite(price) && price >= 0 ? price : DEFAULT_MONTHLY_PRICE; }
-    function customerAiCost(customer) { return Number(customer.usage?.used || 0) * AI_PREVIEW_COST; }
-    function customerProfit(customer) { return customerMonthlyPrice(customer) - customerAiCost(customer); }
-    function visualizerLink(customer) { return `${VISUALIZER_BASE_URL}?companyKey=${encodeURIComponent(customer.companyKey || "")}`; }
-    function formatMoney(value) { return Number(value || 0).toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function usagePercent(customer) { const used = Number(customer.usage?.used || 0); const limit = Number(customer.monthlyLimit || 1); return Math.min(100, Math.round((used / limit) * 100)); }
     function isActive(customer) { return customer.status !== "archived"; }
 
@@ -274,15 +256,11 @@
     function renderSummary() {
       const active = state.customers.filter(isActive);
       const totalPreviews = state.customers.reduce(function(sum, customer) { return sum + Number(customer.usage?.used || 0); }, 0);
-      const monthlyRevenue = active.reduce(function(sum, customer) { return sum + customerMonthlyPrice(customer); }, 0);
-      const aiSpend = totalPreviews * AI_PREVIEW_COST;
       const nearLimit = active.filter(function(customer) { return usagePercent(customer) >= 80; }).length;
       elements.totalCustomers.textContent = state.customers.length;
       elements.activeCustomers.textContent = active.length;
       elements.totalPreviews.textContent = totalPreviews;
       elements.nearLimit.textContent = nearLimit;
-      elements.aiSpend.textContent = formatMoney(aiSpend);
-      elements.estimatedProfit.textContent = formatMoney(monthlyRevenue - aiSpend);
     }
 
     function renderRows() {
@@ -297,19 +275,14 @@
         const toggleLabel = active ? "Deactivate" : "Activate";
         const toggleClass = active ? "danger" : "success";
         const toggleAction = active ? "deactivate" : "activate";
-        const copyLink = visualizerLink(customer);
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td><span class="company-name"><b>${escapeHtml(customer.companyName)}</b><small>${escapeHtml(customer.companyKey)}</small></span></td>
           <td><span class="badge ${active ? "" : "archived"}">${active ? "active" : "inactive"}</span></td>
           <td><div>${used} used</div><div class="usage-bar ${barClass}" style="--value: ${percent}%"><span></span></div></td>
           <td>${customer.monthlyLimit}</td>
-          <td class="money-cell">${formatMoney(customerAiCost(customer))}</td>
-          <td class="money-cell">${formatMoney(customerMonthlyPrice(customer))}</td>
-          <td class="money-cell">${formatMoney(customerProfit(customer))}</td>
           <td><span class="contact-stack"><b>${escapeHtml(customerEmail(customer) || "-")}</b><small>${escapeHtml(customerPhone(customer) || "")}</small></span></td>
           <td>${escapeHtml(customerCity(customer) || "-")}</td>
-          <td><button class="neutral" type="button" data-action="copy-link" data-key="${escapeAttr(customer.companyKey)}" data-link="${escapeAttr(copyLink)}">Copy Link</button></td>
           <td><div class="row-actions">
             <button class="link-button" type="button" data-action="edit" data-key="${escapeAttr(customer.companyKey)}">Edit</button>
             <button class="neutral" type="button" data-action="reset" data-key="${escapeAttr(customer.companyKey)}">Reset</button>
@@ -331,7 +304,6 @@
       elements.customerForm.reset();
       field("companyKey").disabled = false;
       field("monthlyLimit").value = "200";
-      field("monthlyPrice").value = String(DEFAULT_MONTHLY_PRICE);
       field("primaryColor").value = "#1f2937";
       field("ctaText").value = "Request an Estimate";
       setStatus("");
@@ -347,7 +319,6 @@
       field("companyKey").value = customer.companyKey;
       field("companyName").value = customer.companyName || "";
       field("monthlyLimit").value = customer.monthlyLimit || 200;
-      field("monthlyPrice").value = customerMonthlyPrice(customer);
       field("status").value = customer.status || "active";
       field("phone").value = customerPhone(customer);
       field("email").value = customerEmail(customer);
@@ -372,7 +343,6 @@
         companyKey: field("companyKey").value,
         companyName: field("companyName").value,
         monthlyLimit: field("monthlyLimit").value,
-        monthlyPrice: field("monthlyPrice").value,
         status: field("status").value,
         phone,
         email,
@@ -393,26 +363,6 @@
         },
         notes: field("notes").value
       };
-    }
-
-    async function copyVisualizerLink(link) {
-      if (!link) return;
-
-      try {
-        await navigator.clipboard.writeText(link);
-      } catch (_error) {
-        const textarea = document.createElement("textarea");
-        textarea.value = link;
-        textarea.setAttribute("readonly", "");
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        textarea.remove();
-      }
-
-      setStatus("Visualizer link copied.");
     }
 
     async function loadCustomers() {
@@ -486,7 +436,6 @@
     }
 
     elements.monthInput.value = thisMonth();
-    field("monthlyPrice").value = String(DEFAULT_MONTHLY_PRICE);
     field("ctaText").value = "Request an Estimate";
     elements.loginForm.addEventListener("submit", function(event) {
       event.preventDefault();
@@ -509,7 +458,6 @@
       if (!button) return;
       const companyKey = button.getAttribute("data-key");
       const action = button.getAttribute("data-action");
-      if (action === "copy-link") copyVisualizerLink(button.getAttribute("data-link"));
       if (action === "edit") editCustomer(companyKey);
       if (action === "reset") resetUsage(companyKey);
       if (action === "deactivate" && window.confirm(`Deactivate ${companyKey}?`)) updateCustomerStatus(companyKey, "archived");
