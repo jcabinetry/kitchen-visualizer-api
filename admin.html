@@ -149,6 +149,43 @@
       .toolbar { align-items: stretch; flex-direction: column; width: 100%; }
       .toolbar input, .toolbar select, .toolbar button { width: 100%; }
     }
+  
+
+    @media (max-width: 760px) {
+      .shell { width: min(100%, calc(100vw - 18px)); padding: 12px 0 28px; }
+      .topbar { position: sticky; top: 0; z-index: 10; background: rgba(248, 250, 255, 0.96); padding: 10px 0; backdrop-filter: blur(8px); }
+      h1 { font-size: 22px; }
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .metric { padding: 12px; }
+      .metric strong { font-size: 22px; }
+      .layout { display: block; }
+      .panel { margin-bottom: 14px; }
+      .panel-header { align-items: stretch; flex-direction: column; }
+      .toolbar { width: 100%; }
+      .toolbar input, .toolbar select, .toolbar button { width: 100%; }
+      .table-wrap { overflow: visible; }
+      table { min-width: 0; width: 100%; }
+      thead { display: none; }
+      tbody { display: grid; gap: 12px; padding: 12px; }
+      tr { display: block; background: white; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+      td { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 12px; border-bottom: 1px solid #eef1f6; text-align: right; }
+      td:last-child { border-bottom: 0; }
+      td::before { content: attr(data-label); color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; text-align: left; }
+      td[data-label="Company"] { align-items: flex-start; background: #fafbfe; text-align: left; }
+      td[data-label="Company"]::before { display: none; }
+      td[data-label="Actions"] { display: block; }
+      td[data-label="Actions"]::before { display: none; }
+      .company-name b { font-size: 16px; }
+      .usage-bar { width: 130px; }
+      .row-actions { min-width: 0; justify-content: stretch; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .row-actions button { width: 100%; min-height: 42px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-actions { flex-direction: column-reverse; }
+      .form-actions button { width: 100%; }
+      .helper-top { align-items: stretch; flex-direction: column; }
+      .helper-actions { display: grid; grid-template-columns: 1fr; }
+    }
+
   </style>
 </head>
 <body>
@@ -395,19 +432,19 @@ const state = {
         const websiteUrl = customerWebsiteUrl(customer);
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td><span class="company-name"><b>${escapeHtml(customer.companyName)}</b><small>${escapeHtml(customer.companyKey)}</small></span></td>
-          <td><span class="plan-badge">${escapeHtml(customerPlan(customer))}</span></td>
-          <td><span class="badge ${active ? "" : "archived"}">${active ? "active" : "inactive"}</span></td>
-          <td>${money(monthlyPrice)}</td>
-          <td><div>${used} used</div><div class="usage-bar ${barClass}" style="--value: ${percent}%"><span></span></div></td>
-          <td>${customer.monthlyLimit}</td>
-          <td>${remaining}</td>
-          <td>${money(aiCost)}</td>
-          <td>${money(estProfit)}</td>
-          <td>${escapeHtml(formatDate(customer.createdAt))}</td>
-          <td><span class="contact-stack"><b>${escapeHtml(customerEmail(customer) || "-")}</b><small>${escapeHtml(customerPhone(customer) || "")}</small></span></td>
-          <td>${escapeHtml(customerCity(customer) || "-")}</td>
-          <td><div class="row-actions">
+          <td data-label="Company"><span class="company-name"><b>${escapeHtml(customer.companyName)}</b><small>${escapeHtml(customer.companyKey)}</small></span></td>
+          <td data-label="Plan"><span class="plan-badge">${escapeHtml(customerPlan(customer))}</span></td>
+          <td data-label="Status"><span class="badge ${active ? "" : "archived"}">${active ? "active" : "inactive"}</span></td>
+          <td data-label="Monthly Price">${money(monthlyPrice)}</td>
+          <td data-label="Usage"><div>${used} used</div><div class="usage-bar ${barClass}" style="--value: ${percent}%"><span></span></div></td>
+          <td data-label="Limit">${customer.monthlyLimit}</td>
+          <td data-label="Remaining">${remaining}</td>
+          <td data-label="AI Cost">${money(aiCost)}</td>
+          <td data-label="Est. Profit">${money(estProfit)}</td>
+          <td data-label="Created">${escapeHtml(formatDate(customer.createdAt))}</td>
+          <td data-label="Contact"><span class="contact-stack"><b>${escapeHtml(customerEmail(customer) || "-")}</b><small>${escapeHtml(customerPhone(customer) || "")}</small></span></td>
+          <td data-label="City">${escapeHtml(customerCity(customer) || "-")}</td>
+          <td data-label="Actions"><div class="row-actions">
             <button class="neutral" type="button" data-action="copy-key" data-key="${escapeAttr(customer.companyKey)}">Copy Key</button>
             <button class="neutral" type="button" data-action="copy-setup" data-key="${escapeAttr(customer.companyKey)}">Copy Webador Setup</button>
             ${websiteUrl ? `<button class="link-button" type="button" data-action="open-page" data-url="${escapeAttr(websiteUrl)}">Open Page</button>` : ""}
