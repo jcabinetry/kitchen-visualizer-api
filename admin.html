@@ -505,43 +505,55 @@ const state = {
     }
 
     function formPayload() {
-      const email = field("email").value;
-      const phone = field("phone").value;
-      const city = field("city").value;
-      const logoUrl = field("logoUrl").value;
-      const primaryColor = field("primaryColor").value;
-      const websiteUrl = field("websiteUrl").value;
-      const estimateUrl = field("estimateUrl").value;
-      const ctaText = field("ctaText").value;
-      return {
-        companyKey: field("companyKey").value,
-        companyName: field("companyName").value,
-        monthlyLimit: field("monthlyLimit").value,
-        monthlyPrice: field("monthlyPrice").value,
-        plan: field("plan").value,
-        status: field("status").value,
-        phone,
-        email,
-        city,
-        websiteUrl,
-        estimateUrl,
-        logoUrl,
-        primaryColor,
-        ctaText,
-        branding: {
-          phone,
-          email,
-          contactEmail: email,
-          city,
-          websiteUrl,
-          estimateUrl,
-          logoUrl,
-          primaryColor,
-          ctaText
-        },
-        notes: field("notes").value
-      };
+  const companyKey = field("companyKey").value.trim();
+  const companyName = field("companyName").value.trim();
+  const monthlyLimit = Number(field("monthlyLimit").value || 0);
+  const monthlyPrice = Number(field("monthlyPrice").value || 0);
+  const plan = field("plan").value;
+  const status = field("status").value;
+  const phone = field("phone").value.trim();
+  const email = field("email").value.trim();
+  const city = field("city").value.trim();
+  const primaryColor = field("primaryColor").value;
+  const customerPageUrl = field("websiteUrl").value.trim();
+  const estimateUrl = field("estimateUrl").value.trim();
+  const logoUrl = field("logoUrl").value.trim();
+  const buttonText = field("ctaText").value.trim() || "Request an Estimate";
+  const notes = field("notes").value.trim();
+
+  return {
+    companyKey,
+    companyName,
+    monthlyLimit,
+    monthlyPrice,
+    plan,
+    status,
+    phone,
+    email,
+    city,
+    primaryColor,
+    customerPageUrl,
+    websiteUrl: customerPageUrl,
+    estimateUrl,
+    logoUrl,
+    buttonText,
+    ctaText: buttonText,
+    notes,
+    branding: {
+      phone,
+      email,
+      contactEmail: email,
+      city,
+      primaryColor,
+      customerPageUrl,
+      websiteUrl: customerPageUrl,
+      estimateUrl,
+      logoUrl,
+      buttonText,
+      ctaText: buttonText
     }
+  };
+}
 
     async function loadCustomers() {
       setBusy(true);
