@@ -352,19 +352,19 @@ const KV_COMPANY = {
 }
 
 /* Client info modal for showroom design packet */
-.jcr-client-modal{position:fixed;inset:0;background:rgba(15,23,42,.62);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;overflow-x:hidden;padding:20px;z-index:999999;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+.jcr-client-modal{position:fixed;inset:0;background:rgba(15,23,42,.62);display:none;align-items:center;justify-content:center;overflow:hidden;padding:20px;z-index:999999;overscroll-behavior:contain;}
 .jcr-client-modal.active{display:flex;}
-.jcr-client-box{width:min(760px,100%);max-height:calc(100vh - 40px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:#fff;border-radius:26px;border:1px solid #e5e7eb;box-shadow:0 30px 90px rgba(0,0,0,.28);padding:26px;animation:jcrPop .25s ease both;}
+.jcr-client-box{width:min(760px,100%);height:calc(100vh - 40px);max-height:760px;overflow:hidden;background:#fff;border-radius:26px;border:1px solid #e5e7eb;box-shadow:0 30px 90px rgba(0,0,0,.28);padding:26px;animation:jcrPop .25s ease both;display:flex;flex-direction:column;}
 .jcr-client-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;}
 .jcr-client-head h3{font-size:28px;line-height:1.05;margin:0;color:#111827;letter-spacing:-.04em;}
 .jcr-client-head p{font-size:15px;color:#6b7280;margin:8px 0 0;line-height:1.45;}
 .jcr-client-close{width:42px;height:42px;border-radius:999px;border:none;background:#f3f4f6;color:#111827;font-size:24px;font-weight:900;cursor:pointer;}
-.jcr-client-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.jcr-client-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;overflow-y:auto;overflow-x:hidden;min-height:0;padding-right:6px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .jcr-client-field label{display:block;font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin-bottom:6px;}
 .jcr-client-field input,.jcr-client-field textarea{width:100%;padding:13px 14px;border-radius:14px;border:1px solid #d1d5db;font-size:15px;color:#111827;outline:none;}
 .jcr-client-field textarea{min-height:92px;resize:vertical;}
 .jcr-client-field.full{grid-column:1/-1;}
-.jcr-client-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+.jcr-client-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-shrink:0;}
 .jcr-btn-light{padding:14px 22px;background:#f3f4f6;color:#111827;border:none;border-radius:14px;font-size:16px;font-weight:900;cursor:pointer;}
 @media(max-width:640px){.jcr-client-box{padding:20px;border-radius:20px;}.jcr-client-grid{grid-template-columns:1fr;}.jcr-client-actions{display:grid;grid-template-columns:1fr;}.jcr-client-actions button{width:100%;}}
 
@@ -1596,18 +1596,6 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     clientModal.addEventListener("click", function(e) {
       if (e.target === clientModal) closeClientModal();
     });
-
-    function lockScrollToClientPopup(e) {
-      const clientBox = document.querySelector(".jcr-client-box");
-      if (!clientBox || !clientModal.classList.contains("active")) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const scrollTarget = clientBox.scrollHeight > clientBox.clientHeight ? clientBox : clientModal;
-      scrollTarget.scrollTop += e.deltaY;
-    }
-
-    clientModal.addEventListener("wheel", lockScrollToClientPopup, { passive: false, capture: true });
-    window.addEventListener("wheel", lockScrollToClientPopup, { passive: false, capture: true });
   }
 
   button.addEventListener("click", async function() {
