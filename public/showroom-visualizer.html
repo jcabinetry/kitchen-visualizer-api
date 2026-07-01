@@ -1336,19 +1336,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     doc.line(margin, y, pageWidth - margin, y);
 
     y += 30;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(15);
-    doc.setTextColor(17, 24, 39);
-    doc.text("Visualizer Information", margin, y);
 
-    y += 20;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.setTextColor(55, 65, 81);
-    doc.text("Company Key: " + (KV_COMPANY.companyKey || "-"), margin, y);
-    doc.text("Monthly Limit: " + (KV_COMPANY.monthlyLimit || "-"), margin + 250, y);
-
-    y += 26;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(15);
     doc.setTextColor(17, 24, 39);
