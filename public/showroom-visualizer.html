@@ -351,6 +351,23 @@ const KV_COMPANY = {
   }
 }
 
+/* Client info modal for showroom design packet */
+.jcr-client-modal{position:fixed;inset:0;background:rgba(15,23,42,.62);display:none;align-items:center;justify-content:center;overflow-y:auto;padding:20px;z-index:999999;}
+.jcr-client-modal.active{display:flex;}
+.jcr-client-box{width:min(760px,100%);max-height:90vh;overflow-y:auto;background:#fff;border-radius:26px;border:1px solid #e5e7eb;box-shadow:0 30px 90px rgba(0,0,0,.28);padding:26px;animation:jcrPop .25s ease both;}
+.jcr-client-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;}
+.jcr-client-head h3{font-size:28px;line-height:1.05;margin:0;color:#111827;letter-spacing:-.04em;}
+.jcr-client-head p{font-size:15px;color:#6b7280;margin:8px 0 0;line-height:1.45;}
+.jcr-client-close{width:42px;height:42px;border-radius:999px;border:none;background:#f3f4f6;color:#111827;font-size:24px;font-weight:900;cursor:pointer;}
+.jcr-client-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.jcr-client-field label{display:block;font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin-bottom:6px;}
+.jcr-client-field input,.jcr-client-field textarea{width:100%;padding:13px 14px;border-radius:14px;border:1px solid #d1d5db;font-size:15px;color:#111827;outline:none;}
+.jcr-client-field textarea{min-height:92px;resize:vertical;}
+.jcr-client-field.full{grid-column:1/-1;}
+.jcr-client-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+.jcr-btn-light{padding:14px 22px;background:#f3f4f6;color:#111827;border:none;border-radius:14px;font-size:16px;font-weight:900;cursor:pointer;}
+@media(max-width:640px){.jcr-client-box{padding:20px;border-radius:20px;}.jcr-client-grid{grid-template-columns:1fr;}.jcr-client-actions{display:grid;grid-template-columns:1fr;}.jcr-client-actions button{width:100%;}}
+
 </style>
 
 <div class="kv-hero-card">
@@ -619,6 +636,51 @@ const KV_COMPANY = {
 </div>
 
 
+
+<div id="jcr_client_modal" class="jcr-client-modal" aria-hidden="true">
+  <div class="jcr-client-box" role="dialog" aria-modal="true" aria-labelledby="jcr_client_modal_title">
+    <div class="jcr-client-head">
+      <div>
+        <h3 id="jcr_client_modal_title">Add Client Info</h3>
+        <p>This information will be added to the showroom design packet PDF.</p>
+      </div>
+      <button id="jcr_client_close" class="jcr-client-close" type="button" aria-label="Close">×</button>
+    </div>
+
+    <div class="jcr-client-grid">
+      <div class="jcr-client-field">
+        <label for="jcr_client_name">Client Name</label>
+        <input id="jcr_client_name" type="text" placeholder="John Smith">
+      </div>
+      <div class="jcr-client-field">
+        <label for="jcr_client_phone">Client Phone</label>
+        <input id="jcr_client_phone" type="tel" placeholder="(555) 555-5555">
+      </div>
+      <div class="jcr-client-field">
+        <label for="jcr_client_email">Client Email</label>
+        <input id="jcr_client_email" type="email" placeholder="john@email.com">
+      </div>
+      <div class="jcr-client-field">
+        <label for="jcr_salesperson">Salesperson / Designer</label>
+        <input id="jcr_salesperson" type="text" placeholder="Designer name">
+      </div>
+      <div class="jcr-client-field full">
+        <label for="jcr_project_address">Project Address</label>
+        <input id="jcr_project_address" type="text" placeholder="Project address">
+      </div>
+      <div class="jcr-client-field full">
+        <label for="jcr_project_notes">Project Notes</label>
+        <textarea id="jcr_project_notes" placeholder="Notes, preferences, timeline, next steps..."></textarea>
+      </div>
+    </div>
+
+    <div class="jcr-client-actions">
+      <button id="jcr_client_skip" class="jcr-btn-light" type="button">Skip Info</button>
+      <button id="jcr_client_download" class="jcr-btn-primary" type="button">Download Packet</button>
+    </div>
+  </div>
+</div>
+
 <div id="jcr_monthly_counter" style="position:absolute;right:16px;bottom:12px;font-size:12px;line-height:1;color:#6b7280;opacity:.8;font-family:Arial,sans-serif;z-index:999999;background:rgba(255,255,255,.85);padding:3px 6px;border-radius:8px;border:1px solid rgba(229,231,235,.9);">0</div>
 
 </div>
@@ -740,6 +802,10 @@ const KV_COMPANY = {
   const downloadRow = document.getElementById("jcr_download_row");
   const downloadBtn = document.getElementById("jcr_download_btn");
   const packetBtn = document.getElementById("jcr_packet_btn");
+  const clientModal = document.getElementById("jcr_client_modal");
+  const clientCloseBtn = document.getElementById("jcr_client_close");
+  const clientSkipBtn = document.getElementById("jcr_client_skip");
+  const clientDownloadBtn = document.getElementById("jcr_client_download");
   const successBox = document.getElementById("jcr_success");
   const aiPanel = document.getElementById("jcr_ai_panel");
   const loadingFill = document.getElementById("jcr_loading_fill");
@@ -1274,7 +1340,8 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     });
   }
 
-  async function downloadDesignPacket() {
+  async function downloadDesignPacket(clientInfo) {
+    clientInfo = clientInfo || {};
     if (!uploadedImageData || !beforeImg.src || !afterImg.src) {
       status.innerText = "Generate a preview before downloading the design packet.";
       return;
@@ -1299,6 +1366,13 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     const countertopTextPdf = countertopInput.value ? countertopInput.options[countertopInput.selectedIndex].text : "Keep Existing";
     const backsplashTextPdf = backsplashInput.value ? backsplashInput.options[backsplashInput.selectedIndex].text : "Keep Existing";
     const flooringTextPdf = flooringInput.value ? flooringInput.options[flooringInput.selectedIndex].text : "Keep Existing";
+    const packetDate = new Date().toLocaleDateString();
+    const clientName = clientInfo.name || "-";
+    const clientPhone = clientInfo.phone || "-";
+    const clientEmail = clientInfo.email || "-";
+    const projectAddress = clientInfo.address || "-";
+    const salesperson = clientInfo.salesperson || "-";
+    const projectNotes = clientInfo.notes || "-";
 
     doc.setFillColor(248, 250, 252);
     doc.rect(0, 0, pageWidth, 792, "F");
@@ -1336,7 +1410,35 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     doc.line(margin, y, pageWidth - margin, y);
 
     y += 30;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(17, 24, 39);
+    doc.text("Client / Project Information", margin, y);
 
+    y += 20;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(55, 65, 81);
+    doc.text("Prepared For: " + clientName, margin, y);
+    doc.text("Date: " + packetDate, margin + 250, y);
+
+    y += 16;
+    doc.text("Phone: " + clientPhone, margin, y);
+    doc.text("Email: " + clientEmail, margin + 250, y, { maxWidth: pageWidth - margin - 250 });
+
+    y += 16;
+    doc.text("Project Address: " + projectAddress, margin, y, { maxWidth: pageWidth - margin * 2 });
+
+    y += 16;
+    doc.text("Prepared By: " + salesperson, margin, y);
+
+    if (projectNotes && projectNotes !== "-") {
+      y += 16;
+      doc.text("Project Notes: " + projectNotes, margin, y, { maxWidth: pageWidth - margin * 2 });
+      y += 12;
+    }
+
+    y += 26;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(15);
     doc.setTextColor(17, 24, 39);
@@ -1421,9 +1523,38 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     y += 18;
     doc.text("Website: " + KV_COMPANY.estimateUrl, margin + 20, y);
 
-    doc.save("kitchen-design-packet.pdf");
+    doc.save((clientName && clientName !== "-" ? clientName.replace(/[^a-z0-9-_]+/gi, "-").replace(/-+/g, "-") + "-" : "") + "kitchen-design-packet.pdf");
   }
 
+
+  function getClientInfoFromModal() {
+    return {
+      name: (document.getElementById("jcr_client_name") || {}).value || "",
+      phone: (document.getElementById("jcr_client_phone") || {}).value || "",
+      email: (document.getElementById("jcr_client_email") || {}).value || "",
+      address: (document.getElementById("jcr_project_address") || {}).value || "",
+      salesperson: (document.getElementById("jcr_salesperson") || {}).value || "",
+      notes: (document.getElementById("jcr_project_notes") || {}).value || ""
+    };
+  }
+
+  function openClientModal() {
+    if (!uploadedImageData || !beforeImg.src || !afterImg.src) {
+      status.innerText = "Generate a preview before downloading the design packet.";
+      return;
+    }
+    clientModal.classList.add("active");
+    clientModal.setAttribute("aria-hidden", "false");
+    setTimeout(function() {
+      const firstField = document.getElementById("jcr_client_name");
+      if (firstField) firstField.focus();
+    }, 100);
+  }
+
+  function closeClientModal() {
+    clientModal.classList.remove("active");
+    clientModal.setAttribute("aria-hidden", "true");
+  }
 
   downloadBtn.addEventListener("click", function() {
     const link = document.createElement("a");
@@ -1433,8 +1564,35 @@ It should look like the existing doors, drawers, and cabinet faces were professi
   });
 
   packetBtn.addEventListener("click", function() {
-    downloadDesignPacket();
+    openClientModal();
   });
+
+  if (clientCloseBtn) {
+    clientCloseBtn.addEventListener("click", function() {
+      closeClientModal();
+    });
+  }
+
+  if (clientSkipBtn) {
+    clientSkipBtn.addEventListener("click", function() {
+      closeClientModal();
+      downloadDesignPacket({});
+    });
+  }
+
+  if (clientDownloadBtn) {
+    clientDownloadBtn.addEventListener("click", function() {
+      const clientInfo = getClientInfoFromModal();
+      closeClientModal();
+      downloadDesignPacket(clientInfo);
+    });
+  }
+
+  if (clientModal) {
+    clientModal.addEventListener("click", function(e) {
+      if (e.target === clientModal) closeClientModal();
+    });
+  }
 
   button.addEventListener("click", async function() {
     if (!uploadedImageData) { status.innerText = "Upload a kitchen photo first."; return; }
