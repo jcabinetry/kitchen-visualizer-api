@@ -6,6 +6,20 @@ function cleanKey(value) {
     .slice(0, 80);
 }
 
+async function redisGet(key) {
+  const response = await fetch(
+    `${process.env.KV_REST_API_URL}/get/${encodeURIComponent(key)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`
+      }
+    }
+  );
+
+  const data = await response.json().catch(() => ({}));
+  return data.result ? JSON.parse(data.result) : null;
+}
+
 async function redisSet(key, value) {
   await fetch(
     `${process.env.KV_REST_API_URL}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}`,
@@ -42,10 +56,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
-      return res.status(500).json({ error: "Missing Redis environment variables." });
-    }
-
     const { name, id, limit, plan, email } = req.body || {};
 
     if (!name || !id) {
@@ -53,18 +63,43 @@ export default async function handler(req, res) {
     }
 
     const safeId = cleanKey(id);
+    const customerKey = `customer:${safeId}`;
+
+    const existingCustomer = await redisGet(customerKey);
+
+    await redisSadd("customers", safeId);
+
+    if (existingCustomer) {
+      return res.status(200).json({
+        success: true,
+        skipped: true,
+        customer: existingCustomer
+      });
+    }
 
     const customer = {
-      name,
-      id: safeId,
-      limit: Number(limit || 50),
+      companyKey: safeId,
+      companyName: name,
+      monthlyLimit: Number(limit || 50),
+      monthlyPrice: 0,
       plan: plan || "Starter",
+      status: "active",
+      phone: "",
       email: email || "",
+      city: "",
+      primaryColor: "#1f2937",
+      customerPageUrl: "",
+      websiteUrl: "",
+      estimateUrl: "",
+      logoUrl: "",
+      buttonText: "Request an Estimate",
+      ctaText: "Request an Estimate",
+      notes: "",
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
-    await redisSadd("customers", safeId);
-    await redisSet(`customer:${safeId}`, customer);
+    await redisSet(customerKey, customer);
 
     return res.status(200).json({
       success: true,
