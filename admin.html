@@ -66,7 +66,7 @@
     .toolbar input, .toolbar select { width: 180px; }
 
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 1600px; }
+    table { width: 100%; border-collapse: collapse; min-width: 1720px; }
     th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
     th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0; background: #fafbfe; }
     tbody tr { transition: background 120ms ease; }
@@ -171,12 +171,12 @@
     <section class="summary-grid" aria-label="Summary">
       <div class="metric"><span>Total Customers</span><strong id="totalCustomers">0</strong></div>
       <div class="metric"><span>Active Customers</span><strong id="activeCustomers">0</strong></div>
-      <div class="metric"><span>Inactive Customers</span><strong id="inactiveCustomers">0</strong></div>
       <div class="metric"><span>Images This Month</span><strong id="totalPreviews">0</strong></div>
-      <div class="metric"><span>Near Limit</span><strong id="nearLimit">0</strong></div>
-      <div class="metric"><span>Remaining Credits</span><strong id="remainingCredits">0</strong></div>
-      <div class="metric"><span>Estimated AI Cost</span><strong id="aiSpend">$0.00</strong></div>
-      <div class="metric"><span>Average Per Customer</span><strong id="avgImages">0</strong></div>
+      <div class="metric"><span>MRR</span><strong id="monthlyRevenue">$0</strong></div>
+      <div class="metric"><span>ARR</span><strong id="annualRevenue">$0</strong></div>
+      <div class="metric"><span>Avg Revenue / Customer</span><strong id="avgRevenue">$0</strong></div>
+      <div class="metric"><span>AI Cost</span><strong id="aiSpend">$0.00</strong></div>
+      <div class="metric"><span>Gross Profit</span><strong id="grossProfit">$0</strong></div>
     </section>
 
     <section class="layout">
@@ -196,7 +196,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Company</th><th>Plan</th><th>Status</th><th>Usage</th><th>Limit</th><th>Remaining</th><th>Created</th><th>Contact</th><th>City</th><th></th></tr>
+              <tr><th>Company</th><th>Plan</th><th>Status</th><th>Monthly Price</th><th>Usage</th><th>Limit</th><th>Remaining</th><th>AI Cost</th><th>Est. Profit</th><th>Created</th><th>Contact</th><th>City</th><th></th></tr>
             </thead>
             <tbody id="customerRows"></tbody>
           </table>
@@ -213,6 +213,7 @@
           <div class="form-grid">
             <label>Company key<input id="companyKey" name="companyKey" required autocomplete="off" placeholder="company-name"></label>
             <label>Monthly limit<input id="monthlyLimit" name="monthlyLimit" type="number" min="1" step="1" value="200" required></label>
+            <label>Monthly Price ($)<input id="monthlyPrice" name="monthlyPrice" type="number" min="0" step="1" value="199"></label>
             <label class="full">Company name<input id="companyName" name="companyName" required autocomplete="organization" placeholder="Company Name"></label>
             <label>Plan<select id="plan" name="plan"><option value="Trial">Trial</option><option value="Starter">Starter</option><option value="Professional">Professional</option><option value="Enterprise">Enterprise</option></select></label>
             <label>Status<select id="status" name="status"><option value="active">Active</option><option value="archived">Inactive</option></select></label>
@@ -260,7 +261,8 @@ const state = {
       monthInput: document.getElementById("monthInput"), totalCustomers: document.getElementById("totalCustomers"),
       activeCustomers: document.getElementById("activeCustomers"), inactiveCustomers: document.getElementById("inactiveCustomers"),
       totalPreviews: document.getElementById("totalPreviews"), nearLimit: document.getElementById("nearLimit"),
-      remainingCredits: document.getElementById("remainingCredits"), aiSpend: document.getElementById("aiSpend"), avgImages: document.getElementById("avgImages"),
+      monthlyRevenue: document.getElementById("monthlyRevenue"), annualRevenue: document.getElementById("annualRevenue"),
+      avgRevenue: document.getElementById("avgRevenue"), aiSpend: document.getElementById("aiSpend"), grossProfit: document.getElementById("grossProfit"),
       customerRows: document.getElementById("customerRows"), emptyState: document.getElementById("emptyState"),
       searchInput: document.getElementById("searchInput"), statusFilter: document.getElementById("statusFilter"),
       refreshButton: document.getElementById("refreshButton"), newButton: document.getElementById("newButton"),
@@ -278,6 +280,8 @@ const state = {
     function showLogin(message = "") { elements.adminShell.hidden = true; elements.loginShell.hidden = false; elements.loginError.textContent = message; elements.adminTokenInput.focus(); }
     function showAdmin() { elements.loginShell.hidden = true; elements.adminShell.hidden = false; elements.loginError.textContent = ""; }
     function getToken() { return state.token || ""; }
+    function money(value) { return "$" + Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+    function customerMonthlyPrice(customer) { return Number(customer.monthlyPrice ?? customer.price ?? customer.subscriptionPrice ?? 0); }
 
     async function api(path, options = {}) {
       const token = getToken();
@@ -356,21 +360,19 @@ const state = {
 
     function renderSummary() {
       const active = state.customers.filter(isActive);
-      const inactive = state.customers.length - active.length;
       const totalPreviews = state.customers.reduce(function(sum, customer) { return sum + Number(customer.usage?.used || 0); }, 0);
-      const totalLimit = active.reduce(function(sum, customer) { return sum + Number(customer.monthlyLimit || 0); }, 0);
-      const remaining = Math.max(0, totalLimit - totalPreviews);
-      const nearLimit = active.filter(function(customer) { return usagePercent(customer) >= 80; }).length;
-      const aiSpend = totalPreviews * 0.02;
-      const avgImages = state.customers.length ? Math.round(totalPreviews / state.customers.length) : 0;
+      const mrr = active.reduce(function(sum, customer) { return sum + customerMonthlyPrice(customer); }, 0);
+      const aiCost = totalPreviews * 0.02;
+      const grossProfit = mrr - aiCost;
+      const avgRevenue = active.length ? mrr / active.length : 0;
       elements.totalCustomers.textContent = state.customers.length;
       elements.activeCustomers.textContent = active.length;
-      elements.inactiveCustomers.textContent = inactive;
       elements.totalPreviews.textContent = totalPreviews;
-      elements.nearLimit.textContent = nearLimit;
-      elements.remainingCredits.textContent = remaining;
-      elements.aiSpend.textContent = "$" + aiSpend.toFixed(2);
-      elements.avgImages.textContent = avgImages;
+      elements.monthlyRevenue.textContent = money(mrr);
+      elements.annualRevenue.textContent = money(mrr * 12);
+      elements.avgRevenue.textContent = money(avgRevenue);
+      elements.aiSpend.textContent = money(aiCost);
+      elements.grossProfit.textContent = money(grossProfit);
     }
 
     function renderRows() {
@@ -381,6 +383,9 @@ const state = {
         const used = Number(customer.usage?.used || 0);
         const monthlyLimit = Number(customer.monthlyLimit || 0);
         const remaining = Math.max(0, monthlyLimit - used);
+        const monthlyPrice = customerMonthlyPrice(customer);
+        const aiCost = used * 0.02;
+        const estProfit = monthlyPrice - aiCost;
         const percent = usagePercent(customer);
         const barClass = percent >= 100 ? "over" : percent >= 80 ? "warn" : "";
         const active = isActive(customer);
@@ -393,9 +398,12 @@ const state = {
           <td><span class="company-name"><b>${escapeHtml(customer.companyName)}</b><small>${escapeHtml(customer.companyKey)}</small></span></td>
           <td><span class="plan-badge">${escapeHtml(customerPlan(customer))}</span></td>
           <td><span class="badge ${active ? "" : "archived"}">${active ? "active" : "inactive"}</span></td>
+          <td>${money(monthlyPrice)}</td>
           <td><div>${used} used</div><div class="usage-bar ${barClass}" style="--value: ${percent}%"><span></span></div></td>
           <td>${customer.monthlyLimit}</td>
           <td>${remaining}</td>
+          <td>${money(aiCost)}</td>
+          <td>${money(estProfit)}</td>
           <td>${escapeHtml(formatDate(customer.createdAt))}</td>
           <td><span class="contact-stack"><b>${escapeHtml(customerEmail(customer) || "-")}</b><small>${escapeHtml(customerPhone(customer) || "")}</small></span></td>
           <td>${escapeHtml(customerCity(customer) || "-")}</td>
@@ -423,6 +431,7 @@ const state = {
       elements.customerForm.reset();
       field("companyKey").disabled = false;
       field("monthlyLimit").value = "200";
+      field("monthlyPrice").value = "199";
       field("plan").value = "Trial";
       field("primaryColor").value = "#1f2937";
       field("ctaText").value = "Request an Estimate";
@@ -440,6 +449,7 @@ const state = {
       field("companyKey").value = customer.companyKey;
       field("companyName").value = customer.companyName || "";
       field("monthlyLimit").value = customer.monthlyLimit || 200;
+      field("monthlyPrice").value = customerMonthlyPrice(customer);
       field("plan").value = customerPlan(customer);
       field("status").value = customer.status || "active";
       field("phone").value = customerPhone(customer);
@@ -468,6 +478,7 @@ const state = {
         companyKey: field("companyKey").value,
         companyName: field("companyName").value,
         monthlyLimit: field("monthlyLimit").value,
+        monthlyPrice: field("monthlyPrice").value,
         plan: field("plan").value,
         status: field("status").value,
         phone,
@@ -565,6 +576,7 @@ const state = {
 
     elements.monthInput.value = thisMonth();
     field("plan").value = "Trial";
+    field("monthlyPrice").value = "199";
     field("ctaText").value = "Request an Estimate";
     updateHelper();
 
