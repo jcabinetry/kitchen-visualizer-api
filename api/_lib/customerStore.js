@@ -82,6 +82,12 @@ function toPositiveInteger(value, fallback = DEFAULT_MONTHLY_LIMIT) {
   return parsed;
 }
 
+function toMoneyNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return Math.round(parsed * 100) / 100;
+}
+
 function parseMaybeJson(value) {
   if (!value || typeof value !== "string") return value;
 
@@ -113,8 +119,6 @@ function normalizeCustomer(input = {}, existing = null) {
   let source = parseMaybeJson(input) || {};
   let existingSource = parseMaybeJson(existing) || null;
 
-  // Some early/manual Redis records stored only a plain string like "0333".
-  // Treat that string as the company key instead of crashing the customer list.
   if (typeof source !== "object") {
     source = { companyKey: String(source || "") };
   }
@@ -149,10 +153,12 @@ function normalizeCustomer(input = {}, existing = null) {
     companyName: textValue(source.companyName, existingSource?.companyName, companyKey),
     status,
     monthlyLimit: toPositiveInteger(source.monthlyLimit ?? existingSource?.monthlyLimit),
+    monthlyPrice: toMoneyNumber(source.monthlyPrice ?? source.price ?? source.subscriptionPrice ?? existingSource?.monthlyPrice ?? existingSource?.price ?? existingSource?.subscriptionPrice, 0),
     plan: textValue(source.plan, existingSource?.plan),
     phone,
     email,
     city,
+    websiteUrl,
     estimateUrl,
     logoUrl,
     primaryColor,
