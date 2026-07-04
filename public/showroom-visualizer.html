@@ -1600,20 +1600,21 @@ if (createProposalBtn) {
   createProposalBtn.addEventListener("click", function() {
     const clientInfo = getClientInfoFromModal();
 
-    const proposalData = {
-      companyKey: KV_COMPANY.companyKey || "",
-      customer: clientInfo,
-      pricing: {
-        projectTotal: clientInfo.projectTotal || "",
-        notes: clientInfo.notes || ""
-},
-images: {
-  beforeImage: afterImg ? afterImg.src : "",
-  afterImage: beforeImg ? beforeImg.src : ""
-},
-design: getDesignDetails(beforeImg ? beforeImg.src : "")
+const proposalData = {
+  companyKey: KV_COMPANY.companyKey || "",
+  customer: clientInfo,
+  pricing: {
+    projectTotal: clientInfo.projectTotal || "",
+    notes: clientInfo.notes || ""
+  },
+  images: {
+    beforeImage: beforeImg ? beforeImg.src : "",
+    afterImage: afterImg ? afterImg.src : ""
+  },
+  design: getDesignDetails(afterImg ? afterImg.src : "")
 };
-    sessionStorage.setItem("cv_proposal_data", JSON.stringify(proposalData));
+
+sessionStorage.setItem("cv_proposal_data", JSON.stringify(proposalData));
 
     closeClientModal();
 
