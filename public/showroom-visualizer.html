@@ -1568,10 +1568,11 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     }, 100);
   }
 
-  function closeClientModal() {
-    clientModal.classList.remove("active");
-    clientModal.setAttribute("aria-hidden", "true");
-  }
+function closeClientModal() {
+  clientModal.classList.remove("active");
+  clientModal.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
 
   downloadBtn.addEventListener("click", function() {
     const link = document.createElement("a");
