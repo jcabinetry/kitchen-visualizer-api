@@ -83,7 +83,7 @@ export default async function handler(req, res) {
     `;
 
     const result = await resend.emails.send({
-      from: "Cabinet Visualizer <onboarding@resend.dev>",
+      from: "Cabinet Visualizer <leads@cabinetvisualizer.com>",
       to: recipients,
       subject: `New Visualizer Lead | ${companyName}`,
       html
