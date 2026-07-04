@@ -5,6 +5,8 @@
   window.CV = {
     companyKey: null,
     company: {},
+    proposalNumber: "",
+    proposalDate: new Date().toLocaleDateString(),
     proposal: {
       customer: {},
       design: {},
@@ -113,33 +115,46 @@
       notes: getValue("cv_project_notes")
     };
 
-    renderPreviewStub();
+    renderProposalPreview();
     showStep("preview");
   }
 
-  function renderPreviewStub() {
-    const customer = window.CV.proposal.customer || {};
-    const pricing = window.CV.proposal.pricing || {};
-    const company = window.CV.company || {};
+  function renderProposalPreview() {
+    const container = document.getElementById("cv_proposal_preview_pages");
+    if (!container) return;
 
-    setText("cv_preview_company", company.companyName || company.name || "Cabinet Visualizer");
-    setText("cv_preview_customer", customer.name || "Customer Name");
-    setText("cv_preview_address", [customer.address, customer.city, customer.state, customer.zip].filter(Boolean).join(", "));
-    setText("cv_preview_total", pricing.projectTotal || "$0");
-    setText("cv_preview_notes", pricing.notes || "No notes added yet.");
+    const data = {
+      company: window.CV.company || {},
+      customer: window.CV.proposal.customer || {},
+      pricing: window.CV.proposal.pricing || {},
+      images: window.CV.proposal.images || {},
+      proposalNumber: window.CV.proposalNumber,
+      proposalDate: window.CV.proposalDate,
+      companyKey: window.CV.companyKey
+    };
+
+    if (window.CVProposalPages && typeof window.CVProposalPages.coverPage === "function") {
+      container.innerHTML = window.CVProposalPages.coverPage(data);
+    } else {
+      container.innerHTML = '<div class="cv-empty-preview">Cover page component not loaded.</div>';
+    }
   }
 
   function createProposalNumber() {
     const year = new Date().getFullYear();
+    const key = window.CV.companyKey || "000";
     const random = Math.floor(100000 + Math.random() * 900000);
-    return "CV-" + year + "-" + random;
+    return "CV-" + key + "-" + year + "-" + random;
   }
 
   function init() {
+    window.CV.companyKey = getCompanyKey();
+    window.CV.proposalNumber = createProposalNumber();
+
     loadCompany();
 
     setValue("cv_valid_for", "30 Days");
-    setText("cv_proposal_number", createProposalNumber());
+    setText("cv_proposal_number", window.CV.proposalNumber);
 
     document.querySelectorAll(".cv-step").forEach(function (button) {
       button.addEventListener("click", function () {
