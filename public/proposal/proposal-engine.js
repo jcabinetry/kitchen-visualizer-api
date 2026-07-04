@@ -410,10 +410,11 @@
     if (hasStoredData) {
       renderDesignReview();
       renderProposalPreview();
-      showStep("preview");
+      showStep("customer");
       setText("cv_engine_status", "Proposal data loaded");
     } else {
       renderDesignReview();
+      showStep("customer");
     }
   }
 
