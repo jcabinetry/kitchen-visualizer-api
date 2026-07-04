@@ -13,10 +13,24 @@
     return "$" + Number(digits).toLocaleString("en-US");
   }
 
+  function phone(value) {
+    var raw = String(value || "");
+    var digits = "";
+    for (var i = 0; i < raw.length; i++) {
+      var c = raw.charAt(i);
+      if (c >= "0" && c <= "9") digits += c;
+    }
+    digits = digits.slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return "(" + digits.slice(0, 3) + ") " + digits.slice(3);
+    return "(" + digits.slice(0, 3) + ") " + digits.slice(3, 6) + "-" + digits.slice(6);
+  }
+
   function addPricingHelpers() {
     var grid = document.querySelector('[data-panel="pricing"] .cv-form-grid');
     var customerTotal = document.getElementById("cv_project_total");
     var deposit = document.getElementById("cv_project_deposit");
+    var customerPhone = document.getElementById("cv_customer_phone");
 
     if (grid && !document.getElementById("cv_project_total_pricing")) {
       var field = document.createElement("div");
@@ -43,13 +57,19 @@
       if (deposit) deposit.value = money(deposit.value);
     }
 
+    function formatPhone() {
+      if (customerPhone) customerPhone.value = phone(customerPhone.value);
+    }
+
     if (customerTotal) customerTotal.addEventListener("input", function () { sync(customerTotal); });
     if (pricingTotal) pricingTotal.addEventListener("input", function () { sync(pricingTotal); });
     if (deposit) deposit.addEventListener("input", formatDeposit);
+    if (customerPhone) customerPhone.addEventListener("input", formatPhone);
 
     setTimeout(function () {
       if (customerTotal && customerTotal.value) sync(customerTotal);
       if (deposit && deposit.value) formatDeposit();
+      if (customerPhone && customerPhone.value) formatPhone();
     }, 400);
   }
 
