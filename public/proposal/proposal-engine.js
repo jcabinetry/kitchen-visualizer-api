@@ -119,8 +119,8 @@
     document.documentElement.style.setProperty("--cv-primary", primary);
 
     setText("cv_company_name", company.companyName || company.name || "Cabinet Visualizer");
-    setText("cv_company_key", window.CV.companyKey ? "Company Key: " + window.CV.companyKey : "Company Key Missing");
-    setText("cv_loaded_company", company.companyName || company.name || "No company loaded yet");
+    setText("cv_company_key", "");
+    setText("cv_loaded_company", company.companyName || company.name || "");
 
     const logo = document.getElementById("cv_company_logo");
     if (logo && company.logoUrl) {
@@ -152,7 +152,7 @@
 
       window.CV.company = data;
       applyCompanyBrand(data);
-      setText("cv_engine_status", "Company loaded");
+      setText("cv_engine_status", "Ready");
     } catch (error) {
       console.warn("Company load failed", error);
       applyCompanyBrand({ companyName: "Cabinet Visualizer" });
@@ -168,6 +168,47 @@
     document.querySelectorAll(".cv-step").forEach(function (button) {
       button.classList.toggle("active", button.getAttribute("data-step") === stepName);
     });
+
+    if (stepName === "design") renderDesignReview();
+  }
+
+  function designItem(label, value) {
+    return '<div class="cv-design-selection-item"><span>' + label + '</span><strong>' + (value || "Not Selected") + '</strong></div>';
+  }
+
+  function renderDesignReview() {
+    const container = document.getElementById("cv_design_review");
+    if (!container) return;
+
+    const images = window.CV.proposal.images || {};
+    const design = window.CV.proposal.design || {};
+
+    container.innerHTML = `
+      <div class="cv-design-image-grid">
+        <div class="cv-design-image-card">
+          <h3>Current Kitchen</h3>
+          <div class="cv-design-image-box">
+            ${images.beforeImage ? `<img src="${images.beforeImage}" alt="Current Kitchen">` : "Before image not loaded yet."}
+          </div>
+        </div>
+        <div class="cv-design-image-card">
+          <h3>New Kitchen Design</h3>
+          <div class="cv-design-image-box">
+            ${images.afterImage ? `<img src="${images.afterImage}" alt="New Kitchen Design">` : "After image not loaded yet."}
+          </div>
+        </div>
+      </div>
+      <div class="cv-design-selection-grid">
+        ${designItem("Upper Color", design.upperColor)}
+        ${designItem("Base Color", design.baseColor)}
+        ${designItem("Door Style", design.doorStyle)}
+        ${designItem("Hardware", design.hardware)}
+        ${designItem("Countertops", design.countertop)}
+        ${designItem("Backsplash", design.backsplash)}
+        ${designItem("Flooring", design.flooring)}
+        ${designItem("Upper Cabinets", design.upperCabinets)}
+      </div>
+    `;
   }
 
   function saveCustomerStep() {
@@ -273,9 +314,12 @@
     if (pricingNext) pricingNext.addEventListener("click", savePricingStep);
 
     if (hasStoredData) {
+      renderDesignReview();
       renderProposalPreview();
       showStep("preview");
       setText("cv_engine_status", "Proposal data loaded");
+    } else {
+      renderDesignReview();
     }
   }
 
