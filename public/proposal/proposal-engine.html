@@ -100,13 +100,20 @@
 
         <div class="cv-panel" data-panel="export">
           <h2>Export PDF</h2>
-          <p class="cv-panel-desc">PDF generation comes after the preview layout is finished.</p>
-          <div class="cv-empty-preview">PDF export coming soon.</div>
+          <p class="cv-panel-desc">Download a print-ready PDF proposal packet for the customer.</p>
+          <div class="cv-export-box">
+            <div class="cv-export-icon">📄</div>
+            <h3>Proposal PDF Ready</h3>
+            <p>This will export the proposal preview pages into a PDF packet.</p>
+            <button id="cv_download_pdf" class="cv-btn cv-btn-primary" type="button">Download Proposal PDF</button>
+          </div>
         </div>
       </section>
     </main>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="pages/cover-page.js"></script>
   <script src="pages/before-after-page.js"></script>
   <script src="pages/selections-page.js"></script>
