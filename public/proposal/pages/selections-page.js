@@ -16,6 +16,7 @@
 
   window.CVProposalPages.selectionsPage = function selectionsPage(data) {
     const design = data.design || {};
+    const pricing = data.pricing || {};
 
     return `
       <article class="cv-proposal-page cv-selections-page">
@@ -42,9 +43,21 @@
           ${item("Upper Cabinets", design.upperCabinets)}
         </div>
 
+        <div class="cv-investment-section">
+          <div class="cv-page-kicker">Project Details</div>
+          <h2>Investment Summary</h2>
+
+          <div class="cv-investment-grid">
+            ${item("Project Total", pricing.projectTotal)}
+            ${item("Deposit", pricing.deposit)}
+            ${item("Estimated Timeline", pricing.timeline)}
+            ${item("Proposal Valid For", pricing.validFor || "30 Days")}
+          </div>
+        </div>
+
         <div class="cv-selection-note">
-          <h3>Design Note</h3>
-          <p>Final colors, materials, and product availability should be confirmed before ordering. This proposal is intended to help the homeowner clearly visualize the selected design direction.</p>
+          <h3>Project Notes</h3>
+          <p>${pricing.notes || "Final colors, materials, and product availability should be confirmed before ordering. This proposal is intended to help the homeowner clearly visualize the selected design direction."}</p>
         </div>
       </article>
     `;
