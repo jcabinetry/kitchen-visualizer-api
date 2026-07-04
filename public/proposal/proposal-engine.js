@@ -118,6 +118,7 @@
 
     const logo = document.getElementById("cv_company_logo");
     if (logo && company.logoUrl) {
+      logo.crossOrigin = "anonymous";
       logo.src = company.logoUrl;
       logo.style.display = "block";
     }
@@ -281,6 +282,11 @@
 
   function waitForImages(container) {
     const images = Array.from(container.querySelectorAll("img"));
+    images.forEach(function (img) {
+      if (img.src && img.src.indexOf("data:image") !== 0) {
+        img.crossOrigin = "anonymous";
+      }
+    });
     return Promise.all(images.map(function (img) {
       if (img.complete) return Promise.resolve();
       return new Promise(function (resolve) {
@@ -341,10 +347,7 @@
           useCORS: true,
           allowTaint: false,
           backgroundColor: "#ffffff",
-          imageTimeout: 15000,
-          ignoreElements: function (el) {
-            return el.tagName === "IMG" && el.src && el.src.indexOf("data:image") !== 0 && el.src.indexOf(window.location.origin) !== 0;
-          }
+          imageTimeout: 15000
         });
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
