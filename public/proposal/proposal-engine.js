@@ -45,7 +45,8 @@
       city: customer.city || "",
       state: customer.state || "",
       zip: customer.zip || "",
-      salesperson: customer.salesperson || customer.designer || ""
+      salesperson: customer.salesperson || customer.designer || "",
+      proposalNumber: customer.proposalNumber || ""
     };
   }
 
@@ -65,11 +66,6 @@
 
   function normalizeImages(images) {
     images = images || {};
-
-    // The showroom visualizer currently stores these reversed:
-    // beforeImage = generated preview, afterImage = original uploaded photo.
-    // Normalize them here so the Proposal Engine always has:
-    // beforeImage = original kitchen, afterImage = generated design.
     return {
       beforeImage: images.afterImage || images.beforeImage || "",
       afterImage: images.beforeImage || images.afterImage || ""
@@ -87,6 +83,15 @@
       window.CV.proposal.pricing = stored.pricing || {};
       window.CV.proposal.design = normalizeDesign(stored.design);
       window.CV.proposal.images = normalizeImages(stored.images);
+
+      const customProposalNumber =
+        stored.proposalNumber ||
+        window.CV.proposal.customer.proposalNumber ||
+        "";
+
+      if (customProposalNumber) {
+        window.CV.proposalNumber = customProposalNumber;
+      }
 
       const customer = window.CV.proposal.customer;
       const pricing = window.CV.proposal.pricing;
@@ -247,8 +252,8 @@
 
   function init() {
     window.CV.companyKey = getCompanyKey();
-    const hasStoredData = loadStoredProposalData();
     window.CV.proposalNumber = createProposalNumber();
+    const hasStoredData = loadStoredProposalData();
 
     loadCompany();
 
