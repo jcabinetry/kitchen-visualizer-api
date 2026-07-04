@@ -56,6 +56,31 @@
   line-height: 1.25;
 }
 
+.cv-investment-section {
+  margin-top: 30px;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+  border: 1px solid var(--cv-border);
+}
+
+.cv-investment-section h2 {
+  margin: 8px 0 18px;
+  font-size: 32px;
+  letter-spacing: -0.05em;
+}
+
+.cv-investment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.cv-investment-grid .cv-selection-card:first-child strong {
+  font-size: 26px;
+  color: var(--cv-primary);
+}
+
 .cv-selection-note {
   margin-top: 28px;
   padding: 24px;
@@ -75,10 +100,12 @@
   color: var(--cv-muted);
   font-size: 16px;
   line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 @media (max-width: 900px) {
-  .cv-selections-grid {
+  .cv-selections-grid,
+  .cv-investment-grid {
     grid-template-columns: 1fr;
   }
 }
