@@ -1112,6 +1112,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
   function buildLeadPayload(afterImage) {
     return {
+      companyKey: KV_COMPANY.companyKey,
       company: KV_COMPANY.companyName,
       customerName: leadName.value,
       customerPhone: leadPhone.value,
@@ -1129,7 +1130,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
   async function sendLeadToCompany(payload) {
     try {
-      await fetch("https://formspree.io/f/xaqzgvyk", {
+      await fetch("https://kitchen-visualizer-api.vercel.app/api/send-lead", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(payload)
