@@ -352,9 +352,9 @@ const KV_COMPANY = {
 }
 
 /* Client info modal for showroom design packet */
-.jcr-client-modal{position:fixed;inset:0;background:rgba(15,23,42,.62);display:none;align-items:center;justify-content:center;overflow:hidden;padding:20px;z-index:999999;}
+.jcr-client-modal{position:absolute;top:0;left:0;width:100%;min-height:100%;background:rgba(15,23,42,.62);display:none;align-items:flex-start;justify-content:center;overflow:visible;padding:40px 20px;z-index:999999;}
 .jcr-client-modal.active{display:flex;}
-.jcr-client-box{width:min(760px,100%);max-height:calc(100vh - 40px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;background:#fff;border-radius:26px;border:1px solid #e5e7eb;box-shadow:0 30px 90px rgba(0,0,0,.28);padding:26px;animation:jcrPop .25s ease both;}
+.jcr-client-box{width:min(760px,100%);background:#fff;border-radius:26px;border:1px solid #e5e7eb;box-shadow:0 30px 90px rgba(0,0,0,.28);padding:26px;animation:jcrPop .25s ease both;}
 .jcr-client-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;}
 .jcr-client-head h3{font-size:28px;line-height:1.05;margin:0;color:#111827;letter-spacing:-.04em;}
 .jcr-client-head p{font-size:15px;color:#6b7280;margin:8px 0 0;line-height:1.45;}
@@ -1561,7 +1561,6 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     }
     clientModal.classList.add("active");
     clientModal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
     setTimeout(function() {
       const firstField = document.getElementById("jcr_client_name");
       if (firstField) firstField.focus();
@@ -1571,7 +1570,6 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 function closeClientModal() {
   clientModal.classList.remove("active");
   clientModal.setAttribute("aria-hidden", "true");
-  document.body.style.overflow = "";
 }
 
   downloadBtn.addEventListener("click", function() {
