@@ -94,6 +94,7 @@
       setValue("cv_customer_phone", customer.phone);
       setValue("cv_customer_email", customer.email);
       setValue("cv_salesperson", customer.salesperson);
+      setValue("cv_proposal_number_input", window.CV.proposalNumber);
       setValue("cv_project_address", customer.address);
       setValue("cv_project_city", customer.city);
       setValue("cv_project_state", customer.state);
@@ -205,6 +206,11 @@
   }
 
   function saveCustomerStep() {
+    const proposalNumberInput = getValue("cv_proposal_number_input");
+    if (proposalNumberInput) {
+      window.CV.proposalNumber = proposalNumberInput;
+    }
+
     window.CV.proposal.customer = {
       name: getValue("cv_customer_name"),
       phone: getValue("cv_customer_phone"),
@@ -213,14 +219,24 @@
       city: getValue("cv_project_city"),
       state: getValue("cv_project_state"),
       zip: getValue("cv_project_zip"),
-      salesperson: getValue("cv_salesperson")
+      salesperson: getValue("cv_salesperson"),
+      proposalNumber: window.CV.proposalNumber
     };
+
+    window.CV.proposal.pricing = window.CV.proposal.pricing || {};
+    window.CV.proposal.pricing.projectTotal = getValue("cv_project_total") || window.CV.proposal.pricing.projectTotal || "";
+
     showStep("design");
   }
 
   function savePricingStep() {
+    const proposalNumberInput = getValue("cv_proposal_number_input");
+    if (proposalNumberInput) {
+      window.CV.proposalNumber = proposalNumberInput;
+    }
+
     window.CV.proposal.pricing = {
-      projectTotal: getValue("cv_project_total"),
+      projectTotal: getValue("cv_project_total") || (window.CV.proposal.pricing || {}).projectTotal || "",
       deposit: getValue("cv_project_deposit"),
       timeline: getValue("cv_project_timeline"),
       validFor: getValue("cv_valid_for") || "30 Days",
@@ -245,6 +261,11 @@
   }
 
   function getProposalData() {
+    const proposalNumberInput = getValue("cv_proposal_number_input");
+    if (proposalNumberInput) {
+      window.CV.proposalNumber = proposalNumberInput;
+    }
+
     return {
       company: window.CV.company || {},
       customer: window.CV.proposal.customer || {},
@@ -275,9 +296,32 @@
   }
 
   function renderProposalPreview() {
+    saveCustomerStepDataOnly();
     const container = document.getElementById("cv_proposal_preview_pages");
     if (!container) return;
     container.innerHTML = buildProposalPagesHTML() || '<div class="cv-empty-preview">Proposal page components not loaded.</div>';
+  }
+
+  function saveCustomerStepDataOnly() {
+    const proposalNumberInput = getValue("cv_proposal_number_input");
+    if (proposalNumberInput) {
+      window.CV.proposalNumber = proposalNumberInput;
+    }
+
+    window.CV.proposal.customer = {
+      name: getValue("cv_customer_name"),
+      phone: getValue("cv_customer_phone"),
+      email: getValue("cv_customer_email"),
+      address: getValue("cv_project_address"),
+      city: getValue("cv_project_city"),
+      state: getValue("cv_project_state"),
+      zip: getValue("cv_project_zip"),
+      salesperson: getValue("cv_salesperson"),
+      proposalNumber: window.CV.proposalNumber
+    };
+
+    window.CV.proposal.pricing = window.CV.proposal.pricing || {};
+    window.CV.proposal.pricing.projectTotal = getValue("cv_project_total") || window.CV.proposal.pricing.projectTotal || "";
   }
 
   function waitForImages(container) {
@@ -390,6 +434,7 @@
     loadCompany();
 
     setValue("cv_valid_for", "30 Days");
+    setValue("cv_proposal_number_input", window.CV.proposalNumber);
     setText("cv_proposal_number", window.CV.proposalNumber);
 
     document.querySelectorAll(".cv-step").forEach(function (button) {
