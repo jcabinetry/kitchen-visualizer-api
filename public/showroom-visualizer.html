@@ -669,6 +669,10 @@ const KV_COMPANY = {
         <input id="jcr_project_address" type="text" placeholder="Project address">
       </div>
       <div class="jcr-client-field">
+  <label for="jcr_proposal_number">Proposal #</label>
+  <input id="jcr_proposal_number" type="text" placeholder="CV-333-000128">
+</div>
+      <div class="jcr-client-field">
   <label for="jcr_project_total">Project Total</label>
   <input id="jcr_project_total" type="text" placeholder="$12,500">
 </div>
@@ -1548,6 +1552,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       phone: (document.getElementById("jcr_client_phone") || {}).value || "",
       email: (document.getElementById("jcr_client_email") || {}).value || "",
       address: (document.getElementById("jcr_project_address") || {}).value || "",
+      proposalNumber: (document.getElementById("jcr_proposal_number") || {}).value || "",
       projectTotal: (document.getElementById("jcr_project_total") || {}).value || "",
       salesperson: (document.getElementById("jcr_salesperson") || {}).value || "",
       notes: (document.getElementById("jcr_project_notes") || {}).value || ""
