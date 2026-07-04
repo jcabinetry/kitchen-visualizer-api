@@ -63,6 +63,19 @@
     };
   }
 
+  function normalizeImages(images) {
+    images = images || {};
+
+    // The showroom visualizer currently stores these reversed:
+    // beforeImage = generated preview, afterImage = original uploaded photo.
+    // Normalize them here so the Proposal Engine always has:
+    // beforeImage = original kitchen, afterImage = generated design.
+    return {
+      beforeImage: images.afterImage || images.beforeImage || "",
+      afterImage: images.beforeImage || images.afterImage || ""
+    };
+  }
+
   function loadStoredProposalData() {
     try {
       const raw = sessionStorage.getItem("cv_proposal_data");
@@ -73,7 +86,7 @@
       window.CV.proposal.customer = normalizeCustomer(stored.customer);
       window.CV.proposal.pricing = stored.pricing || {};
       window.CV.proposal.design = normalizeDesign(stored.design);
-      window.CV.proposal.images = stored.images || {};
+      window.CV.proposal.images = normalizeImages(stored.images);
 
       const customer = window.CV.proposal.customer;
       const pricing = window.CV.proposal.pricing;
