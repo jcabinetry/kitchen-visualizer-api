@@ -133,11 +133,17 @@
       companyKey: window.CV.companyKey
     };
 
+    let html = "";
+
     if (window.CVProposalPages && typeof window.CVProposalPages.coverPage === "function") {
-      container.innerHTML = window.CVProposalPages.coverPage(data);
-    } else {
-      container.innerHTML = '<div class="cv-empty-preview">Cover page component not loaded.</div>';
+      html += window.CVProposalPages.coverPage(data);
     }
+
+    if (window.CVProposalPages && typeof window.CVProposalPages.beforeAfterPage === "function") {
+      html += window.CVProposalPages.beforeAfterPage(data);
+    }
+
+    container.innerHTML = html || '<div class="cv-empty-preview">Proposal page components not loaded.</div>';
   }
 
   function createProposalNumber() {
