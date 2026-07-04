@@ -284,6 +284,31 @@ export async function archiveCustomer(companyKey) {
   return saveCustomer({ ...existing, status: "archived" });
 }
 
+export async function deleteCustomer(companyKey) {
+  const redis = getRedis();
+  const safeCompanyKey = cleanCompanyKey(companyKey);
+
+  if (!safeCompanyKey) {
+    throw new Error("companyKey is required.");
+  }
+
+  await Promise.all([
+    redis.srem(CUSTOMER_INDEX_KEY, safeCompanyKey),
+    redis.srem(CUSTOMER_INDEX_KEY_V2, safeCompanyKey),
+    redis.del(customerKey(safeCompanyKey)),
+    redis.del(customerKeyV2(safeCompanyKey))
+  ]);
+
+  const extraKeys = await upstashCommand(["KEYS", `visualizer:${safeCompanyKey}:*`]).catch(function() { return []; });
+  const keysToDelete = toList(extraKeys).filter(Boolean);
+
+  if (keysToDelete.length) {
+    await upstashCommand(["DEL", ...keysToDelete]);
+  }
+
+  return { companyKey: safeCompanyKey, deleted: true };
+}
+
 export async function getCustomerUsage(companyKey, monthKey = getMonthKey()) {
   const redis = getRedis();
   const safeCompanyKey = cleanCompanyKey(companyKey);
