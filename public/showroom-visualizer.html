@@ -680,7 +680,7 @@ const KV_COMPANY = {
 
     <div class="jcr-client-actions">
       <button id="jcr_client_skip" class="jcr-btn-light" type="button">Skip Info</button>
-      <button id="jcr_client_download" class="jcr-btn-primary" type="button">Download Packet</button>
+      <button id="createProposalBtn" class="jcr-btn-primary" type="button">Create Proposal</button>
     </div>
   </div>
 </div>
@@ -809,7 +809,7 @@ const KV_COMPANY = {
   const clientModal = document.getElementById("jcr_client_modal");
   const clientCloseBtn = document.getElementById("jcr_client_close");
   const clientSkipBtn = document.getElementById("jcr_client_skip");
-  const clientDownloadBtn = document.getElementById("jcr_client_download");
+  const createProposalBtn = document.getElementById("createProposalBtn");
   const successBox = document.getElementById("jcr_success");
   const aiPanel = document.getElementById("jcr_ai_panel");
   const loadingFill = document.getElementById("jcr_loading_fill");
@@ -1596,13 +1596,33 @@ function closeClientModal() {
     });
   }
 
-  if (clientDownloadBtn) {
-    clientDownloadBtn.addEventListener("click", function() {
-      const clientInfo = getClientInfoFromModal();
-      closeClientModal();
-      downloadDesignPacket(clientInfo);
-    });
-  }
+if (createProposalBtn) {
+  createProposalBtn.addEventListener("click", function() {
+    const clientInfo = getClientInfoFromModal();
+
+    const proposalData = {
+      companyKey: KV_COMPANY.companyKey || "",
+      customer: clientInfo,
+      pricing: {
+        projectTotal: clientInfo.projectTotal || "",
+        notes: clientInfo.notes || ""
+      },
+      images: {
+        beforeImage: beforeImg ? beforeImg.src : "",
+        afterImage: afterImg ? afterImg.src : ""
+      },
+      design: getDesignDetails(afterImg ? afterImg.src : "")
+    };
+
+    sessionStorage.setItem("cv_proposal_data", JSON.stringify(proposalData));
+
+    closeClientModal();
+
+    window.location.href =
+      "/proposal/proposal-engine.html?companyKey=" +
+      encodeURIComponent(KV_COMPANY.companyKey || "");
+  });
+}
 
   if (clientModal) {
     clientModal.addEventListener("click", function(e) {
