@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cabinet Visualizer Proposal Engine</title>
   <link rel="stylesheet" href="proposal-engine.css" />
+  <link rel="stylesheet" href="pages/before-after-page.css" />
 </head>
 <body>
   <div class="cv-proposal-app">
@@ -42,38 +43,14 @@
           <p class="cv-panel-desc">This is the first proposal step. Later this will be passed in from the showroom visualizer automatically.</p>
 
           <div class="cv-form-grid">
-            <div class="cv-field">
-              <label>Customer Name</label>
-              <input id="cv_customer_name" placeholder="John & Jane Smith" />
-            </div>
-            <div class="cv-field">
-              <label>Customer Phone</label>
-              <input id="cv_customer_phone" placeholder="(555) 555-5555" />
-            </div>
-            <div class="cv-field">
-              <label>Customer Email</label>
-              <input id="cv_customer_email" placeholder="customer@email.com" />
-            </div>
-            <div class="cv-field">
-              <label>Salesperson</label>
-              <input id="cv_salesperson" placeholder="Dusty" />
-            </div>
-            <div class="cv-field full">
-              <label>Project Address</label>
-              <input id="cv_project_address" placeholder="123 Main Street" />
-            </div>
-            <div class="cv-field">
-              <label>City</label>
-              <input id="cv_project_city" placeholder="Denver" />
-            </div>
-            <div class="cv-field">
-              <label>State</label>
-              <input id="cv_project_state" placeholder="CO" />
-            </div>
-            <div class="cv-field">
-              <label>ZIP</label>
-              <input id="cv_project_zip" placeholder="80202" />
-            </div>
+            <div class="cv-field"><label>Customer Name</label><input id="cv_customer_name" placeholder="John & Jane Smith" /></div>
+            <div class="cv-field"><label>Customer Phone</label><input id="cv_customer_phone" placeholder="(555) 555-5555" /></div>
+            <div class="cv-field"><label>Customer Email</label><input id="cv_customer_email" placeholder="customer@email.com" /></div>
+            <div class="cv-field"><label>Salesperson</label><input id="cv_salesperson" placeholder="Dusty" /></div>
+            <div class="cv-field full"><label>Project Address</label><input id="cv_project_address" placeholder="123 Main Street" /></div>
+            <div class="cv-field"><label>City</label><input id="cv_project_city" placeholder="Denver" /></div>
+            <div class="cv-field"><label>State</label><input id="cv_project_state" placeholder="CO" /></div>
+            <div class="cv-field"><label>ZIP</label><input id="cv_project_zip" placeholder="80202" /></div>
           </div>
 
           <div class="cv-actions">
@@ -96,33 +73,11 @@
           <p class="cv-panel-desc">Add the project total, deposit, timeline, and notes for the proposal packet.</p>
 
           <div class="cv-form-grid">
-            <div class="cv-field">
-              <label>Project Total</label>
-              <input id="cv_project_total" placeholder="$18,450" />
-            </div>
-            <div class="cv-field">
-              <label>Deposit</label>
-              <input id="cv_project_deposit" placeholder="$5,000" />
-            </div>
-            <div class="cv-field">
-              <label>Timeline</label>
-              <select id="cv_project_timeline">
-                <option>To Be Determined</option>
-                <option>1-2 Weeks</option>
-                <option>2-3 Weeks</option>
-                <option>3-4 Weeks</option>
-                <option>4-6 Weeks</option>
-                <option>6-8 Weeks</option>
-              </select>
-            </div>
-            <div class="cv-field">
-              <label>Valid For</label>
-              <input id="cv_valid_for" placeholder="30 Days" />
-            </div>
-            <div class="cv-field full">
-              <label>Project Notes</label>
-              <textarea id="cv_project_notes" placeholder="Project scope, timeline, warranty notes, special requests..."></textarea>
-            </div>
+            <div class="cv-field"><label>Project Total</label><input id="cv_project_total" placeholder="$18,450" /></div>
+            <div class="cv-field"><label>Deposit</label><input id="cv_project_deposit" placeholder="$5,000" /></div>
+            <div class="cv-field"><label>Timeline</label><select id="cv_project_timeline"><option>To Be Determined</option><option>1-2 Weeks</option><option>2-3 Weeks</option><option>3-4 Weeks</option><option>4-6 Weeks</option><option>6-8 Weeks</option></select></div>
+            <div class="cv-field"><label>Valid For</label><input id="cv_valid_for" placeholder="30 Days" /></div>
+            <div class="cv-field full"><label>Project Notes</label><textarea id="cv_project_notes" placeholder="Project scope, timeline, warranty notes, special requests..."></textarea></div>
           </div>
 
           <div class="cv-actions">
@@ -133,7 +88,7 @@
 
         <div class="cv-panel" data-panel="preview">
           <h2>Proposal Preview</h2>
-          <p class="cv-panel-desc">This is the first real proposal page component. Next we add the before/after page.</p>
+          <p class="cv-panel-desc">The proposal now includes the cover page and before/after transformation page.</p>
 
           <div id="cv_proposal_preview_pages" class="cv-proposal-preview-stack"></div>
 
@@ -153,6 +108,7 @@
   </div>
 
   <script src="pages/cover-page.js"></script>
+  <script src="pages/before-after-page.js"></script>
   <script src="proposal-engine.js"></script>
 </body>
 </html>
