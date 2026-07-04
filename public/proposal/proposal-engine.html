@@ -14,7 +14,6 @@
       <div class="cv-brand-card">
         <img id="cv_company_logo" class="cv-brand-logo" alt="Company Logo" />
         <div id="cv_company_name" class="cv-brand-name">Cabinet Visualizer</div>
-        <div id="cv_company_key" class="cv-company-key">Loading company key...</div>
       </div>
 
       <nav class="cv-step-list">
@@ -31,7 +30,7 @@
         <div>
           <div class="cv-kicker">Proposal Engine</div>
           <h1>Kitchen Proposal Builder</h1>
-          <p>Build a branded proposal packet using the dealer profile loaded from the company key.</p>
+          <p>Create a professional branded kitchen proposal for your customer.</p>
         </div>
         <div class="cv-status-pill">
           <span id="cv_engine_status">Loading...</span>
@@ -41,7 +40,7 @@
       <section class="cv-workspace">
         <div class="cv-panel active" data-panel="customer">
           <h2>Customer Information</h2>
-          <p class="cv-panel-desc">This is the first proposal step. Later this will be passed in from the showroom visualizer automatically.</p>
+          <p class="cv-panel-desc">Confirm the customer and project details before creating the proposal.</p>
 
           <div class="cv-form-grid">
             <div class="cv-field"><label>Customer Name</label><input id="cv_customer_name" placeholder="John & Jane Smith" /></div>
@@ -61,7 +60,7 @@
 
         <div class="cv-panel" data-panel="design">
           <h2>Kitchen Design</h2>
-          <p class="cv-panel-desc">This section will receive the before image, after image, and visualizer selections from the showroom version.</p>
+          <p class="cv-panel-desc">Review the kitchen images and selected design options.</p>
           <div class="cv-empty-preview">Design data connection coming next.</div>
           <div class="cv-actions">
             <button class="cv-btn cv-btn-light" type="button" onclick="document.querySelector('[data-step=customer]').click()">Back</button>
@@ -71,7 +70,7 @@
 
         <div class="cv-panel" data-panel="pricing">
           <h2>Pricing & Project Details</h2>
-          <p class="cv-panel-desc">Add the project total, deposit, timeline, and notes for the proposal packet.</p>
+          <p class="cv-panel-desc">Add the project total, deposit, timeline, and proposal notes.</p>
 
           <div class="cv-form-grid">
             <div class="cv-field"><label>Project Total</label><input id="cv_project_total" placeholder="$18,450" /></div>
@@ -89,7 +88,7 @@
 
         <div class="cv-panel" data-panel="preview">
           <h2>Proposal Preview</h2>
-          <p class="cv-panel-desc">The proposal now includes the cover page, before/after page, and selections page.</p>
+          <p class="cv-panel-desc">Review the proposal before exporting it for the customer.</p>
 
           <div id="cv_proposal_preview_pages" class="cv-proposal-preview-stack"></div>
 
