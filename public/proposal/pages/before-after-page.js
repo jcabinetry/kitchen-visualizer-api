@@ -70,7 +70,12 @@
       if (customerTotal && customerTotal.value) sync(customerTotal);
       if (deposit && deposit.value) formatDeposit();
       if (customerPhone && customerPhone.value) formatPhone();
-    }, 400);
+
+      var proposalNumberInput = document.getElementById("cv_proposal_number_input");
+      if (proposalNumberInput && proposalNumberInput.value.indexOf("CV-") === 0) {
+        proposalNumberInput.value = "";
+      }
+    }, 700);
   }
 
   document.addEventListener("DOMContentLoaded", addPricingHelpers);
