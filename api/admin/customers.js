@@ -2,6 +2,7 @@ import { requireAdmin } from "../_lib/adminAuth.js";
 import { setCorsHeaders } from "../_lib/cors.js";
 import {
   archiveCustomer,
+  deleteCustomer,
   getCustomer,
   getCustomerUsage,
   getMonthKey,
