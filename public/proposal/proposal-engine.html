@@ -4,9 +4,162 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cabinet Visualizer Proposal Engine</title>
+  <link rel="stylesheet" href="proposal-engine.css" />
 </head>
 <body>
-  <h1>Proposal Engine</h1>
-  <p>This is the new proposal packet builder.</p>
+  <div class="cv-proposal-app">
+    <aside class="cv-sidebar">
+      <div class="cv-brand-card">
+        <img id="cv_company_logo" class="cv-brand-logo" alt="Company Logo" />
+        <div id="cv_company_name" class="cv-brand-name">Cabinet Visualizer</div>
+        <div id="cv_company_key" class="cv-company-key">Loading company key...</div>
+      </div>
+
+      <nav class="cv-step-list">
+        <button class="cv-step active" data-step="customer" type="button">1. Customer</button>
+        <button class="cv-step" data-step="design" type="button">2. Kitchen Design</button>
+        <button class="cv-step" data-step="pricing" type="button">3. Pricing</button>
+        <button class="cv-step" data-step="preview" type="button">4. Preview</button>
+        <button class="cv-step" data-step="export" type="button">5. Export PDF</button>
+      </nav>
+    </aside>
+
+    <main class="cv-main">
+      <header class="cv-topbar">
+        <div>
+          <div class="cv-kicker">Proposal Engine</div>
+          <h1>Kitchen Proposal Builder</h1>
+          <p>Build a branded proposal packet using the dealer profile loaded from the company key.</p>
+        </div>
+        <div class="cv-status-pill">
+          <span id="cv_engine_status">Loading...</span>
+        </div>
+      </header>
+
+      <section class="cv-workspace">
+        <div class="cv-panel active" data-panel="customer">
+          <h2>Customer Information</h2>
+          <p class="cv-panel-desc">This is the first proposal step. Later this will be passed in from the showroom visualizer automatically.</p>
+
+          <div class="cv-form-grid">
+            <div class="cv-field">
+              <label>Customer Name</label>
+              <input id="cv_customer_name" placeholder="John & Jane Smith" />
+            </div>
+            <div class="cv-field">
+              <label>Customer Phone</label>
+              <input id="cv_customer_phone" placeholder="(555) 555-5555" />
+            </div>
+            <div class="cv-field">
+              <label>Customer Email</label>
+              <input id="cv_customer_email" placeholder="customer@email.com" />
+            </div>
+            <div class="cv-field">
+              <label>Salesperson</label>
+              <input id="cv_salesperson" placeholder="Dusty" />
+            </div>
+            <div class="cv-field full">
+              <label>Project Address</label>
+              <input id="cv_project_address" placeholder="123 Main Street" />
+            </div>
+            <div class="cv-field">
+              <label>City</label>
+              <input id="cv_project_city" placeholder="Denver" />
+            </div>
+            <div class="cv-field">
+              <label>State</label>
+              <input id="cv_project_state" placeholder="CO" />
+            </div>
+            <div class="cv-field">
+              <label>ZIP</label>
+              <input id="cv_project_zip" placeholder="80202" />
+            </div>
+          </div>
+
+          <div class="cv-actions">
+            <button id="cv_customer_next" class="cv-btn cv-btn-primary" type="button">Continue to Design</button>
+          </div>
+        </div>
+
+        <div class="cv-panel" data-panel="design">
+          <h2>Kitchen Design</h2>
+          <p class="cv-panel-desc">This section will receive the before image, after image, and visualizer selections from the showroom version.</p>
+          <div class="cv-empty-preview">Design data connection coming next.</div>
+          <div class="cv-actions">
+            <button class="cv-btn cv-btn-light" type="button" onclick="document.querySelector('[data-step=customer]').click()">Back</button>
+            <button class="cv-btn cv-btn-primary" type="button" onclick="document.querySelector('[data-step=pricing]').click()">Continue to Pricing</button>
+          </div>
+        </div>
+
+        <div class="cv-panel" data-panel="pricing">
+          <h2>Pricing & Project Details</h2>
+          <p class="cv-panel-desc">Add the project total, deposit, timeline, and notes for the proposal packet.</p>
+
+          <div class="cv-form-grid">
+            <div class="cv-field">
+              <label>Project Total</label>
+              <input id="cv_project_total" placeholder="$18,450" />
+            </div>
+            <div class="cv-field">
+              <label>Deposit</label>
+              <input id="cv_project_deposit" placeholder="$5,000" />
+            </div>
+            <div class="cv-field">
+              <label>Timeline</label>
+              <select id="cv_project_timeline">
+                <option>To Be Determined</option>
+                <option>1-2 Weeks</option>
+                <option>2-3 Weeks</option>
+                <option>3-4 Weeks</option>
+                <option>4-6 Weeks</option>
+                <option>6-8 Weeks</option>
+              </select>
+            </div>
+            <div class="cv-field">
+              <label>Valid For</label>
+              <input id="cv_valid_for" placeholder="30 Days" />
+            </div>
+            <div class="cv-field full">
+              <label>Project Notes</label>
+              <textarea id="cv_project_notes" placeholder="Project scope, timeline, warranty notes, special requests..."></textarea>
+            </div>
+          </div>
+
+          <div class="cv-actions">
+            <button class="cv-btn cv-btn-light" type="button" onclick="document.querySelector('[data-step=design]').click()">Back</button>
+            <button id="cv_pricing_next" class="cv-btn cv-btn-primary" type="button">Create Preview</button>
+          </div>
+        </div>
+
+        <div class="cv-panel" data-panel="preview">
+          <h2>Proposal Preview</h2>
+          <p class="cv-panel-desc">This is the first preview stub. Next we will turn this into the real multi-page packet.</p>
+
+          <div class="cv-empty-preview">
+            <p><strong id="cv_preview_company">Company</strong></p>
+            <p>Proposal #: <span id="cv_proposal_number"></span></p>
+            <p>Prepared For: <strong id="cv_preview_customer">Customer Name</strong></p>
+            <p id="cv_preview_address"></p>
+            <p>Project Total: <strong id="cv_preview_total">$0</strong></p>
+            <p id="cv_preview_notes">No notes added yet.</p>
+            <p>Loaded Dealer: <span id="cv_loaded_company">Loading...</span></p>
+          </div>
+
+          <div class="cv-actions">
+            <button class="cv-btn cv-btn-light" type="button" onclick="document.querySelector('[data-step=pricing]').click()">Back</button>
+            <button class="cv-btn cv-btn-primary" type="button" onclick="document.querySelector('[data-step=export]').click()">Continue to Export</button>
+          </div>
+        </div>
+
+        <div class="cv-panel" data-panel="export">
+          <h2>Export PDF</h2>
+          <p class="cv-panel-desc">PDF generation comes after the preview layout is finished.</p>
+          <div class="cv-empty-preview">PDF export coming soon.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="proposal-engine.js"></script>
 </body>
 </html>
