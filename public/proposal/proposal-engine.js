@@ -115,6 +115,17 @@
       notes: getValue("cv_project_notes")
     };
 
+    window.CV.proposal.design = {
+      upperColor: "White",
+      baseColor: "Same as Upper",
+      doorStyle: "Shaker",
+      hardware: "Matte Black",
+      countertop: "Calacatta Quartz",
+      backsplash: "White Subway Tile",
+      flooring: "White Oak LVP",
+      upperCabinets: "Keep Existing"
+    };
+
     renderProposalPreview();
     showStep("preview");
   }
@@ -127,6 +138,7 @@
       company: window.CV.company || {},
       customer: window.CV.proposal.customer || {},
       pricing: window.CV.proposal.pricing || {},
+      design: window.CV.proposal.design || {},
       images: window.CV.proposal.images || {},
       proposalNumber: window.CV.proposalNumber,
       proposalDate: window.CV.proposalDate,
@@ -141,6 +153,10 @@
 
     if (window.CVProposalPages && typeof window.CVProposalPages.beforeAfterPage === "function") {
       html += window.CVProposalPages.beforeAfterPage(data);
+    }
+
+    if (window.CVProposalPages && typeof window.CVProposalPages.selectionsPage === "function") {
+      html += window.CVProposalPages.selectionsPage(data);
     }
 
     container.innerHTML = html || '<div class="cv-empty-preview">Proposal page components not loaded.</div>';
