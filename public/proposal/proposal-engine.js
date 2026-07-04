@@ -35,6 +35,67 @@
     return el ? el.value.trim() : "";
   }
 
+  function normalizeCustomer(customer) {
+    customer = customer || {};
+    return {
+      name: customer.name || customer.customer || customer.clientName || "",
+      phone: customer.phone || customer.clientPhone || "",
+      email: customer.email || customer.clientEmail || "",
+      address: customer.address || customer.projectAddress || "",
+      city: customer.city || "",
+      state: customer.state || "",
+      zip: customer.zip || "",
+      salesperson: customer.salesperson || customer.designer || ""
+    };
+  }
+
+  function normalizeDesign(design) {
+    design = design || {};
+    return {
+      upperColor: design.upperColor || design.mainColor || "",
+      baseColor: design.baseColor || design.islandColor || "",
+      doorStyle: design.doorStyle || "",
+      hardware: design.hardware || "",
+      countertop: design.countertop || design.countertops || "",
+      backsplash: design.backsplash || "",
+      flooring: design.flooring || "",
+      upperCabinets: design.upperCabinets || design.upperHeight || ""
+    };
+  }
+
+  function loadStoredProposalData() {
+    try {
+      const raw = sessionStorage.getItem("cv_proposal_data");
+      if (!raw) return false;
+
+      const stored = JSON.parse(raw);
+      window.CV.companyKey = stored.companyKey || window.CV.companyKey;
+      window.CV.proposal.customer = normalizeCustomer(stored.customer);
+      window.CV.proposal.pricing = stored.pricing || {};
+      window.CV.proposal.design = normalizeDesign(stored.design);
+      window.CV.proposal.images = stored.images || {};
+
+      const customer = window.CV.proposal.customer;
+      const pricing = window.CV.proposal.pricing;
+
+      setValue("cv_customer_name", customer.name);
+      setValue("cv_customer_phone", customer.phone);
+      setValue("cv_customer_email", customer.email);
+      setValue("cv_salesperson", customer.salesperson);
+      setValue("cv_project_address", customer.address);
+      setValue("cv_project_city", customer.city);
+      setValue("cv_project_state", customer.state);
+      setValue("cv_project_zip", customer.zip);
+      setValue("cv_project_total", pricing.projectTotal || "");
+      setValue("cv_project_notes", pricing.notes || "");
+
+      return true;
+    } catch (error) {
+      console.warn("Could not load stored proposal data", error);
+      return false;
+    }
+  }
+
   function applyCompanyBrand(company) {
     const primary = company.primaryColor || company.brandColor || "#0f3d5e";
     document.documentElement.style.setProperty("--cv-primary", primary);
@@ -51,7 +112,7 @@
   }
 
   async function loadCompany() {
-    window.CV.companyKey = getCompanyKey();
+    window.CV.companyKey = window.CV.companyKey || getCompanyKey();
 
     if (!window.CV.companyKey) {
       applyCompanyBrand({ companyName: "Cabinet Visualizer" });
@@ -115,16 +176,18 @@
       notes: getValue("cv_project_notes")
     };
 
-    window.CV.proposal.design = {
-      upperColor: "White",
-      baseColor: "Same as Upper",
-      doorStyle: "Shaker",
-      hardware: "Matte Black",
-      countertop: "Calacatta Quartz",
-      backsplash: "White Subway Tile",
-      flooring: "White Oak LVP",
-      upperCabinets: "Keep Existing"
-    };
+    if (!window.CV.proposal.design || !Object.keys(window.CV.proposal.design).length) {
+      window.CV.proposal.design = {
+        upperColor: "",
+        baseColor: "",
+        doorStyle: "",
+        hardware: "",
+        countertop: "",
+        backsplash: "",
+        flooring: "",
+        upperCabinets: ""
+      };
+    }
 
     renderProposalPreview();
     showStep("preview");
@@ -171,6 +234,7 @@
 
   function init() {
     window.CV.companyKey = getCompanyKey();
+    const hasStoredData = loadStoredProposalData();
     window.CV.proposalNumber = createProposalNumber();
 
     loadCompany();
@@ -189,6 +253,12 @@
 
     const pricingNext = document.getElementById("cv_pricing_next");
     if (pricingNext) pricingNext.addEventListener("click", savePricingStep);
+
+    if (hasStoredData) {
+      renderProposalPreview();
+      showStep("preview");
+      setText("cv_engine_status", "Proposal data loaded");
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);
