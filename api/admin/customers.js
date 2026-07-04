@@ -65,9 +65,14 @@ export default async function handler(req, res) {
       const companyKey = req.body?.companyKey;
 
       if (action === "archive") {
-        const customer = await archiveCustomer(companyKey);
-        return res.status(200).json({ customer });
-      }
+  const customer = await archiveCustomer(companyKey);
+  return res.status(200).json({ customer });
+}
+
+if (action === "delete") {
+  const result = await deleteCustomer(companyKey);
+  return res.status(200).json(result);
+}
 
       const existing = await getCustomer(companyKey);
       if (!existing) return res.status(404).json({ error: "Customer not found." });
