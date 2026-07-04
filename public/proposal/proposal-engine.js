@@ -84,14 +84,8 @@
       window.CV.proposal.design = normalizeDesign(stored.design);
       window.CV.proposal.images = normalizeImages(stored.images);
 
-      const customProposalNumber =
-        stored.proposalNumber ||
-        window.CV.proposal.customer.proposalNumber ||
-        "";
-
-      if (customProposalNumber) {
-        window.CV.proposalNumber = customProposalNumber;
-      }
+      const customProposalNumber = stored.proposalNumber || window.CV.proposal.customer.proposalNumber || "";
+      if (customProposalNumber) window.CV.proposalNumber = customProposalNumber;
 
       const customer = window.CV.proposal.customer;
       const pricing = window.CV.proposal.pricing;
@@ -145,10 +139,7 @@
       );
 
       const data = await response.json().catch(function () { return {}; });
-
-      if (!response.ok) {
-        throw new Error(data.error || "Company not found");
-      }
+      if (!response.ok) throw new Error(data.error || "Company not found");
 
       window.CV.company = data;
       applyCompanyBrand(data);
@@ -170,6 +161,7 @@
     });
 
     if (stepName === "design") renderDesignReview();
+    if (stepName === "export") renderProposalPreview();
   }
 
   function designItem(label, value) {
@@ -222,7 +214,6 @@
       zip: getValue("cv_project_zip"),
       salesperson: getValue("cv_salesperson")
     };
-
     showStep("design");
   }
 
@@ -252,11 +243,8 @@
     showStep("preview");
   }
 
-  function renderProposalPreview() {
-    const container = document.getElementById("cv_proposal_preview_pages");
-    if (!container) return;
-
-    const data = {
+  function getProposalData() {
+    return {
       company: window.CV.company || {},
       customer: window.CV.proposal.customer || {},
       pricing: window.CV.proposal.pricing || {},
@@ -266,22 +254,87 @@
       proposalDate: window.CV.proposalDate,
       companyKey: window.CV.companyKey
     };
+  }
 
+  function renderProposalPreview() {
+    const container = document.getElementById("cv_proposal_preview_pages");
+    if (!container) return;
+
+    const data = getProposalData();
     let html = "";
 
     if (window.CVProposalPages && typeof window.CVProposalPages.coverPage === "function") {
       html += window.CVProposalPages.coverPage(data);
     }
-
     if (window.CVProposalPages && typeof window.CVProposalPages.beforeAfterPage === "function") {
       html += window.CVProposalPages.beforeAfterPage(data);
     }
-
     if (window.CVProposalPages && typeof window.CVProposalPages.selectionsPage === "function") {
       html += window.CVProposalPages.selectionsPage(data);
     }
 
     container.innerHTML = html || '<div class="cv-empty-preview">Proposal page components not loaded.</div>';
+  }
+
+  async function downloadProposalPDF() {
+    const button = document.getElementById("cv_download_pdf");
+    const source = document.getElementById("cv_proposal_preview_pages");
+
+    if (!source || !source.children.length) {
+      renderProposalPreview();
+    }
+
+    const pages = Array.from(document.querySelectorAll("#cv_proposal_preview_pages .cv-proposal-page"));
+    if (!pages.length) {
+      alert("Please create the proposal preview first.");
+      return;
+    }
+
+    if (!window.jspdf || !window.jspdf.jsPDF || !window.html2canvas) {
+      alert("PDF tools are still loading. Please wait a few seconds and try again.");
+      return;
+    }
+
+    try {
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Creating PDF...";
+      }
+      setText("cv_engine_status", "Creating PDF...");
+
+      const pdf = new window.jspdf.jsPDF("p", "pt", "letter");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      for (let i = 0; i < pages.length; i++) {
+        const canvas = await window.html2canvas(pages[i], {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff"
+        });
+
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const y = imgHeight < pageHeight ? (pageHeight - imgHeight) / 2 : 0;
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, y, imgWidth, Math.min(imgHeight, pageHeight));
+      }
+
+      const safeNumber = (window.CV.proposalNumber || "proposal").replace(/[^a-z0-9-_]/gi, "-");
+      pdf.save(safeNumber + ".pdf");
+      setText("cv_engine_status", "Ready");
+    } catch (error) {
+      console.error("PDF export failed", error);
+      alert("PDF export failed. Try again after the images finish loading.");
+      setText("cv_engine_status", "PDF failed");
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Download Proposal PDF";
+      }
+    }
   }
 
   function createProposalNumber() {
@@ -312,6 +365,9 @@
 
     const pricingNext = document.getElementById("cv_pricing_next");
     if (pricingNext) pricingNext.addEventListener("click", savePricingStep);
+
+    const downloadPDF = document.getElementById("cv_download_pdf");
+    if (downloadPDF) downloadPDF.addEventListener("click", downloadProposalPDF);
 
     if (hasStoredData) {
       renderDesignReview();
