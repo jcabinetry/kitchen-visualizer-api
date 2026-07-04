@@ -1545,20 +1545,6 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     doc.save((clientName && clientName !== "-" ? clientName.replace(/[^a-z0-9-_]+/gi, "-").replace(/-+/g, "-") + "-" : "") + "kitchen-design-packet.pdf");
   }
 
-
-  function getClientInfoFromModal() {
-    return {
-      name: (document.getElementById("jcr_client_name") || {}).value || "",
-      phone: (document.getElementById("jcr_client_phone") || {}).value || "",
-      email: (document.getElementById("jcr_client_email") || {}).value || "",
-      address: (document.getElementById("jcr_project_address") || {}).value || "",
-      proposalNumber: (document.getElementById("jcr_proposal_number") || {}).value || "",
-      projectTotal: (document.getElementById("jcr_project_total") || {}).value || "",
-      salesperson: (document.getElementById("jcr_salesperson") || {}).value || "",
-      notes: (document.getElementById("jcr_project_notes") || {}).value || ""
-    };
-  }
-
   function openClientModal() {
     if (!uploadedImageData || !beforeImg.src || !afterImg.src) {
       status.innerText = "Generate a preview before downloading the design packet.";
