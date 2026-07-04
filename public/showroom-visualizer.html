@@ -1606,14 +1606,13 @@ if (createProposalBtn) {
       pricing: {
         projectTotal: clientInfo.projectTotal || "",
         notes: clientInfo.notes || ""
-      },
-      images: {
-        beforeImage: beforeImg ? beforeImg.src : "",
-        afterImage: afterImg ? afterImg.src : ""
-      },
-      design: getDesignDetails(afterImg ? afterImg.src : "")
-    };
-
+},
+images: {
+  beforeImage: afterImg ? afterImg.src : "",
+  afterImage: beforeImg ? beforeImg.src : ""
+},
+design: getDesignDetails(beforeImg ? beforeImg.src : "")
+};
     sessionStorage.setItem("cv_proposal_data", JSON.stringify(proposalData));
 
     closeClientModal();
