@@ -47,7 +47,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: "This company is inactive." });
     }
 
-    const kpmCopyEmail = process.env.LEAD_COPY_EMAIL || "dusty@jcabinetry.com";
+    const kpmCopyEmail = process.env.LEAD_COPY_EMAIL || "cabinetvisualizer@gmail.com";
     const companyEmail = company.email || company.contactEmail || company.branding?.email || company.branding?.contactEmail;
     const recipients = uniqueEmails([companyEmail, kpmCopyEmail]);
 
