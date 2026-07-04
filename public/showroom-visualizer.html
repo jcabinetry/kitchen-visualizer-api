@@ -668,6 +668,10 @@ const KV_COMPANY = {
         <label for="jcr_project_address">Project Address</label>
         <input id="jcr_project_address" type="text" placeholder="Project address">
       </div>
+      <div class="jcr-client-field">
+  <label for="jcr_project_total">Project Total</label>
+  <input id="jcr_project_total" type="text" placeholder="$12,500">
+</div>
       <div class="jcr-client-field full">
         <label for="jcr_project_notes">Project Notes</label>
         <textarea id="jcr_project_notes" placeholder="Notes, preferences, timeline, next steps..."></textarea>
@@ -1371,6 +1375,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     const clientPhone = clientInfo.phone || "-";
     const clientEmail = clientInfo.email || "-";
     const projectAddress = clientInfo.address || "-";
+    const projectTotal = clientInfo.projectTotal || "-";
     const salesperson = clientInfo.salesperson || "-";
     const projectNotes = clientInfo.notes || "-";
 
@@ -1429,8 +1434,18 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     y += 16;
     doc.text("Project Address: " + projectAddress, margin, y, { maxWidth: pageWidth - margin * 2 });
 
-    y += 16;
+        y += 16;
     doc.text("Prepared By: " + salesperson, margin, y);
+
+    y += 16;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(22, 101, 52);
+    doc.text("Project Total: " + projectTotal, margin, y);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(55, 65, 81);
 
     if (projectNotes && projectNotes !== "-") {
       y += 16;
@@ -1533,6 +1548,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       phone: (document.getElementById("jcr_client_phone") || {}).value || "",
       email: (document.getElementById("jcr_client_email") || {}).value || "",
       address: (document.getElementById("jcr_project_address") || {}).value || "",
+      projectTotal: (document.getElementById("jcr_project_total") || {}).value || "",
       salesperson: (document.getElementById("jcr_salesperson") || {}).value || "",
       notes: (document.getElementById("jcr_project_notes") || {}).value || ""
     };
