@@ -340,16 +340,149 @@
     }));
   }
 
+  function getPdfExportStyles() {
+    return `
+      <style>
+        #cv_pdf_export_render_area .cv-proposal-preview-stack {
+          display: block;
+          gap: 0;
+          background: #ffffff;
+        }
+
+        #cv_pdf_export_render_area .cv-proposal-page {
+          width: 816px;
+          min-height: 1056px;
+          margin: 0;
+          padding: 54px;
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
+          overflow: hidden;
+          page-break-after: always;
+          background: #ffffff;
+        }
+
+        #cv_pdf_export_render_area .cv-proposal-page + .cv-proposal-page {
+          margin-top: 0;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-page {
+          position: relative;
+          border-top: none;
+          gap: 24px;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-page::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          height: 18px;
+          background: var(--cv-primary);
+        }
+
+        #cv_pdf_export_render_area .cv-cover-brand-row {
+          padding-top: 18px;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-logo,
+        #cv_pdf_export_render_area .cv-cover-logo-placeholder {
+          width: 96px;
+          height: 96px;
+          border-radius: 0;
+          border: none;
+          padding: 0;
+          background: transparent;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-company {
+          font-size: 34px;
+          letter-spacing: -0.04em;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-center {
+          text-align: left;
+          padding: 18px 0 0;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-label,
+        #cv_pdf_export_render_area .cv-page-kicker {
+          color: var(--cv-primary);
+          font-size: 12px;
+          font-weight: 950;
+          letter-spacing: .16em;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-center h1 {
+          font-size: 64px;
+          line-height: .95;
+          margin: 14px 0 10px;
+          letter-spacing: -0.07em;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-hero {
+          min-height: 430px;
+          border-radius: 0;
+          border: none;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-hero img {
+          min-height: 430px;
+          object-fit: cover;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-footer-grid,
+        #cv_pdf_export_render_area .cv-selections-grid,
+        #cv_pdf_export_render_area .cv-investment-grid {
+          gap: 12px;
+        }
+
+        #cv_pdf_export_render_area .cv-cover-footer-grid div,
+        #cv_pdf_export_render_area .cv-selection-card,
+        #cv_pdf_export_render_area .cv-selection-note,
+        #cv_pdf_export_render_area .cv-investment-section,
+        #cv_pdf_export_render_area .cv-selections-intro {
+          border-radius: 0;
+          box-shadow: none;
+          background: #ffffff;
+          border: 1px solid #d9dee7;
+        }
+
+        #cv_pdf_export_render_area .cv-selection-icon {
+          border-radius: 0;
+        }
+
+        #cv_pdf_export_render_area .cv-page-header {
+          padding-bottom: 18px;
+          margin-bottom: 24px;
+          border-bottom: 2px solid var(--cv-primary);
+        }
+
+        #cv_pdf_export_render_area .cv-page-header h2,
+        #cv_pdf_export_render_area .cv-investment-section h2 {
+          font-size: 40px;
+          line-height: 1;
+          letter-spacing: -0.06em;
+        }
+
+        #cv_pdf_export_render_area img {
+          box-shadow: none !important;
+        }
+      </style>
+    `;
+  }
+
   function createPdfExportContainer() {
     const wrapper = document.createElement("div");
     wrapper.id = "cv_pdf_export_render_area";
     wrapper.style.position = "fixed";
     wrapper.style.left = "-10000px";
     wrapper.style.top = "0";
-    wrapper.style.width = "900px";
+    wrapper.style.width = "816px";
     wrapper.style.background = "#ffffff";
     wrapper.style.zIndex = "-1";
-    wrapper.innerHTML = '<div class="cv-proposal-preview-stack">' + buildProposalPagesHTML() + '</div>';
+    wrapper.innerHTML = getPdfExportStyles() + '<div class="cv-proposal-preview-stack">' + buildProposalPagesHTML() + '</div>';
     document.body.appendChild(wrapper);
     return wrapper;
   }
