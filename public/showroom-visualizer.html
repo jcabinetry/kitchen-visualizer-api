@@ -1584,50 +1584,24 @@ function closeClientModal() {
     link.click();
   });
 
-  packetBtn.addEventListener("click", function() {
-    openClientModal();
-  });
+packetBtn.addEventListener("click", function() {
+  const proposalData = {
+    companyKey: KV_COMPANY.companyKey || "",
+    customer: {},
+    pricing: {},
+    images: {
+      beforeImage: beforeImg ? beforeImg.src : "",
+      afterImage: afterImg ? afterImg.src : ""
+    },
+    design: getDesignDetails(afterImg ? afterImg.src : "")
+  };
 
-  if (clientCloseBtn) {
-    clientCloseBtn.addEventListener("click", function() {
-      closeClientModal();
-    });
-  }
+  sessionStorage.setItem("cv_proposal_data", JSON.stringify(proposalData));
 
-  if (clientSkipBtn) {
-    clientSkipBtn.addEventListener("click", function() {
-      closeClientModal();
-      downloadDesignPacket({});
-    });
-  }
-
-if (createProposalBtn) {
-  createProposalBtn.addEventListener("click", function() {
-    const clientInfo = getClientInfoFromModal();
-
-    const proposalData = {
-      companyKey: KV_COMPANY.companyKey || "",
-      customer: clientInfo,
-      pricing: {
-        projectTotal: clientInfo.projectTotal || "",
-        notes: clientInfo.notes || ""
-      },
-      images: {
-        beforeImage: beforeImg ? beforeImg.src : "",
-        afterImage: afterImg ? afterImg.src : ""
-      },
-      design: getDesignDetails(afterImg ? afterImg.src : "")
-    };
-
-    sessionStorage.setItem("cv_proposal_data", JSON.stringify(proposalData));
-
-    closeClientModal();
-
-    window.location.href =
-      "/proposal/proposal-engine.html?companyKey=" +
-      encodeURIComponent(KV_COMPANY.companyKey || "");
-  });
-}
+  window.location.href =
+    "/proposal/proposal-engine.html?companyKey=" +
+    encodeURIComponent(KV_COMPANY.companyKey || "");
+});
 
   if (clientModal) {
     clientModal.addEventListener("click", function(e) {
