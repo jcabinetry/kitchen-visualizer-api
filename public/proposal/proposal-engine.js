@@ -256,10 +256,7 @@
     };
   }
 
-  function renderProposalPreview() {
-    const container = document.getElementById("cv_proposal_preview_pages");
-    if (!container) return;
-
+  function buildProposalPagesHTML() {
     const data = getProposalData();
     let html = "";
 
@@ -273,27 +270,49 @@
       html += window.CVProposalPages.selectionsPage(data);
     }
 
-    container.innerHTML = html || '<div class="cv-empty-preview">Proposal page components not loaded.</div>';
+    return html;
+  }
+
+  function renderProposalPreview() {
+    const container = document.getElementById("cv_proposal_preview_pages");
+    if (!container) return;
+    container.innerHTML = buildProposalPagesHTML() || '<div class="cv-empty-preview">Proposal page components not loaded.</div>';
+  }
+
+  function waitForImages(container) {
+    const images = Array.from(container.querySelectorAll("img"));
+    return Promise.all(images.map(function (img) {
+      if (img.complete) return Promise.resolve();
+      return new Promise(function (resolve) {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+  }
+
+  function createPdfExportContainer() {
+    const wrapper = document.createElement("div");
+    wrapper.id = "cv_pdf_export_render_area";
+    wrapper.style.position = "fixed";
+    wrapper.style.left = "-10000px";
+    wrapper.style.top = "0";
+    wrapper.style.width = "900px";
+    wrapper.style.background = "#ffffff";
+    wrapper.style.zIndex = "-1";
+    wrapper.innerHTML = '<div class="cv-proposal-preview-stack">' + buildProposalPagesHTML() + '</div>';
+    document.body.appendChild(wrapper);
+    return wrapper;
   }
 
   async function downloadProposalPDF() {
     const button = document.getElementById("cv_download_pdf");
-    const source = document.getElementById("cv_proposal_preview_pages");
-
-    if (!source || !source.children.length) {
-      renderProposalPreview();
-    }
-
-    const pages = Array.from(document.querySelectorAll("#cv_proposal_preview_pages .cv-proposal-page"));
-    if (!pages.length) {
-      alert("Please create the proposal preview first.");
-      return;
-    }
 
     if (!window.jspdf || !window.jspdf.jsPDF || !window.html2canvas) {
       alert("PDF tools are still loading. Please wait a few seconds and try again.");
       return;
     }
+
+    let renderArea = null;
 
     try {
       if (button) {
@@ -301,6 +320,16 @@
         button.textContent = "Creating PDF...";
       }
       setText("cv_engine_status", "Creating PDF...");
+      renderProposalPreview();
+
+      renderArea = createPdfExportContainer();
+      await waitForImages(renderArea);
+
+      const pages = Array.from(renderArea.querySelectorAll(".cv-proposal-page"));
+      if (!pages.length) {
+        alert("Please create the proposal preview first.");
+        return;
+      }
 
       const pdf = new window.jspdf.jsPDF("p", "pt", "letter");
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -310,7 +339,12 @@
         const canvas = await window.html2canvas(pages[i], {
           scale: 2,
           useCORS: true,
-          backgroundColor: "#ffffff"
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          imageTimeout: 15000,
+          ignoreElements: function (el) {
+            return el.tagName === "IMG" && el.src && el.src.indexOf("data:image") !== 0 && el.src.indexOf(window.location.origin) !== 0;
+          }
         });
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
@@ -327,9 +361,10 @@
       setText("cv_engine_status", "Ready");
     } catch (error) {
       console.error("PDF export failed", error);
-      alert("PDF export failed. Try again after the images finish loading.");
+      alert("PDF export failed. Please try again, or use your browser print option for now.");
       setText("cv_engine_status", "PDF failed");
     } finally {
+      if (renderArea && renderArea.parentNode) renderArea.parentNode.removeChild(renderArea);
       if (button) {
         button.disabled = false;
         button.textContent = "Download Proposal PDF";
