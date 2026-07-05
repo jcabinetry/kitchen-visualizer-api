@@ -32,6 +32,8 @@
     var deposit = document.getElementById("cv_project_deposit");
     var customerPhone = document.getElementById("cv_customer_phone");
 
+    if (deposit) deposit.placeholder = "Deposit";
+
     if (grid && !document.getElementById("cv_project_total_pricing")) {
       var field = document.createElement("div");
       field.className = "cv-field";
@@ -39,13 +41,14 @@
       label.textContent = "Project Total";
       var input = document.createElement("input");
       input.id = "cv_project_total_pricing";
-      input.placeholder = "$18,450";
+      input.placeholder = "Project total";
       field.appendChild(label);
       field.appendChild(input);
       grid.insertBefore(field, grid.firstChild);
     }
 
     var pricingTotal = document.getElementById("cv_project_total_pricing");
+    if (pricingTotal) pricingTotal.placeholder = "Project total";
 
     function sync(source) {
       var formatted = money(source && source.value);
