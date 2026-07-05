@@ -3,15 +3,143 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cabinet Visualizer V2 Test</title>
+  <title>Cabinet Visualizer Premium V2 Test</title>
   <style>
     body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f8fafc;font-family:Arial,sans-serif;color:#111827}
     .box{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:28px;box-shadow:0 18px 45px rgba(15,23,42,.10);max-width:560px;text-align:center}
   </style>
 </head>
 <body>
-  <div class="box">Loading showroom visualizer V2 test...</div>
+  <div class="box">Loading premium showroom visualizer V2...</div>
+
   <script>
+    function injectV2Layout(html){
+      const v2Css = `
+<style id="cv-v2-style">
+:root{--kpm-blue:#0b4f9c;}
+.cv-app{max-width:1800px;margin:40px auto;padding:28px;display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:24px;background:linear-gradient(180deg,var(--kv-card,#ffffff),var(--kv-background,#f8fafc));border-radius:28px;font-family:Arial,sans-serif;box-shadow:0 30px 90px rgba(15,23,42,.12);border:1px solid #e5e7eb;}
+.cv-main{min-width:0;}
+.cv-sidebar,.cv-summary{background:rgba(255,255,255,.94);border:1px solid #e5e7eb;border-radius:28px;box-shadow:0 24px 70px rgba(15,23,42,.10);backdrop-filter:blur(10px);}
+.cv-sidebar{padding:22px;position:sticky;top:28px;height:calc(100vh - 56px);display:flex;flex-direction:column;overflow:hidden;}
+.cv-side-brand{padding:20px;border-radius:24px;background:radial-gradient(circle at top left,rgba(255,255,255,.24),transparent 40%),linear-gradient(135deg,var(--kv-primary,#1f2937),var(--kv-accent,#2563eb));color:#fff;margin-bottom:22px;box-shadow:0 18px 44px rgba(37,99,235,.22);}
+.cv-side-logo{width:78px;height:78px;border-radius:22px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:14px;overflow:hidden;}
+.cv-side-logo img{max-width:100%;max-height:100%;object-fit:contain;border-radius:14px;}
+.cv-side-brand h2{margin:0;font-size:22px;line-height:1.1;letter-spacing:-.03em;}
+.cv-side-brand p{margin:7px 0 0;font-size:14px;opacity:.86;line-height:1.4;}
+.cv-side-contact{display:grid;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.22);font-size:13px;font-weight:800;opacity:.94;}
+.cv-steps{display:grid;gap:10px;}
+.cv-step{width:100%;border:1px solid #e5e7eb;background:#fff;border-radius:18px;padding:15px;text-align:left;display:flex;align-items:center;gap:12px;}
+.cv-step-num{width:34px;height:34px;border-radius:50%;background:#eef2ff;color:var(--kv-primary,#1f2937);display:flex;align-items:center;justify-content:center;font-weight:900;flex:0 0 auto;}
+.cv-step strong{display:block;font-size:15px;color:#111827;}
+.cv-step span{display:block;font-size:12px;color:#64748b;margin-top:2px;}
+.cv-powered{margin-top:auto;margin-left:-22px;margin-right:-22px;margin-bottom:-22px;padding:12px 16px 14px;border-top:1px solid rgba(15,23,42,.08);background:linear-gradient(180deg,rgba(255,255,255,.25),rgba(255,255,255,.72));text-align:center;color:#94a3b8;font-size:10px;line-height:1.15;}
+.cv-powered .kpm{width:26px;height:26px;border-radius:50%;background:var(--kpm-blue);color:white;display:flex;align-items:center;justify-content:center;margin:4px auto 3px;font-size:8px;font-weight:950;box-shadow:0 6px 14px rgba(11,79,156,.22);}
+.cv-powered strong{display:block;color:var(--kpm-blue);font-size:12px;line-height:1.05;margin:0;font-weight:900;}
+.cv-summary{padding:22px;position:sticky;top:28px;height:fit-content;}
+.cv-summary-brand{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.cv-summary-logo{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,var(--kv-primary,#1f2937),var(--kv-accent,#2563eb));display:flex;align-items:center;justify-content:center;color:white;font-size:24px;overflow:hidden;flex:0 0 auto;}
+.cv-summary-logo img{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px;}
+.cv-summary h3{margin:0 0 6px;font-size:24px;letter-spacing:-.04em;color:#111827;}
+.cv-summary p{margin:3px 0 0;color:#64748b;font-size:14px;}
+.cv-preview-box{border-radius:24px;min-height:230px;background:linear-gradient(135deg,#111827,#374151);display:flex;align-items:center;justify-content:center;color:white;font-size:48px;box-shadow:0 26px 70px rgba(15,23,42,.28);margin-bottom:18px;overflow:hidden;}
+.cv-preview-box.has-image{padding:0;align-items:stretch;justify-content:stretch;}
+.cv-preview-box.has-image img{width:100%;height:230px;object-fit:cover;display:block;}
+.cv-summary-list{display:grid;gap:12px;margin-bottom:18px;}
+.cv-summary-item{display:flex;justify-content:space-between;gap:12px;border:1px solid #e5e7eb;background:linear-gradient(180deg,#fff,var(--kv-background,#f8fafc));border-radius:16px;padding:13px;}
+.cv-summary-item span{color:#64748b;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;}
+.cv-summary-item strong{text-align:right;font-size:14px;color:#111827;}
+.cv-cta-box{margin-top:14px;padding:14px;border-radius:16px;background:linear-gradient(180deg,#fff,var(--kv-background,#f8fafc));border:1px solid #e5e7eb;font-size:13px;color:#64748b;line-height:1.45;text-align:center;}
+.cv-cta-box strong{display:block;color:var(--kv-primary,#1f2937);margin-bottom:4px;}
+@media(max-width:1150px){.cv-app{grid-template-columns:260px 1fr}.cv-summary{grid-column:1/-1;position:static}}
+@media(max-width:800px){body{display:block}.cv-app{display:block;margin:0;padding:0;max-width:560px;border-radius:0;box-shadow:none;border:none}.cv-sidebar{position:sticky;top:0;z-index:20;height:auto;border-radius:0 0 30px 30px;padding:18px 16px 16px;background:linear-gradient(135deg,var(--kv-primary,#1f2937),var(--kv-accent,#2563eb));color:white}.cv-side-brand{background:transparent;box-shadow:none;padding:0;margin:0;display:flex;gap:12px;align-items:center}.cv-side-logo{width:58px;height:58px;border-radius:18px;margin:0}.cv-side-brand h2{font-size:20px}.cv-side-contact,.cv-steps,.cv-powered,.cv-summary{display:none}.cv-main{padding:14px}.kv-wrap{margin:0!important;padding:0!important;border-radius:0!important;box-shadow:none!important;border:none!important;background:transparent!important}.jcr-btn-primary{position:sticky;bottom:12px;z-index:9999;width:100%!important}}
+</style>`;
+
+      const sidebar = `
+<div class="cv-app">
+  <aside class="cv-sidebar">
+    <div class="cv-side-brand">
+      <div class="cv-side-logo" id="cvSideLogo">🏠</div>
+      <div>
+        <h2 id="cvSideCompany">Customer Company</h2>
+        <p>Branded Kitchen Design Studio</p>
+        <div class="cv-side-contact" id="cvSideContact"></div>
+      </div>
+    </div>
+    <div class="cv-steps">
+      <div class="cv-step"><div class="cv-step-num">1</div><div><strong>Upload Photo</strong><span>Start with the kitchen</span></div></div>
+      <div class="cv-step"><div class="cv-step-num">2</div><div><strong>Cabinet Colors</strong><span>Upper and base colors</span></div></div>
+      <div class="cv-step"><div class="cv-step-num">3</div><div><strong>Door & Hardware</strong><span>Style, hardware, upper options</span></div></div>
+      <div class="cv-step"><div class="cv-step-num">4</div><div><strong>Materials</strong><span>Tops, backsplash, floors</span></div></div>
+      <div class="cv-step"><div class="cv-step-num">5</div><div><strong>Generate</strong><span>Create preview</span></div></div>
+    </div>
+    <div class="cv-powered"><div>Powered by</div><div class="kpm">KPM</div><strong>Cabinet Visualizer</strong><div>by KPM Technology</div></div>
+  </aside>
+  <main class="cv-main">
+`;
+
+      const summary = `
+  </main>
+  <aside class="cv-summary">
+    <div class="cv-summary-brand">
+      <div class="cv-summary-logo" id="cvSummaryLogo">🏠</div>
+      <div><h3>Your Design</h3><p id="cvSummaryCompany">For Customer Company</p></div>
+    </div>
+    <div id="cvSidebarPreview" class="cv-preview-box">🖼️</div>
+    <div class="cv-summary-list">
+      <div class="cv-summary-item"><span>Photo</span><strong id="cvPhotoStatus">Not uploaded</strong></div>
+      <div class="cv-summary-item"><span>Upper</span><strong id="cvUpperSummary">White</strong></div>
+      <div class="cv-summary-item"><span>Base</span><strong id="cvBaseSummary">Same as Main</strong></div>
+      <div class="cv-summary-item"><span>Doors</span><strong id="cvDoorSummary">Shaker</strong></div>
+      <div class="cv-summary-item"><span>Hardware</span><strong id="cvHardwareSummary">Matte Black</strong></div>
+      <div class="cv-summary-item"><span>Countertops</span><strong id="cvCounterSummary">Keep Existing</strong></div>
+      <div class="cv-summary-item"><span>Backsplash</span><strong id="cvBacksplashSummary">Keep Existing</strong></div>
+      <div class="cv-summary-item"><span>Flooring</span><strong id="cvFloorSummary">Keep Existing</strong></div>
+    </div>
+    <div class="cv-cta-box"><strong id="cvCtaCompany">Customer Company</strong><span id="cvCtaText">Ready for an estimate?</span></div>
+  </aside>
+</div>
+`;
+
+      html = html.replace('</style>', '</style>' + v2Css);
+      html = html.replace(/<div class="kv-wrap"([^>]*)>/, sidebar + '<div class="kv-wrap"$1>');
+      html = html.replace(/<script>\s*\(async function \(\) \{/, summary + '\n<script>\n(async function () {');
+      html += `
+<script id="cv-v2-enhance">
+(function(){
+  function text(id,value){var el=document.getElementById(id);if(el)el.textContent=value;}
+  function htmlSet(id,value){var el=document.getElementById(id);if(el)el.innerHTML=value;}
+  function selectedText(id,fallback){var el=document.getElementById(id);return el&&el.options&&el.selectedIndex>=0?el.options[el.selectedIndex].text:fallback;}
+  function updateSummaries(){
+    text('cvUpperSummary',selectedText('jcr_color','White'));
+    text('cvBaseSummary',selectedText('jcr_island','Same as Main')||'Same as Main');
+    text('cvHardwareSummary',selectedText('jcr_hardware','Matte Black'));
+    text('cvCounterSummary',selectedText('jcr_countertop','Keep Existing')||'Keep Existing');
+    text('cvBacksplashSummary',selectedText('jcr_backsplash','Keep Existing')||'Keep Existing');
+    text('cvFloorSummary',selectedText('jcr_flooring','Keep Existing')||'Keep Existing');
+    var style=document.getElementById('jcr_style');
+    if(style){text('cvDoorSummary',(style.value||'shaker').replace(' cabinet doors','').replace(/\b\w/g,function(c){return c.toUpperCase()}));}
+  }
+  function enhance(){
+    if(window.KV_COMPANY){
+      var name=KV_COMPANY.companyName||'Customer Company';
+      text('cvSideCompany',name);text('cvSummaryCompany','For '+name);text('cvCtaCompany',name);
+      text('cvCtaText',KV_COMPANY.phone?'Call '+KV_COMPANY.phone+' when you are ready for an estimate.':'Ready for an estimate?');
+      htmlSet('cvSideContact','<div>📞 '+(KV_COMPANY.phone||'')+'</div><div>🌐 '+((KV_COMPANY.websiteUrl||KV_COMPANY.estimateUrl||'').replace(/^https?:\\/\\//,''))+'</div>');
+      if(KV_COMPANY.logoUrl){
+        htmlSet('cvSideLogo','<img src="'+KV_COMPANY.logoUrl+'" alt="Company Logo">');
+        htmlSet('cvSummaryLogo','<img src="'+KV_COMPANY.logoUrl+'" alt="Company Logo">');
+      }
+    }
+    updateSummaries();
+  }
+  setTimeout(enhance,800);setTimeout(enhance,1800);
+  document.addEventListener('change',function(e){updateSummaries();if(e.target&&e.target.id==='jcr_photo'&&e.target.files&&e.target.files[0]){var r=new FileReader();r.onload=function(ev){var box=document.getElementById('cvSidebarPreview');if(box){box.classList.add('has-image');box.innerHTML='<img src="'+ev.target.result+'" alt="Uploaded kitchen photo">';}text('cvPhotoStatus','Uploaded');};r.readAsDataURL(e.target.files[0]);}});
+  document.addEventListener('click',function(){setTimeout(updateSummaries,60);});
+})();
+</script>`;
+      return html;
+    }
+
     fetch("https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/main/public/showroom-visualizer.html?v=" + Date.now(), { cache: "no-store" })
       .then(function(response){
         if(!response.ok) throw new Error("Could not load showroom file");
@@ -19,7 +147,7 @@
       })
       .then(function(html){
         document.open();
-        document.write(html);
+        document.write(injectV2Layout(html));
         document.close();
       })
       .catch(function(error){
