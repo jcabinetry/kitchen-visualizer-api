@@ -119,13 +119,26 @@
   <script src="pages/selections-page.js"></script>
   <script src="proposal-engine.js"></script>
   <script>
-    document.addEventListener("click", function(e) {
-      const stepClick = e.target.closest(".cv-step, #cv_customer_next, #cv_pricing_next, .cv-actions .cv-btn");
-      if (!stepClick || stepClick.id === "cv_download_pdf") return;
-      setTimeout(function() {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 50);
-    });
+    (function() {
+      function forceProposalTop() {
+        var main = document.querySelector('.cv-main');
+        var topbar = document.querySelector('.cv-topbar');
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        if (main && typeof main.scrollTo === 'function') main.scrollTo(0, 0);
+        if (topbar) topbar.scrollIntoView({ block: 'start' });
+      }
+
+      document.addEventListener('click', function(e) {
+        const stepClick = e.target.closest('.cv-step, #cv_customer_next, #cv_pricing_next, .cv-actions .cv-btn');
+        if (!stepClick || stepClick.id === 'cv_download_pdf') return;
+        forceProposalTop();
+        setTimeout(forceProposalTop, 50);
+        setTimeout(forceProposalTop, 150);
+        setTimeout(forceProposalTop, 350);
+      });
+    })();
   </script>
 </body>
 </html>
