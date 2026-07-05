@@ -130,6 +130,29 @@
         if (topbar) topbar.scrollIntoView({ block: 'start' });
       }
 
+      function safeFileName(value) {
+        return String(value || '')
+          .trim()
+          .replace(/[^a-z0-9\s-_]/gi, '')
+          .replace(/\s+/g, ' ')
+          .trim() || 'Customer';
+      }
+
+      function customerProposalFileName() {
+        var nameField = document.getElementById('cv_customer_name');
+        var customerName = safeFileName(nameField ? nameField.value : 'Customer');
+        return customerName + ' Cabinet Proposal.pdf';
+      }
+
+      function patchPdfSaveName() {
+        if (!window.jspdf || !window.jspdf.jsPDF || window.__cvPdfNamePatchApplied) return;
+        var originalSave = window.jspdf.jsPDF.API.save;
+        window.jspdf.jsPDF.API.save = function(fileName, options) {
+          return originalSave.call(this, customerProposalFileName(), options);
+        };
+        window.__cvPdfNamePatchApplied = true;
+      }
+
       document.addEventListener('click', function(e) {
         const stepClick = e.target.closest('.cv-step, #cv_customer_next, #cv_pricing_next, .cv-actions .cv-btn');
         if (!stepClick || stepClick.id === 'cv_download_pdf') return;
@@ -138,6 +161,13 @@
         setTimeout(forceProposalTop, 150);
         setTimeout(forceProposalTop, 350);
       });
+
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'cv_download_pdf') patchPdfSaveName();
+      }, true);
+
+      setTimeout(patchPdfSaveName, 500);
+      setTimeout(patchPdfSaveName, 1500);
     })();
   </script>
 </body>
