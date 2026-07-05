@@ -8,18 +8,30 @@ function setNoStore(res) {
 function publicCompany(customer) {
   const branding = customer.branding || {};
 
-  return {
-    companyName: customer.companyName || customer.companyKey,
-    companyKey: customer.companyKey,
-    monthlyLimit: customer.monthlyLimit,
-    phone: customer.phone || branding.phone || "",
-    email: customer.email || branding.email || branding.contactEmail || "",
-    city: customer.city || branding.city || "",
-    estimateUrl: customer.estimateUrl || branding.estimateUrl || branding.websiteUrl || "",
-    logoUrl: customer.logoUrl || branding.logoUrl || "",
+return {
+  companyName: customer.companyName || customer.companyKey,
+  companyKey: customer.companyKey,
+  monthlyLimit: customer.monthlyLimit,
+  phone: customer.phone || branding.phone || "",
+  email: customer.email || branding.email || branding.contactEmail || "",
+  city: customer.city || branding.city || "",
+  estimateUrl: customer.estimateUrl || branding.estimateUrl || branding.websiteUrl || "",
+  logoUrl: customer.logoUrl || branding.logoUrl || "",
+  primaryColor: customer.primaryColor || branding.primaryColor || "#1f2937",
+  secondaryColor: customer.secondaryColor || branding.secondaryColor || "#64748b",
+  accentColor: customer.accentColor || branding.accentColor || "#2563eb",
+  backgroundColor: customer.backgroundColor || branding.backgroundColor || "#f8fafc",
+  cardColor: customer.cardColor || branding.cardColor || "#ffffff",
+  branding: {
+    ...branding,
     primaryColor: customer.primaryColor || branding.primaryColor || "#1f2937",
-    ctaText: customer.ctaText || branding.ctaText || "Request an Estimate"
-  };
+    secondaryColor: customer.secondaryColor || branding.secondaryColor || "#64748b",
+    accentColor: customer.accentColor || branding.accentColor || "#2563eb",
+    backgroundColor: customer.backgroundColor || branding.backgroundColor || "#f8fafc",
+    cardColor: customer.cardColor || branding.cardColor || "#ffffff"
+  },
+  ctaText: customer.ctaText || branding.ctaText || "Request an Estimate"
+};
 }
 
 export default async function handler(req, res) {
