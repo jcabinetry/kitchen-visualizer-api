@@ -32,6 +32,13 @@
     var deposit = document.getElementById("cv_project_deposit");
     var customerPhone = document.getElementById("cv_customer_phone");
 
+    if (!customerTotal) {
+      customerTotal = document.createElement("input");
+      customerTotal.type = "hidden";
+      customerTotal.id = "cv_project_total";
+      document.body.appendChild(customerTotal);
+    }
+
     if (deposit) deposit.placeholder = "Deposit";
 
     if (grid && !document.getElementById("cv_project_total_pricing")) {
@@ -71,6 +78,7 @@
 
     setTimeout(function () {
       if (customerTotal && customerTotal.value) sync(customerTotal);
+      if (pricingTotal && pricingTotal.value) sync(pricingTotal);
       if (deposit && deposit.value) formatDeposit();
       if (customerPhone && customerPhone.value) formatPhone();
 
