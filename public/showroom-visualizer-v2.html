@@ -5,45 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cabinet Visualizer V2</title>
 <style>
-*{box-sizing:border-box}
-:root{--kpm-blue:#0b4f9c;--cv-primary:#1f2937;--cv-accent:#2563eb;--cv-bg:#f8fafc;--cv-border:#e5e7eb;--cv-muted:#64748b}
-body{margin:0;background:linear-gradient(180deg,#f8fafc,#eef2f7);font-family:Arial,sans-serif;color:#111827}
-.cv-app{min-height:100vh;display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:24px;padding:28px}
-.cv-sidebar,.cv-summary{background:rgba(255,255,255,.94);border:1px solid var(--cv-border);border-radius:28px;box-shadow:0 24px 70px rgba(15,23,42,.10)}
-.cv-sidebar{padding:22px;position:sticky;top:28px;height:calc(100vh - 56px);display:flex;flex-direction:column;overflow:hidden}
-.cv-brand{padding:20px;border-radius:24px;background:linear-gradient(135deg,var(--cv-primary),var(--cv-accent));color:white;margin-bottom:22px;box-shadow:0 18px 44px rgba(37,99,235,.22)}
-.cv-logo{width:78px;height:78px;border-radius:22px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:14px}
-.cv-brand h2{margin:0;font-size:22px;line-height:1.1;letter-spacing:-.03em}.cv-brand p{margin:7px 0 0;font-size:14px;opacity:.86;line-height:1.4}
-.cv-steps{display:grid;gap:10px}.cv-step{border:1px solid var(--cv-border);background:#fff;border-radius:18px;padding:15px;display:flex;gap:12px;align-items:center}.cv-num{width:34px;height:34px;border-radius:50%;background:#eef2ff;color:var(--cv-primary);display:flex;align-items:center;justify-content:center;font-weight:900}.cv-step strong{display:block;font-size:15px}.cv-step span{display:block;font-size:12px;color:var(--cv-muted);margin-top:2px}.cv-powered{margin-top:auto;margin-left:-22px;margin-right:-22px;margin-bottom:-22px;padding:12px 16px 14px;border-top:1px solid rgba(15,23,42,.08);background:linear-gradient(180deg,rgba(255,255,255,.25),rgba(255,255,255,.72));text-align:center;color:#94a3b8;font-size:10px;line-height:1.15}.kpm{width:26px;height:26px;border-radius:50%;background:var(--kpm-blue);color:white;display:flex;align-items:center;justify-content:center;margin:4px auto 3px;font-size:8px;font-weight:950}.cv-powered strong{display:block;color:var(--kpm-blue);font-size:12px;line-height:1.05;margin:0;font-weight:900}
-.cv-main{min-width:0;background:white;border:1px solid var(--cv-border);border-radius:28px;box-shadow:0 24px 70px rgba(15,23,42,.10);overflow:hidden}.cv-frame{width:100%;height:2300px;border:0;display:block;background:white}
-.cv-summary{padding:22px;position:sticky;top:28px;height:fit-content}.cv-summary h3{margin:0 0 6px;font-size:24px;letter-spacing:-.04em}.cv-summary p{margin:0 0 18px;color:var(--cv-muted);font-size:14px}.cv-preview{height:230px;border-radius:24px;background:linear-gradient(135deg,#111827,#374151);display:flex;align-items:center;justify-content:center;color:white;font-size:48px;box-shadow:0 26px 70px rgba(15,23,42,.28);margin-bottom:18px}.cv-item{display:flex;justify-content:space-between;gap:12px;border:1px solid var(--cv-border);background:linear-gradient(180deg,#fff,#f8fafc);border-radius:16px;padding:13px;margin-bottom:12px}.cv-item span{color:var(--cv-muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}.cv-item strong{text-align:right;font-size:14px}.cv-note{margin-top:14px;padding:14px;border-radius:16px;background:#f8fafc;border:1px solid var(--cv-border);font-size:13px;color:var(--cv-muted);line-height:1.45;text-align:center}
-@media(max-width:1150px){.cv-app{grid-template-columns:260px 1fr}.cv-summary{grid-column:1/-1;position:static}}
-@media(max-width:800px){.cv-app{display:block;padding:0}.cv-sidebar{position:sticky;top:0;z-index:10;height:auto;border-radius:0 0 30px 30px;padding:18px 16px 16px;background:linear-gradient(135deg,var(--cv-primary),var(--cv-accent));color:white}.cv-brand{background:transparent;box-shadow:none;padding:0;margin:0;display:flex;gap:12px;align-items:center}.cv-logo{width:58px;height:58px;border-radius:18px;margin:0}.cv-brand h2{font-size:20px}.cv-steps,.cv-powered,.cv-summary{display:none}.cv-main{border:none;border-radius:0;box-shadow:none}.cv-frame{height:2600px}}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f8fafc;font-family:Arial,sans-serif;color:#111827}.box{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:28px;box-shadow:0 18px 45px rgba(15,23,42,.10);max-width:560px;text-align:center}
 </style>
 </head>
 <body>
-<div class="cv-app">
-  <aside class="cv-sidebar">
-    <div class="cv-brand"><div class="cv-logo">🏠</div><div><h2>Kitchen Design Studio</h2><p>Premium showroom visualizer test</p></div></div>
-    <div class="cv-steps">
-      <div class="cv-step"><div class="cv-num">1</div><div><strong>Upload Photo</strong><span>Start with the kitchen</span></div></div>
-      <div class="cv-step"><div class="cv-num">2</div><div><strong>Cabinet Colors</strong><span>Upper and base colors</span></div></div>
-      <div class="cv-step"><div class="cv-num">3</div><div><strong>Door & Hardware</strong><span>Style and hardware</span></div></div>
-      <div class="cv-step"><div class="cv-num">4</div><div><strong>Materials</strong><span>Tops, backsplash, floors</span></div></div>
-      <div class="cv-step"><div class="cv-num">5</div><div><strong>Generate</strong><span>Create preview</span></div></div>
-    </div>
-    <div class="cv-powered"><div>Powered by</div><div class="kpm">KPM</div><strong>Cabinet Visualizer</strong><div>by KPM Technology</div></div>
-  </aside>
-  <main class="cv-main"><iframe class="cv-frame" src="/showroom-visualizer.html?companyKey=33333333"></iframe></main>
-  <aside class="cv-summary">
-    <h3>Your Design</h3><p>Live working visualizer is embedded in the center.</p>
-    <div class="cv-preview">🖼️</div>
-    <div class="cv-item"><span>Photo</span><strong>Use center app</strong></div>
-    <div class="cv-item"><span>Colors</span><strong>Use center app</strong></div>
-    <div class="cv-item"><span>Door Style</span><strong>Use center app</strong></div>
-    <div class="cv-item"><span>Materials</span><strong>Use center app</strong></div>
-    <div class="cv-note"><strong>Safe V2 test:</strong><br>This keeps all backend generation inside the original working visualizer.</div>
-  </aside>
-</div>
+<div class="box">Loading premium showroom visualizer V2...</div>
+<script>
+function buildV2(html){
+  var css = '<style id="cv-v2-style">' +
+  ':root{--kpm-blue:#0b4f9c;}' +
+  'body{background:linear-gradient(180deg,#f8fafc,#eef2f7)!important;}' +
+  '.cv-app{max-width:1800px;margin:28px auto;padding:28px;display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:24px;font-family:Arial,sans-serif;}' +
+  '.cv-main{min-width:0;}' +
+  '.cv-sidebar,.cv-summary{background:rgba(255,255,255,.94);border:1px solid #e5e7eb;border-radius:28px;box-shadow:0 24px 70px rgba(15,23,42,.10);}' +
+  '.cv-sidebar{padding:22px;position:sticky;top:28px;height:calc(100vh - 56px);display:flex;flex-direction:column;overflow:hidden;}' +
+  '.cv-brand{padding:20px;border-radius:24px;background:linear-gradient(135deg,var(--kv-primary,#1f2937),var(--kv-accent,#2563eb));color:white;margin-bottom:22px;box-shadow:0 18px 44px rgba(37,99,235,.22);}' +
+  '.cv-logo{width:78px;height:78px;border-radius:22px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:14px;overflow:hidden;}.cv-logo img{max-width:100%;max-height:100%;object-fit:contain;border-radius:14px;}' +
+  '.cv-brand h2{margin:0;font-size:22px;line-height:1.1;letter-spacing:-.03em}.cv-brand p{margin:7px 0 0;font-size:14px;opacity:.86;line-height:1.4}.cv-contact{display:grid;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.22);font-size:13px;font-weight:800;opacity:.94;}' +
+  '.cv-steps{display:grid;gap:10px}.cv-step{border:1px solid #e5e7eb;background:#fff;border-radius:18px;padding:15px;display:flex;gap:12px;align-items:center}.cv-num{width:34px;height:34px;border-radius:50%;background:#eef2ff;color:var(--kv-primary,#1f2937);display:flex;align-items:center;justify-content:center;font-weight:900;flex:0 0 auto}.cv-step strong{display:block;font-size:15px;color:#111827}.cv-step span{display:block;font-size:12px;color:#64748b;margin-top:2px}' +
+  '.cv-powered{margin-top:auto;margin-left:-22px;margin-right:-22px;margin-bottom:-22px;padding:12px 16px 14px;border-top:1px solid rgba(15,23,42,.08);background:linear-gradient(180deg,rgba(255,255,255,.25),rgba(255,255,255,.72));text-align:center;color:#94a3b8;font-size:10px;line-height:1.15}.cv-powered .kpm{width:26px;height:26px;border-radius:50%;background:var(--kpm-blue);color:white;display:flex;align-items:center;justify-content:center;margin:4px auto 3px;font-size:8px;font-weight:950}.cv-powered strong{display:block;color:var(--kpm-blue);font-size:12px;line-height:1.05;margin:0;font-weight:900}' +
+  '.cv-summary{padding:22px;position:sticky;top:28px;height:fit-content}.cv-summary h3{margin:0 0 6px;font-size:24px;letter-spacing:-.04em;color:#111827}.cv-summary p{margin:0 0 18px;color:#64748b;font-size:14px}.cv-preview{height:230px;border-radius:24px;background:linear-gradient(135deg,#111827,#374151);display:flex;align-items:center;justify-content:center;color:white;font-size:48px;box-shadow:0 26px 70px rgba(15,23,42,.28);margin-bottom:18px}.cv-item{display:flex;justify-content:space-between;gap:12px;border:1px solid #e5e7eb;background:linear-gradient(180deg,#fff,#f8fafc);border-radius:16px;padding:13px;margin-bottom:12px}.cv-item span{color:#64748b;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}.cv-item strong{text-align:right;font-size:14px;color:#111827}' +
+  '.cv-note{margin-top:14px;padding:14px;border-radius:16px;background:#f8fafc;border:1px solid #e5e7eb;font-size:13px;color:#64748b;line-height:1.45;text-align:center}' +
+  '.kv-wrap{margin:0!important;max-width:none!important;width:100%!important;}' +
+  '@media(max-width:1150px){.cv-app{grid-template-columns:260px 1fr}.cv-summary{grid-column:1/-1;position:static}}' +
+  '@media(max-width:800px){.cv-app{display:block;margin:0;padding:0}.cv-sidebar{position:sticky;top:0;z-index:10;height:auto;border-radius:0 0 30px 30px;padding:18px 16px 16px;background:linear-gradient(135deg,var(--kv-primary,#1f2937),var(--kv-accent,#2563eb));color:white}.cv-brand{background:transparent;box-shadow:none;padding:0;margin:0;display:flex;gap:12px;align-items:center}.cv-logo{width:58px;height:58px;border-radius:18px;margin:0}.cv-brand h2{font-size:20px}.cv-contact,.cv-steps,.cv-powered,.cv-summary{display:none}.cv-main{padding:14px}.kv-wrap{padding:0!important;border-radius:0!important;box-shadow:none!important;border:none!important;background:transparent!important}}' +
+  '</style>';
+
+  var side = '<div class="cv-app"><aside class="cv-sidebar"><div class="cv-brand"><div class="cv-logo" id="cv_logo_box">🏠</div><div><h2 id="cv_company_name">Kitchen Design Studio</h2><p>Premium showroom visualizer</p><div class="cv-contact" id="cv_contact"></div></div></div><div class="cv-steps"><div class="cv-step"><div class="cv-num">1</div><div><strong>Upload Photo</strong><span>Start with the kitchen</span></div></div><div class="cv-step"><div class="cv-num">2</div><div><strong>Cabinet Colors</strong><span>Upper and base colors</span></div></div><div class="cv-step"><div class="cv-num">3</div><div><strong>Door and Hardware</strong><span>Style and hardware</span></div></div><div class="cv-step"><div class="cv-num">4</div><div><strong>Materials</strong><span>Tops, backsplash, floors</span></div></div><div class="cv-step"><div class="cv-num">5</div><div><strong>Generate</strong><span>Create preview</span></div></div></div><div class="cv-powered"><div>Powered by</div><div class="kpm">KPM</div><strong>Cabinet Visualizer</strong><div>by KPM Technology</div></div></aside><main class="cv-main">';
+  var summary = '</main><aside class="cv-summary"><h3>Your Design</h3><p id="cv_summary_company">For Customer Company</p><div class="cv-preview">🖼️</div><div class="cv-item"><span>Photo</span><strong>Upload in form</strong></div><div class="cv-item"><span>Upper</span><strong>Use form</strong></div><div class="cv-item"><span>Base</span><strong>Use form</strong></div><div class="cv-item"><span>Door</span><strong>Use form</strong></div><div class="cv-item"><span>Materials</span><strong>Use form</strong></div><div class="cv-note"><strong>V2 test:</strong><br>Same backend and same form IDs. Only the layout wrapper changed.</div></aside></div>';
+  html = html.replace('</style>', '</style>' + css);
+  html = html.replace(/<div class="kv-wrap"([^>]*)>/, side + '<div class="kv-wrap"$1>');
+  var marker = '<scr' + 'ipt>\n(async function () {';
+  html = html.replace(marker, summary + marker);
+  return html;
+}
+
+fetch('/showroom-visualizer.html' + window.location.search, {cache:'no-store'})
+  .then(function(r){if(!r.ok)throw new Error('Could not load showroom file');return r.text();})
+  .then(function(html){document.open();document.write(buildV2(html));document.close();})
+  .catch(function(error){document.body.innerHTML='<div class="box"><h1>Visualizer loading error</h1><p>'+error.message+'</p></div>';});
+</script>
 </body>
 </html>
