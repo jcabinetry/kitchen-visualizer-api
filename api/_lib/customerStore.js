@@ -143,38 +143,48 @@ function normalizeCustomer(input = {}, existing = null) {
   const city = textValue(source.city, branding.city, existingSource?.city, existingBranding.city);
   const logoUrl = textValue(source.logoUrl, branding.logoUrl, existingSource?.logoUrl, existingBranding.logoUrl);
   const primaryColor = textValue(source.primaryColor, branding.primaryColor, existingSource?.primaryColor, existingBranding.primaryColor, "#1f2937");
+  const secondaryColor = textValue(source.secondaryColor, branding.secondaryColor, existingSource?.secondaryColor, existingBranding.secondaryColor, "#64748b");
+  const backgroundColor = textValue(source.backgroundColor, branding.backgroundColor, existingSource?.backgroundColor, existingBranding.backgroundColor, "#f8fafc");
+  const cardColor = textValue(source.cardColor, branding.cardColor, existingSource?.cardColor, existingBranding.cardColor, "#ffffff");
   const accentColor = textValue(source.accentColor, branding.accentColor, existingSource?.accentColor, existingBranding.accentColor, "#f59e0b");
   const websiteUrl = textValue(source.websiteUrl, source.website, branding.websiteUrl, branding.website, existingSource?.websiteUrl, existingSource?.website, existingBranding.websiteUrl, existingBranding.website);
   const estimateUrl = textValue(source.estimateUrl, branding.estimateUrl, existingSource?.estimateUrl, existingBranding.estimateUrl);
   const ctaText = textValue(source.ctaText, branding.ctaText, existingSource?.ctaText, existingBranding.ctaText, "Request an Estimate");
 
-  return {
-    companyKey,
-    companyName: textValue(source.companyName, existingSource?.companyName, companyKey),
-    status,
-    monthlyLimit: toPositiveInteger(source.monthlyLimit ?? existingSource?.monthlyLimit),
-    monthlyPrice: toMoneyNumber(source.monthlyPrice ?? source.price ?? source.subscriptionPrice ?? existingSource?.monthlyPrice ?? existingSource?.price ?? existingSource?.subscriptionPrice, 0),
-    plan: textValue(source.plan, existingSource?.plan),
-    phone,
-    email,
-    city,
-    websiteUrl,
-    estimateUrl,
+return {
+  companyKey,
+  companyName: textValue(source.companyName, existingSource?.companyName, companyKey),
+  status,
+  monthlyLimit: toPositiveInteger(source.monthlyLimit ?? existingSource?.monthlyLimit),
+  monthlyPrice: toMoneyNumber(source.monthlyPrice ?? source.price ?? source.subscriptionPrice ?? existingSource?.monthlyPrice ?? existingSource?.price ?? existingSource?.subscriptionPrice, 0),
+  plan: textValue(source.plan, existingSource?.plan),
+  phone,
+  email,
+  city,
+  websiteUrl,
+  estimateUrl,
+  logoUrl,
+  primaryColor,
+  secondaryColor,
+  accentColor,
+  backgroundColor,
+  cardColor,
+  ctaText,
+  branding: {
     logoUrl,
     primaryColor,
-    ctaText,
-    branding: {
-      logoUrl,
-      primaryColor,
-      accentColor,
-      websiteUrl,
-      estimateUrl,
-      contactEmail: email,
-      email,
-      phone,
-      city,
-      ctaText
-    },
+    secondaryColor,
+    accentColor,
+    backgroundColor,
+    cardColor,
+    websiteUrl,
+    estimateUrl,
+    contactEmail: email,
+    email,
+    phone,
+    city,
+    ctaText
+  },
     notes: String(source.notes ?? existingSource?.notes ?? "").trim(),
     createdAt: existingSource?.createdAt || now,
     updatedAt: now,
