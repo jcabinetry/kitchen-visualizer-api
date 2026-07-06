@@ -433,7 +433,92 @@ const KV_COMPANY = {
 .jcr-client-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
 .jcr-btn-light{padding:14px 22px;background:#f3f4f6;color:#111827;border:none;border-radius:14px;font-size:16px;font-weight:900;cursor:pointer;}
 @media(max-width:640px){.jcr-client-box{padding:20px;border-radius:20px;}.jcr-client-grid{grid-template-columns:1fr;}.jcr-client-actions{display:grid;grid-template-columns:1fr;}.jcr-client-actions button{width:100%;}}
+/* Bigger logo and branded step header */
+.cv-v2-logo{
+  width:96px!important;
+  height:96px!important;
+  border-radius:24px!important;
+}
 
+.cv-v2-logo img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  padding:6px!important;
+}
+
+.cv-v2-panel-brand{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:16px;
+  margin-bottom:20px;
+  border:1px solid #e5e7eb;
+  border-radius:20px;
+  background:#ffffff;
+}
+
+.cv-v2-panel-logo{
+  width:64px;
+  height:64px;
+  border-radius:18px;
+  background:#f8fafc;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  flex:0 0 auto;
+  border:1px solid #e5e7eb;
+}
+
+.cv-v2-panel-logo img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  padding:5px;
+}
+
+.cv-v2-panel-brand strong{
+  display:block;
+  font-size:20px;
+  line-height:1.1;
+  color:#111827;
+}
+
+.cv-v2-panel-brand span{
+  display:block;
+  margin-top:4px;
+  font-size:14px;
+  line-height:1.35;
+  color:#64748b;
+}
+
+@media(max-width:800px){
+  .cv-v2-logo{
+    width:70px!important;
+    height:70px!important;
+  }
+
+  .cv-v2-panel-brand{
+    padding:12px;
+    border-radius:18px;
+    margin-bottom:16px;
+  }
+
+  .cv-v2-panel-logo{
+    width:52px;
+    height:52px;
+    border-radius:15px;
+  }
+
+  .cv-v2-panel-brand strong{
+    font-size:17px;
+  }
+
+  .cv-v2-panel-brand span{
+    font-size:12px;
+  }
+}
 </style>
 
 <div class="kv-hero-card">
@@ -1707,7 +1792,12 @@ packetBtn.addEventListener("click", function() {
       const panel=document.createElement("section");
       panel.className="cv-v2-panel";
       panel.dataset.panel=id;
-      panel.innerHTML="<h2>"+title+"</h2><p class='cv-v2-panel-desc'>"+desc+"</p>";
+ panel.innerHTML=
+  "<div class='cv-v2-panel-brand'>"+
+    "<div class='cv-v2-panel-logo' data-panel-logo>KPM</div>"+
+    "<div><strong data-panel-company>Kitchen Design Studio</strong><span data-panel-phone></span></div>"+
+  "</div>"+
+  "<h2>"+title+"</h2><p class='cv-v2-panel-desc'>"+desc+"</p>";
       nodes.filter(Boolean).forEach(n=>panel.appendChild(n));
       return panel;
     }
@@ -1842,10 +1932,27 @@ packetBtn.addEventListener("click", function() {
       });
 
       setInterval(function(){
-        if(logo?.src){document.getElementById("cv_brand_logo").innerHTML="<img src='"+logo.src+"' alt='Company logo'>";}
-        if(title?.textContent)document.getElementById("cv_brand_name").textContent=title.textContent.replace(" Kitchen Cabinet Visualizer","");
-        if(phone?.textContent)document.getElementById("cv_brand_phone").textContent=phone.textContent;
-        updateShellSummary();
+ const companyName = title?.textContent ? title.textContent.replace(" Kitchen Cabinet Visualizer","") : "Kitchen Design Studio";
+const phoneText = phone?.textContent || "";
+
+if(logo?.src){
+  document.getElementById("cv_brand_logo").innerHTML="<img src='"+logo.src+"' alt='Company logo'>";
+  document.querySelectorAll("[data-panel-logo]").forEach(function(el){
+    el.innerHTML="<img src='"+logo.src+"' alt='Company logo'>";
+  });
+}
+
+document.getElementById("cv_brand_name").textContent = companyName;
+document.getElementById("cv_brand_phone").textContent = phoneText;
+
+document.querySelectorAll("[data-panel-company]").forEach(function(el){
+  el.textContent = companyName;
+});
+
+document.querySelectorAll("[data-panel-phone]").forEach(function(el){
+  el.textContent = phoneText;
+});
+updateShellSummary();
       },700);
 
       go(0);
