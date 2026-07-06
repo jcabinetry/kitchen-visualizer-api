@@ -11,6 +11,42 @@ const KV_COMPANY = {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
+/* Premium V2 sidebar fit fix */
+.cv-v2-sidebar{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+
+.cv-v2-steps{
+  display:grid;
+  gap:14px;
+}
+
+.cv-v2-step{
+  min-height:74px;
+  display:flex;
+  align-items:center;
+}
+
+@media(max-width:900px){
+  .cv-v2-sidebar{
+    position:relative!important;
+    top:auto!important;
+    border-radius:0 0 30px 30px;
+    padding-bottom:16px!important;
+  }
+
+  .cv-v2-steps{
+    gap:10px;
+  }
+
+  .cv-v2-step{
+    min-height:64px;
+    padding:14px 22px;
+  }
+}
 /* Premium V2 shell - layout only */
 .kv-wrap{max-width:1800px!important;padding:28px!important;}
 .cv-v2-shell{display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:24px;}
