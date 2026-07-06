@@ -773,6 +773,170 @@ const KV_COMPANY = {
     display:block!important;
   }
 }
+  /* Mobile mockup presentation pass */
+@media(max-width:800px){
+  .cv-v2-main{
+    padding:0 14px 24px!important;
+    background:#f8fafc!important;
+  }
+
+  .cv-v2-panel{
+    padding-top:12px!important;
+  }
+
+  .cv-v2-panel-brand{
+    display:none!important;
+  }
+
+  .cv-v2-panel h2{
+    font-size:26px!important;
+    line-height:1.05!important;
+    margin:0 0 8px!important;
+    letter-spacing:-.04em!important;
+  }
+
+  .cv-v2-panel-desc{
+    font-size:14px!important;
+    line-height:1.45!important;
+    margin:0 0 16px!important;
+    color:#6b7280!important;
+  }
+
+  .jcr-card{
+    background:transparent!important;
+    border:none!important;
+    box-shadow:none!important;
+    padding:0!important;
+    margin:0 0 16px!important;
+  }
+
+  .jcr-card > label:first-child{
+    display:block!important;
+    font-size:18px!important;
+    font-weight:950!important;
+    color:#111827!important;
+    margin:0 0 10px!important;
+    letter-spacing:-.03em!important;
+  }
+
+  .jcr-section-note{
+    font-size:13px!important;
+    color:#6b7280!important;
+    margin:0 0 12px!important;
+  }
+
+  .jcr-upload-box{
+    border-radius:28px!important;
+    padding:34px 18px!important;
+    background:linear-gradient(180deg,#fff,#f8fafc)!important;
+    border:2px dashed #cbd5e1!important;
+    box-shadow:none!important;
+  }
+
+  .jcr-upload-icon{
+    width:72px!important;
+    height:72px!important;
+    border-radius:24px!important;
+    font-size:34px!important;
+  }
+
+  .jcr-upload-title{
+    font-size:22px!important;
+  }
+
+  .jcr-swatch-grid,
+  .jcr-material-grid,
+  .jcr-door-grid{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+  }
+
+  .jcr-swatch,
+  .jcr-material,
+  .jcr-door-option{
+    position:relative!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:13px!important;
+    min-height:auto!important;
+    text-align:left!important;
+    padding:13px!important;
+    border-radius:20px!important;
+    background:white!important;
+    border:2px solid #e5e7eb!important;
+    box-shadow:0 8px 18px rgba(15,23,42,.06)!important;
+  }
+
+  .jcr-swatch.active,
+  .jcr-material.active,
+  .jcr-door-option.active{
+    border-color:var(--kv-primary,#2563eb)!important;
+    box-shadow:0 16px 34px color-mix(in srgb,var(--kv-primary,#2563eb) 14%,transparent)!important;
+  }
+
+  .jcr-dot{
+    width:42px!important;
+    height:42px!important;
+    border-radius:14px!important;
+    flex:0 0 42px!important;
+  }
+
+  .jcr-material-dot{
+    width:48px!important;
+    height:42px!important;
+    border-radius:14px!important;
+    flex:0 0 48px!important;
+  }
+
+  .jcr-swatch span,
+  .jcr-material span{
+    font-size:15px!important;
+    font-weight:900!important;
+    color:#111827!important;
+  }
+
+  .jcr-door-preview{
+    width:58px!important;
+    max-width:58px!important;
+    margin:0!important;
+    flex:0 0 58px!important;
+    border-radius:14px!important;
+  }
+
+  .jcr-door-name{
+    font-size:16px!important;
+    text-align:left!important;
+    margin:0!important;
+  }
+
+  .jcr-door-desc{
+    font-size:12px!important;
+    text-align:left!important;
+    margin:2px 0 0!important;
+  }
+
+  .jcr-door-option.active::after{
+    width:26px!important;
+    height:26px!important;
+    top:12px!important;
+    right:12px!important;
+    font-size:13px!important;
+  }
+
+  .jcr-ribbon{
+    display:none!important;
+  }
+
+  .jcr-card select{
+    background:white!important;
+    border-radius:20px!important;
+    padding:15px!important;
+    box-shadow:0 8px 18px rgba(15,23,42,.06)!important;
+  }
+}
 </style>
 
 <div class="kv-hero-card">
