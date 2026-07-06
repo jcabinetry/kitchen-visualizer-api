@@ -612,6 +612,89 @@ const KV_COMPANY = {
     border-radius:20px!important;
   }
 } 
+  /* Premium V2 mobile layout match */
+@media(max-width:800px){
+  body{
+    padding-bottom:96px!important;
+  }
+
+  .kv-wrap{
+    margin:0!important;
+    padding:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    border:none!important;
+    background:#f8fafc!important;
+  }
+
+  .cv-v2-shell{
+    display:block!important;
+    max-width:560px!important;
+    margin:0 auto!important;
+    padding-bottom:96px!important;
+    background:#f8fafc!important;
+    min-height:100vh!important;
+  }
+
+  .cv-v2-sidebar{
+    position:sticky!important;
+    top:0!important;
+    z-index:20!important;
+    height:auto!important;
+    border-radius:0 0 30px 30px!important;
+    padding:18px 16px 16px!important;
+    background:
+      radial-gradient(circle at top left,rgba(255,255,255,.22),transparent 40%),
+      linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b))!important;
+    color:white!important;
+    box-shadow:0 18px 45px rgba(15,23,42,.18)!important;
+  }
+
+  .cv-v2-brand{
+    background:transparent!important;
+    box-shadow:none!important;
+    padding:0!important;
+    margin-bottom:14px!important;
+    min-height:auto!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:12px!important;
+  }
+
+  .cv-v2-logo{
+    width:58px!important;
+    height:58px!important;
+    max-width:58px!important;
+    border-radius:18px!important;
+    margin:0!important;
+    flex:0 0 auto!important;
+  }
+
+  .cv-v2-logo img{
+    width:100%!important;
+    height:100%!important;
+    object-fit:contain!important;
+    transform:none!important;
+    padding:2px!important;
+  }
+
+  .cv-v2-brand > div:not(.cv-v2-logo){
+    display:block!important;
+  }
+
+  .cv-v2-brand h2{
+    font-size:20px!important;
+    line-height:1.08!important;
+    margin:0!important;
+  }
+
+  .cv-v2-brand p{
+    display:none!important;
+  }
+
+  .cv-v2-steps,
+  .cv-v
 </style>
 
 <div class="kv-hero-card">
