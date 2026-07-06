@@ -433,20 +433,39 @@ const KV_COMPANY = {
 .jcr-client-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
 .jcr-btn-light{padding:14px 22px;background:#f3f4f6;color:#111827;border:none;border-radius:14px;font-size:16px;font-weight:900;cursor:pointer;}
 @media(max-width:640px){.jcr-client-box{padding:20px;border-radius:20px;}.jcr-client-grid{grid-template-columns:1fr;}.jcr-client-actions{display:grid;grid-template-columns:1fr;}.jcr-client-actions button{width:100%;}}
-/* Bigger logo and branded step header */
+/* V2 final clean overrides */
+
+/* Desktop/sidebar logo block */
+.cv-v2-brand{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:18px!important;
+  min-height:170px!important;
+}
+
+.cv-v2-brand > div:not(.cv-v2-logo){
+  display:none!important;
+}
+
 .cv-v2-logo{
-  width:96px!important;
-  height:96px!important;
+  width:100%!important;
+  height:140px!important;
+  max-width:240px!important;
+  margin:0!important;
   border-radius:24px!important;
+  background:rgba(255,255,255,.18)!important;
 }
 
 .cv-v2-logo img{
   width:100%!important;
   height:100%!important;
   object-fit:contain!important;
-  padding:6px!important;
+  padding:0!important;
+  transform:scale(1.12);
 }
 
+/* Brand header inside each step panel */
 .cv-v2-panel-brand{
   display:flex;
   align-items:center;
@@ -493,81 +512,8 @@ const KV_COMPANY = {
   color:#64748b;
 }
 
-@media(max-width:800px){
-  .cv-v2-logo{
-    width:70px!important;
-    height:70px!important;
-  }
-
-  .cv-v2-panel-brand{
-    padding:12px;
-    border-radius:18px;
-    margin-bottom:16px;
-  }
-
-  .cv-v2-panel-logo{
-    width:52px;
-    height:52px;
-    border-radius:15px;
-  }
-
-  .cv-v2-panel-brand strong{
-    font-size:17px;
-  }
-
-  .cv-v2-panel-brand span{
-    font-size:12px;
-  }
-}
-     font-size:17px;
-  }
-
-  .cv-v2-panel-brand span{
-    font-size:12px;
-  }
-}
-  /* Sidebar brand box: logo only, large */
-.cv-v2-brand{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  padding:18px!important;
-  min-height:170px!important;
-}
-
-.cv-v2-brand > div:not(.cv-v2-logo){
-  display:none!important;
-}
-
-.cv-v2-logo{
-  width:100%!important;
-  height:140px!important;
-  max-width:240px!important;
-  margin:0!important;
-  border-radius:24px!important;
-  background:rgba(255,255,255,.18)!important;
-}
-
-.cv-v2-logo img{
-  width:100%!important;
-  height:100%!important;
-  object-fit:contain!important;
-  padding:0!important;
-  transform:scale(1.15);
-}
-
-@media(max-width:800px){
-  .cv-v2-brand{
-    min-height:96px!important;
-    padding:12px!important;
-  }
-
-  .cv-v2-logo{
-    height:76px!important;
-    max-width:180px!important;
-  }
-}
- #jcr_generate_btn,
+/* Button fade */
+#jcr_generate_btn,
 .cv-v2-primary{
   background:linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b))!important;
   color:white!important;
@@ -577,125 +523,9 @@ const KV_COMPANY = {
 #jcr_generate_btn:hover,
 .cv-v2-primary:hover{
   filter:brightness(.96);
-} 
- /* Mobile polish */
-@media(max-width:800px){
-  .cv-v2-panel h2{
-    font-size:26px!important;
-    line-height:1.12!important;
-  }
+}
 
-  .cv-v2-panel-desc{
-    font-size:14px!important;
-    margin-bottom:18px!important;
-  }
-
-  .jcr-card{
-    padding:20px!important;
-    border-radius:20px!important;
-    margin-bottom:16px!important;
-  }
-
-  .jcr-swatch-grid,
-  .jcr-material-grid{
-    grid-template-columns:repeat(2,1fr)!important;
-    gap:10px!important;
-  }
-
-  .jcr-door-grid{
-    grid-template-columns:1fr!important;
-    gap:14px!important;
-  }
-
-  .jcr-door-option{
-    padding:18px!important;
-    border-radius:20px!important;
-  }
-} 
-  /* Premium V2 mobile layout match */
-@media(max-width:800px){
-  body{
-    padding-bottom:96px!important;
-  }
-
-  .kv-wrap{
-    margin:0!important;
-    padding:0!important;
-    border-radius:0!important;
-    box-shadow:none!important;
-    border:none!important;
-    background:#f8fafc!important;
-  }
-
-  .cv-v2-shell{
-    display:block!important;
-    max-width:560px!important;
-    margin:0 auto!important;
-    padding-bottom:96px!important;
-    background:#f8fafc!important;
-    min-height:100vh!important;
-  }
-
-  .cv-v2-sidebar{
-    position:sticky!important;
-    top:0!important;
-    z-index:20!important;
-    height:auto!important;
-    border-radius:0 0 30px 30px!important;
-    padding:18px 16px 16px!important;
-    background:
-      radial-gradient(circle at top left,rgba(255,255,255,.22),transparent 40%),
-      linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b))!important;
-    color:white!important;
-    box-shadow:0 18px 45px rgba(15,23,42,.18)!important;
-  }
-
-  .cv-v2-brand{
-    background:transparent!important;
-    box-shadow:none!important;
-    padding:0!important;
-    margin-bottom:14px!important;
-    min-height:auto!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:flex-start!important;
-    gap:12px!important;
-  }
-
-  .cv-v2-logo{
-    width:58px!important;
-    height:58px!important;
-    max-width:58px!important;
-    border-radius:18px!important;
-    margin:0!important;
-    flex:0 0 auto!important;
-  }
-
-  .cv-v2-logo img{
-    width:100%!important;
-    height:100%!important;
-    object-fit:contain!important;
-    transform:none!important;
-    padding:2px!important;
-  }
-
-  .cv-v2-brand > div:not(.cv-v2-logo){
-    display:block!important;
-  }
-
-  .cv-v2-brand h2{
-    font-size:20px!important;
-    line-height:1.08!important;
-    margin:0!important;
-  }
-
-  .cv-v2-brand p{
-    display:none!important;
-  }
-
-  .cv-v2-steps,
-  .cv-v
-  /* FORCE Premium V2 mobile layout */
+/* Mobile mockup-style layout only */
 @media(max-width:800px){
   html,
   body{
@@ -725,7 +555,7 @@ const KV_COMPANY = {
     width:100%!important;
     max-width:560px!important;
     margin:0 auto!important;
-    padding:0 0 96px!important;
+    padding-bottom:96px!important;
     background:#f8fafc!important;
   }
 
@@ -768,6 +598,11 @@ const KV_COMPANY = {
     flex:0 0 58px!important;
   }
 
+  .cv-v2-logo img{
+    transform:none!important;
+    padding:2px!important;
+  }
+
   .cv-v2-brand h2{
     display:block!important;
     margin:0!important;
@@ -792,6 +627,10 @@ const KV_COMPANY = {
     padding:14px 0 4px!important;
     margin:0!important;
     scrollbar-width:none!important;
+  }
+
+  .cv-v2-mobile-tabs::-webkit-scrollbar{
+    display:none!important;
   }
 
   .cv-v2-step.mobile{
@@ -824,13 +663,24 @@ const KV_COMPANY = {
     background:#f8fafc!important;
   }
 
-  .cv-v2-panel{
-    padding:0!important;
+  .cv-v2-panel-brand{
+    padding:12px!important;
+    border-radius:18px!important;
+    margin-bottom:14px!important;
   }
 
-  .cv-v2-panel-brand{
-    display:flex!important;
-    margin-bottom:14px!important;
+  .cv-v2-panel-logo{
+    width:52px!important;
+    height:52px!important;
+    border-radius:15px!important;
+  }
+
+  .cv-v2-panel-brand strong{
+    font-size:17px!important;
+  }
+
+  .cv-v2-panel-brand span{
+    font-size:12px!important;
   }
 
   .cv-v2-panel h2{
