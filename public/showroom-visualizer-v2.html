@@ -907,6 +907,109 @@ const KV_COMPANY = {
     display:block!important;
   }
 }
+  /* Mockup-style V2 steps and mobile layout */
+.cv-v2-step{
+  width:100%;
+  gap:12px;
+  transition:.2s ease;
+}
+
+.cv-v2-step:hover{
+  transform:translateY(-2px);
+  box-shadow:0 14px 30px rgba(15,23,42,.08);
+}
+
+.cv-v2-num{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:#eef2ff;
+  color:var(--kv-primary,#2563eb);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  flex:0 0 auto;
+}
+
+.cv-v2-step strong{
+  display:block;
+  font-size:15px;
+}
+
+.cv-v2-step span{
+  display:block;
+  font-size:12px;
+  color:#6b7280;
+  margin-top:2px;
+}
+
+.cv-v2-step.done .cv-v2-num{
+  background:#dcfce7;
+  color:#15803d;
+}
+
+.cv-v2-progress{
+  height:10px;
+  border-radius:999px;
+  background:#e5e7eb;
+  overflow:hidden;
+  margin:18px 0 0;
+}
+
+.cv-v2-progress span{
+  display:block;
+  height:100%;
+  width:20%;
+  background:linear-gradient(90deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b));
+  transition:.25s ease;
+}
+
+@media(max-width:800px){
+  .cv-v2-progress{
+    background:rgba(255,255,255,.22);
+    margin-top:10px;
+  }
+
+  .cv-v2-progress span{
+    background:white;
+  }
+
+  .cv-v2-mobile-tabs{
+    display:flex!important;
+    gap:7px!important;
+    overflow-x:auto!important;
+    padding:14px 14px 8px!important;
+    scrollbar-width:none!important;
+    background:#f8fafc!important;
+  }
+
+  .cv-v2-mobile-tabs::-webkit-scrollbar{
+    display:none!important;
+  }
+
+  .cv-v2-step.mobile{
+    border:none!important;
+    border-radius:999px!important;
+    padding:10px 13px!important;
+    font-size:12px!important;
+    font-weight:950!important;
+    white-space:nowrap!important;
+    background:white!important;
+    color:#6b7280!important;
+    box-shadow:0 8px 18px rgba(15,23,42,.06)!important;
+  }
+
+  .cv-v2-step.mobile.active{
+    color:white!important;
+    background:linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b))!important;
+  }
+
+  .cv-v2-step.mobile.done{
+    color:var(--kv-primary,#2563eb)!important;
+    background:#dcfce7!important;
+  }
+}
 </style>
 
 <div class="kv-hero-card">
@@ -2168,9 +2271,13 @@ packetBtn.addEventListener("click", function() {
 <script>
 (function(){
   function startPremiumV2Shell(){
-    const steps=[
-      ["upload","Photo"],["colors","Colors"],["doors","Doors"],["materials","Materials"],["review","Review"]
-    ];
+const steps=[
+  ["upload","1 Upload","Upload Photo","Start with the kitchen"],
+  ["colors","2 Colors","Cabinet Colors","Choose upper and base colors"],
+  ["doors","3 Doors","Door Style","Select style and hardware"],
+  ["materials","4 Materials","Materials","Tops, backsplash, floors"],
+  ["review","5 Review","Review & Generate","Confirm selections"]
+];
 
     function byText(label){
       return Array.from(document.querySelectorAll(".jcr-card label")).find(l => l.textContent.trim().indexOf(label) > -1)?.closest(".jcr-card");
@@ -2229,11 +2336,18 @@ packetBtn.addEventListener("click", function() {
 
       const shell=document.createElement("div");
       shell.className="cv-v2-shell";
-      shell.innerHTML=
-        "<aside class='cv-v2-sidebar'><div class='cv-v2-brand'><div class='cv-v2-logo' id='cv_brand_logo'>KPM</div><div><h2 id='cv_brand_name'>Kitchen Design Studio</h2><p id='cv_brand_phone'></p></div></div><div class='cv-v2-steps'></div></aside>"+
-        "<main class='cv-v2-main'><div class='cv-v2-mobile-tabs'></div><div id='cv_v2_panels'></div></main>"+
-        "<aside class='cv-v2-summary'><h3>Your Design</h3><p>Live selections</p><div class='cv-v2-preview' id='cv_v2_preview'>Photo</div><div id='cv_v2_summary'></div></aside>";
-      oldHero.replaceWith(shell);
+shell.innerHTML=
+  "<aside class='cv-v2-sidebar'>"+
+    "<div class='cv-v2-brand'>"+
+      "<div class='cv-v2-logo' id='cv_brand_logo'>KPM</div>"+
+      "<div><h2 id='cv_brand_name'>Kitchen Design Studio</h2><p id='cv_brand_phone'></p></div>"+
+    "</div>"+
+    "<div class='cv-v2-steps'></div>"+
+    "<div class='cv-v2-progress'><span id='cv_v2_progress'></span></div>"+
+  "</aside>"+
+  "<nav class='cv-v2-mobile-tabs'></nav>"+
+  "<main class='cv-v2-main'><div id='cv_v2_panels'></div></main>"+
+  "<aside class='cv-v2-summary'><h3>Your Design</h3><p>Live selections</p><div class='cv-v2-preview' id='cv_v2_preview'>Photo</div><div id='cv_v2_summary'></div></aside>";
 
       const panels=shell.querySelector("#cv_v2_panels");
       panels.appendChild(makePanel("upload","Upload Kitchen Photo","Upload a clear kitchen photo before choosing the design.",[byText("Kitchen Photo")]));
@@ -2242,16 +2356,21 @@ packetBtn.addEventListener("click", function() {
       panels.appendChild(makePanel("materials","Countertops, Backsplash & Flooring","All existing material options stay wired to the original visualizer inputs.",[byText("Countertops"),byText("Tile Backsplash"),byText("Flooring")]));
       panels.appendChild(makePanel("review","Review & Generate","Confirm selections, then generate with the existing backend logic.",Array.from(oldWrap.children)));
 
-      steps.forEach(s=>{
-        [".cv-v2-steps",".cv-v2-mobile-tabs"].forEach(sel=>{
-          const b=document.createElement("button");
-          b.type="button";
-          b.className="cv-v2-step"+(sel.includes("mobile")?" mobile":"");
-          b.dataset.step=s[0];
-          b.textContent=s[1];
-          shell.querySelector(sel).appendChild(b);
-        });
-      });
+steps.forEach((s,index)=>{
+  const side=document.createElement("button");
+  side.type="button";
+  side.className="cv-v2-step";
+  side.dataset.step=s[0];
+  side.innerHTML="<div class='cv-v2-num'>"+(index+1)+"</div><div><strong>"+s[2]+"</strong><span>"+s[3]+"</span></div>";
+  shell.querySelector(".cv-v2-steps").appendChild(side);
+
+  const mobile=document.createElement("button");
+  mobile.type="button";
+  mobile.className="cv-v2-step mobile";
+  mobile.dataset.step=s[0];
+  mobile.textContent=s[1];
+  shell.querySelector(".cv-v2-mobile-tabs").appendChild(mobile);
+});
 
       const summary=shell.querySelector("#cv_v2_summary");
       [["Photo","cv_sum_photo"],["Upper","cv_sum_upper"],["Base","cv_sum_base"],["Doors","cv_sum_door"],["Hardware","cv_sum_hardware"],["Countertops","cv_sum_counter"],["Backsplash","cv_sum_back"],["Flooring","cv_sum_floor"]].forEach(i=>{
