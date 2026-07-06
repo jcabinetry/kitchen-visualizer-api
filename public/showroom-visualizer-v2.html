@@ -526,6 +526,47 @@ const KV_COMPANY = {
     font-size:12px;
   }
 }
+  /* Sidebar brand box: logo only, large */
+.cv-v2-brand{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:18px!important;
+  min-height:170px!important;
+}
+
+.cv-v2-brand > div:not(.cv-v2-logo){
+  display:none!important;
+}
+
+.cv-v2-logo{
+  width:100%!important;
+  height:140px!important;
+  max-width:240px!important;
+  margin:0!important;
+  border-radius:24px!important;
+  background:rgba(255,255,255,.18)!important;
+}
+
+.cv-v2-logo img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  padding:0!important;
+  transform:scale(1.15);
+}
+
+@media(max-width:800px){
+  .cv-v2-brand{
+    min-height:96px!important;
+    padding:12px!important;
+  }
+
+  .cv-v2-logo{
+    height:76px!important;
+    max-width:180px!important;
+  }
+}
 </style>
 
 <div class="kv-hero-card">
