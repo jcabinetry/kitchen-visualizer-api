@@ -90,6 +90,42 @@ const KV_COMPANY = {
   .cv-v2-actions{display:none;}
   .cv-v2-mobile-bar{display:block;position:fixed;left:0;right:0;bottom:0;z-index:9999;background:rgba(255,255,255,.95);border-top:1px solid #e5e7eb;padding:12px 14px;}
   .cv-v2-mobile-inner{max-width:560px;margin:0 auto;display:grid;grid-template-columns:1fr 1.5fr;gap:10px;}
+/* Premium V2 sidebar fit fix */
+.cv-v2-sidebar{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+
+.cv-v2-steps{
+  display:grid;
+  gap:14px;
+}
+
+.cv-v2-step{
+  min-height:74px;
+  display:flex;
+  align-items:center;
+}
+
+@media(max-width:900px){
+  .cv-v2-sidebar{
+    position:relative!important;
+    top:auto!important;
+    border-radius:0 0 30px 30px;
+    padding-bottom:16px!important;
+  }
+
+  .cv-v2-steps{
+    gap:10px;
+  }
+
+  .cv-v2-step{
+    min-height:64px;
+    padding:14px 22px;
+  }
+}
 }
 *{box-sizing:border-box;}
 .kv-wrap{color:#111827;background:linear-gradient(180deg,var(--kv-card,#ffffff),var(--kv-background,#f8fafc))!important;}
