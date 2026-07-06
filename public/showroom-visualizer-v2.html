@@ -9,7 +9,7 @@ const KV_COMPANY = {
 </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<style>
+<>
 /* Premium V2 shell - layout only */
 .kv-wrap{max-width:1800px!important;padding:28px!important;}
 .cv-v2-shell{display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:24px;}
@@ -567,6 +567,17 @@ const KV_COMPANY = {
     max-width:180px!important;
   }
 }
+ #jcr_generate_btn,
+.cv-v2-primary{
+  background:linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b))!important;
+  color:white!important;
+  border:none!important;
+}
+
+#jcr_generate_btn:hover,
+.cv-v2-primary:hover{
+  filter:brightness(.96);
+} 
 </style>
 
 <div class="kv-hero-card">
