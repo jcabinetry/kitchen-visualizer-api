@@ -2317,6 +2317,138 @@ packetBtn.addEventListener("click", function() {
   }
 })();
 </script>
+<script>
+(function(){
+  function startMobileMockupShell(){
+    const existingShell=document.querySelector(".cv-v2-shell");
+    const panels=document.getElementById("cv_v2_panels");
+
+    if(!existingShell || !panels){
+      setTimeout(startMobileMockupShell,300);
+      return;
+    }
+
+    if(document.getElementById("cv_v2_mobile_mockup")) return;
+
+    const desktopParent=panels.parentNode;
+
+    const mobile=document.createElement("div");
+    mobile.id="cv_v2_mobile_mockup";
+    mobile.innerHTML=
+      "<div class='cv-mobile-head'>"+
+        "<div class='cv-mobile-brand'>"+
+          "<div class='cv-mobile-logo' id='cv_mobile_mock_logo'>KPM</div>"+
+          "<div><h2 id='cv_mobile_mock_name'>Kitchen Design Studio</h2><p id='cv_mobile_mock_phone'></p></div>"+
+        "</div>"+
+        "<div class='cv-mobile-progress'><span id='cv_mobile_mock_progress'></span></div>"+
+      "</div>"+
+      "<nav class='cv-mobile-tabs' id='cv_mobile_mock_tabs'></nav>"+
+      "<main class='cv-mobile-main' id='cv_mobile_mock_panels'></main>";
+
+    existingShell.after(mobile);
+
+    const steps=[
+      ["upload","1 Upload"],
+      ["colors","2 Colors"],
+      ["doors","3 Doors"],
+      ["materials","4 Materials"],
+      ["review","5 Review"]
+    ];
+
+    steps.forEach(function(step){
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.className="cv-mobile-tab";
+      btn.dataset.step=step[0];
+      btn.textContent=step[1];
+      btn.onclick=function(){
+        const original=document.querySelector('.cv-v2-shell .cv-v2-step[data-step="'+step[0]+'"]');
+        if(original) original.click();
+        setTimeout(syncActive,80);
+      };
+      document.getElementById("cv_mobile_mock_tabs").appendChild(btn);
+    });
+
+    function isMobile(){
+      return window.matchMedia("(max-width:800px)").matches;
+    }
+
+    function mount(){
+      if(isMobile()){
+        document.body.classList.add("cv-mobile-mock-active");
+        document.getElementById("cv_mobile_mock_panels").appendChild(panels);
+      }else{
+        document.body.classList.remove("cv-mobile-mock-active");
+        desktopParent.appendChild(panels);
+      }
+      syncBrand();
+      syncActive();
+    }
+
+    function syncBrand(){
+      const logo=document.getElementById("cv_brand_logo");
+      const name=document.getElementById("cv_brand_name");
+      const phone=document.getElementById("cv_brand_phone");
+
+      if(logo) document.getElementById("cv_mobile_mock_logo").innerHTML=logo.innerHTML;
+      if(name) document.getElementById("cv_mobile_mock_name").textContent=name.textContent;
+      if(phone) document.getElementById("cv_mobile_mock_phone").textContent=phone.textContent;
+    }
+
+    function syncActive(){
+      const active=panels.querySelector(".cv-v2-panel.active");
+      const activeId=active ? active.dataset.panel : "upload";
+      const index=Math.max(0,steps.findIndex(function(s){return s[0]===activeId;}));
+
+      document.querySelectorAll(".cv-mobile-tab").forEach(function(btn){
+        const btnIndex=steps.findIndex(function(s){return s[0]===btn.dataset.step;});
+        btn.classList.toggle("active",btn.dataset.step===activeId);
+        btn.classList.toggle("done",btnIndex<index);
+      });
+
+      const progress=document.getElementById("cv_mobile_mock_progress");
+      if(progress) progress.style.width=((index+1)/steps.length*100)+"%";
+    }
+
+    const style=document.createElement("style");
+    style.textContent=
+      "#cv_v2_mobile_mockup{display:none;}"+
+      "@media(max-width:800px){"+
+        "body.cv-mobile-mock-active .cv-v2-shell{display:none!important;}"+
+        "body.cv-mobile-mock-active #cv_v2_mobile_mockup{display:block!important;max-width:560px;margin:0 auto;background:#f8fafc;min-height:100vh;padding-bottom:96px;}"+
+        ".cv-mobile-head{position:sticky;top:0;z-index:999;padding:18px 16px 16px;border-radius:0 0 30px 30px;background:radial-gradient(circle at top left,rgba(255,255,255,.22),transparent 40%),linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b));box-shadow:0 18px 45px rgba(15,23,42,.18);}"+
+        ".cv-mobile-brand{display:flex;align-items:center;gap:12px;color:white;margin-bottom:10px;}"+
+        ".cv-mobile-logo{width:58px;height:58px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 58px;}"+
+        ".cv-mobile-logo img{width:100%;height:100%;object-fit:contain;padding:2px;}"+
+        ".cv-mobile-brand h2{margin:0;color:white;font-size:20px;line-height:1.08;}"+
+        ".cv-mobile-brand p{display:none;}"+
+        ".cv-mobile-progress{height:10px;border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden;}"+
+        ".cv-mobile-progress span{display:block;height:100%;width:20%;background:white;transition:.25s ease;}"+
+        ".cv-mobile-tabs{display:flex;gap:7px;overflow-x:auto;padding:14px 14px 8px;background:#f8fafc;scrollbar-width:none;}"+
+        ".cv-mobile-tabs::-webkit-scrollbar{display:none;}"+
+        ".cv-mobile-tab{border:none;border-radius:999px;padding:10px 13px;font-size:12px;font-weight:950;white-space:nowrap;background:white;color:#6b7280;box-shadow:0 8px 18px rgba(15,23,42,.06);}"+
+        ".cv-mobile-tab.active{color:white;background:linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b));}"+
+        ".cv-mobile-tab.done{color:var(--kv-primary,#2563eb);background:#dcfce7;}"+
+        ".cv-mobile-main{padding:0 14px 24px;}"+
+      "}";
+
+    document.body.appendChild(style);
+
+    window.addEventListener("resize",mount);
+    document.addEventListener("click",function(){setTimeout(function(){syncBrand();syncActive();},100);});
+    document.addEventListener("change",function(){setTimeout(syncActive,100);});
+
+    mount();
+    setInterval(function(){syncBrand();syncActive();},700);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",startMobileMockupShell);
+  }else{
+    startMobileMockupShell();
+  }
+})();
+</script>
 <!-- KPM Technology Signature -->
 <div style="
 margin-top:30px;
