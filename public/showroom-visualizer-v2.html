@@ -695,6 +695,218 @@ const KV_COMPANY = {
 
   .cv-v2-steps,
   .cv-v
+  /* FORCE Premium V2 mobile layout */
+@media(max-width:800px){
+  html,
+  body{
+    margin:0!important;
+    padding:0!important;
+    background:#f8fafc!important;
+    overflow-x:hidden!important;
+  }
+
+  body{
+    padding-bottom:96px!important;
+  }
+
+  .kv-wrap{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0!important;
+    border-radius:0!important;
+    border:none!important;
+    box-shadow:none!important;
+    background:#f8fafc!important;
+  }
+
+  .cv-v2-shell{
+    display:block!important;
+    width:100%!important;
+    max-width:560px!important;
+    margin:0 auto!important;
+    padding:0 0 96px!important;
+    background:#f8fafc!important;
+  }
+
+  .cv-v2-sidebar{
+    position:sticky!important;
+    top:0!important;
+    z-index:999!important;
+    width:100%!important;
+    padding:18px 16px 16px!important;
+    border-radius:0 0 30px 30px!important;
+    border:none!important;
+    background:
+      radial-gradient(circle at top left,rgba(255,255,255,.22),transparent 40%),
+      linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b))!important;
+    box-shadow:0 18px 45px rgba(15,23,42,.18)!important;
+  }
+
+  .cv-v2-brand{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:12px!important;
+    min-height:0!important;
+    padding:0!important;
+    margin:0 0 14px!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+
+  .cv-v2-brand > div:not(.cv-v2-logo){
+    display:block!important;
+  }
+
+  .cv-v2-logo{
+    width:58px!important;
+    height:58px!important;
+    max-width:58px!important;
+    margin:0!important;
+    border-radius:18px!important;
+    flex:0 0 58px!important;
+  }
+
+  .cv-v2-brand h2{
+    display:block!important;
+    margin:0!important;
+    color:white!important;
+    font-size:20px!important;
+    line-height:1.08!important;
+  }
+
+  .cv-v2-brand p{
+    display:none!important;
+  }
+
+  .cv-v2-steps,
+  .cv-v2-summary{
+    display:none!important;
+  }
+
+  .cv-v2-mobile-tabs{
+    display:flex!important;
+    gap:7px!important;
+    overflow-x:auto!important;
+    padding:14px 0 4px!important;
+    margin:0!important;
+    scrollbar-width:none!important;
+  }
+
+  .cv-v2-step.mobile{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-height:0!important;
+    padding:10px 13px!important;
+    border:none!important;
+    border-radius:999px!important;
+    background:white!important;
+    color:#6b7280!important;
+    font-size:12px!important;
+    font-weight:950!important;
+    white-space:nowrap!important;
+    box-shadow:0 8px 18px rgba(15,23,42,.06)!important;
+  }
+
+  .cv-v2-step.mobile.active{
+    color:white!important;
+    background:linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b))!important;
+  }
+
+  .cv-v2-main{
+    display:block!important;
+    padding:14px!important;
+    border:none!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    background:#f8fafc!important;
+  }
+
+  .cv-v2-panel{
+    padding:0!important;
+  }
+
+  .cv-v2-panel-brand{
+    display:flex!important;
+    margin-bottom:14px!important;
+  }
+
+  .cv-v2-panel h2{
+    font-size:26px!important;
+    line-height:1.05!important;
+    margin-bottom:8px!important;
+  }
+
+  .cv-v2-panel-desc{
+    font-size:14px!important;
+    margin-bottom:16px!important;
+  }
+
+  .jcr-card{
+    padding:18px!important;
+    margin-bottom:14px!important;
+    border-radius:22px!important;
+    background:#fff!important;
+  }
+
+  .jcr-swatch-grid,
+  .jcr-material-grid,
+  .jcr-door-grid{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+  }
+
+  .jcr-swatch,
+  .jcr-material,
+  .jcr-door-option{
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    text-align:left!important;
+    gap:13px!important;
+    min-height:auto!important;
+    padding:13px!important;
+    border-radius:20px!important;
+  }
+
+  .jcr-dot{
+    width:42px!important;
+    height:42px!important;
+    border-radius:14px!important;
+    flex:0 0 42px!important;
+  }
+
+  .jcr-material-dot{
+    width:48px!important;
+    height:42px!important;
+    border-radius:14px!important;
+    flex:0 0 48px!important;
+  }
+
+  .jcr-door-preview{
+    width:58px!important;
+    max-width:58px!important;
+    margin:0!important;
+    flex:0 0 58px!important;
+  }
+
+  .jcr-door-name,
+  .jcr-door-desc{
+    text-align:left!important;
+  }
+
+  .cv-v2-panel-nav{
+    display:none!important;
+  }
+
+  .cv-v2-mobile-bar{
+    display:block!important;
+  }
+}
 </style>
 
 <div class="kv-hero-card">
