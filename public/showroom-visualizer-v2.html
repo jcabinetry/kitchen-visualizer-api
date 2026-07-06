@@ -10,6 +10,22 @@ const KV_COMPANY = {
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
+  @media(max-width:800px){
+  body[data-v2-mobile-test="loaded"]::before{
+    content:"MOBILE V2 LOADED";
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    z-index:9999999;
+    background:red;
+    color:white;
+    font-size:14px;
+    font-weight:900;
+    text-align:center;
+    padding:6px;
+  }
+}
 /* Premium V2 shell - layout only */
 .kv-wrap{max-width:1800px!important;padding:28px!important;}
 .cv-v2-shell{display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:24px;}
@@ -2018,6 +2034,7 @@ packetBtn.addEventListener("click", function() {
 <script>
 (function(){
   function startPremiumV2Shell(){
+    document.body.setAttribute("data-v2-mobile-test","loaded");
     const steps=[
       {id:"upload", mobile:"1 Upload", title:"Upload Photo", note:"Start with the kitchen"},
       {id:"colors", mobile:"2 Colors", title:"Cabinet Colors", note:"Choose upper and base colors"},
