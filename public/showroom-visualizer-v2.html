@@ -2034,54 +2034,59 @@ packetBtn.addEventListener("click", function() {
 <script>
 (function(){
   function startPremiumV2Shell(){
+    document.body.setAttribute("data-v2-mobile-test","loaded");
     const steps=[
-      {id:"upload", desktop:"Photo", mobile:"1 Upload"},
-      {id:"colors", desktop:"Colors", mobile:"2 Colors"},
-      {id:"doors", desktop:"Doors", mobile:"3 Doors"},
-      {id:"materials", desktop:"Materials", mobile:"4 Materials"},
-      {id:"review", desktop:"Review", mobile:"5 Review"}
+      {id:"upload", mobile:"1 Upload", title:"Upload Photo", note:"Start with the kitchen"},
+      {id:"colors", mobile:"2 Colors", title:"Cabinet Colors", note:"Choose upper and base colors"},
+      {id:"doors", mobile:"3 Doors", title:"Door Style", note:"Select style and hardware"},
+      {id:"materials", mobile:"4 Materials", title:"Materials", note:"Tops, backsplash, floors"},
+      {id:"review", mobile:"5 Review", title:"Review & Generate", note:"Confirm selections"}
     ];
 
     function addV2Style(){
-      if(document.getElementById("cv_v2_dual_layout_styles")) return;
+      if(document.getElementById("cv_v2_script_layout_styles")) return;
       const style=document.createElement("style");
-      style.id="cv_v2_dual_layout_styles";
+      style.id="cv_v2_script_layout_styles";
       style.textContent=
-        ".cv-v2-shell{display:block!important;background:transparent!important;}"+
-        ".cv-v2-desktop-shell{display:grid!important;grid-template-columns:300px minmax(0,1fr) 330px;gap:24px;}"+
-        ".cv-v2-mobile-shell{display:none!important;}"+
-        ".cv-v2-progress{height:10px;border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden;margin-top:10px;}"+
-        ".cv-v2-progress span{display:block;height:100%;width:20%;background:white;transition:.25s ease;}"+
+        ".cv-v2-step{gap:12px!important;}"+
+        ".cv-v2-num{width:34px;height:34px;border-radius:50%;background:#eef2ff;color:var(--kv-primary,#2563eb);display:flex;align-items:center;justify-content:center;font-weight:900;flex:0 0 auto;}"+
+        ".cv-v2-step strong{display:block;font-size:15px;}"+
+        ".cv-v2-step span{display:block;font-size:12px;color:#6b7280;margin-top:2px;}"+
+        ".cv-v2-step.done .cv-v2-num{background:#dcfce7;color:#15803d;}"+
+        ".cv-v2-progress{height:10px;border-radius:999px;background:#e5e7eb;overflow:hidden;margin:18px 0 0;}"+
+        ".cv-v2-progress span{display:block;height:100%;width:20%;background:linear-gradient(90deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b));transition:.25s ease;}"+
         "@media(max-width:800px){"+
-          "html,body{margin:0!important;padding:0!important;background:#f8fafc!important;overflow-x:hidden!important;}"+
-          "body{padding-bottom:96px!important;}"+
-          ".kv-wrap{width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:none!important;border-radius:0!important;box-shadow:none!important;background:#f8fafc!important;}"+
-          ".cv-v2-desktop-shell{display:none!important;}"+
-          ".cv-v2-mobile-shell{display:block!important;max-width:560px!important;margin:0 auto!important;background:#f8fafc!important;padding-bottom:96px!important;}"+
-          ".cv-v2-mobile-head{position:sticky;top:0;z-index:999;padding:18px 16px 16px;border-radius:0 0 30px 30px;background:radial-gradient(circle at top left,rgba(255,255,255,.22),transparent 40%),linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b));box-shadow:0 18px 45px rgba(15,23,42,.18);}"+
-          ".cv-v2-mobile-brand{display:flex;align-items:center;gap:12px;margin-bottom:10px;color:white;}"+
-          ".cv-v2-mobile-logo{width:58px;height:58px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 58px;}"+
-          ".cv-v2-mobile-logo img{width:100%;height:100%;object-fit:contain;padding:2px;}"+
-          ".cv-v2-mobile-brand h2{margin:0;color:white;font-size:20px;line-height:1.08;}"+
-          ".cv-v2-mobile-brand p{display:none;}"+
-          ".cv-v2-mobile-tabs{display:flex!important;gap:7px;overflow-x:auto;padding:14px 14px 8px;background:#f8fafc;scrollbar-width:none;}"+
-          ".cv-v2-mobile-tabs::-webkit-scrollbar{display:none;}"+
-          ".cv-v2-step.mobile{display:flex!important;align-items:center;justify-content:center;min-height:0!important;padding:10px 13px!important;border:none!important;border-radius:999px!important;background:white!important;color:#6b7280!important;font-size:12px!important;font-weight:950!important;white-space:nowrap!important;box-shadow:0 8px 18px rgba(15,23,42,.06)!important;}"+
-          ".cv-v2-step.mobile.active{color:white!important;background:linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b))!important;}"+
-          ".cv-v2-step.mobile.done{color:var(--kv-primary,#2563eb)!important;background:#dcfce7!important;}"+
-          ".cv-v2-mobile-main{padding:0 14px 24px;}"+
-          ".cv-v2-panel{padding-top:12px!important;}"+
-          ".cv-v2-panel h2{font-size:26px!important;line-height:1.05!important;margin-bottom:8px!important;}"+
-          ".cv-v2-panel-desc{font-size:14px!important;margin-bottom:16px!important;}"+
-          ".cv-v2-panel-nav{display:none!important;}"+
-          ".jcr-card{padding:18px!important;margin-bottom:14px!important;border-radius:22px!important;background:#fff!important;}"+
-          ".jcr-swatch-grid,.jcr-material-grid,.jcr-door-grid{display:grid!important;grid-template-columns:1fr!important;gap:10px!important;}"+
-          ".jcr-swatch,.jcr-material,.jcr-door-option{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;text-align:left!important;gap:13px!important;min-height:auto!important;padding:13px!important;border-radius:20px!important;}"+
-          ".jcr-dot{width:42px!important;height:42px!important;border-radius:14px!important;flex:0 0 42px!important;}"+
-          ".jcr-material-dot{width:48px!important;height:42px!important;border-radius:14px!important;flex:0 0 48px!important;}"+
-          ".jcr-door-preview{width:58px!important;max-width:58px!important;margin:0!important;flex:0 0 58px!important;}"+
-          ".jcr-door-name,.jcr-door-desc{text-align:left!important;}"+
-          ".cv-v2-mobile-bar{display:block!important;}"+
+        "body{padding-bottom:96px!important;background:#f8fafc!important;overflow-x:hidden!important;}"+
+        ".kv-wrap{margin:0!important;padding:0!important;border-radius:0!important;border:none!important;box-shadow:none!important;background:#f8fafc!important;}"+
+        ".cv-v2-shell{display:block!important;max-width:560px!important;margin:0 auto!important;background:#f8fafc!important;padding-bottom:96px!important;}"+
+        ".cv-v2-sidebar{position:sticky!important;top:0!important;z-index:999!important;border:none!important;border-radius:0 0 30px 30px!important;padding:18px 16px 16px!important;background:radial-gradient(circle at top left,rgba(255,255,255,.22),transparent 40%),linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b))!important;box-shadow:0 18px 45px rgba(15,23,42,.18)!important;}"+
+        ".cv-v2-brand{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;min-height:0!important;padding:0!important;margin:0 0 10px!important;background:transparent!important;box-shadow:none!important;}"+
+        ".cv-v2-brand>div:not(.cv-v2-logo){display:block!important;}"+
+        ".cv-v2-logo{width:58px!important;height:58px!important;max-width:58px!important;margin:0!important;border-radius:18px!important;flex:0 0 58px!important;}"+
+        ".cv-v2-logo img{width:100%!important;height:100%!important;object-fit:contain!important;transform:none!important;padding:2px!important;}"+
+        ".cv-v2-brand h2{display:block!important;margin:0!important;color:white!important;font-size:20px!important;line-height:1.08!important;}"+
+        ".cv-v2-brand p{display:none!important;}"+
+        ".cv-v2-steps,.cv-v2-summary{display:none!important;}"+
+        ".cv-v2-progress{background:rgba(255,255,255,.22)!important;margin-top:10px!important;}"+
+        ".cv-v2-progress span{background:white!important;}"+
+        ".cv-v2-mobile-tabs{display:flex!important;gap:7px!important;overflow-x:auto!important;padding:14px 14px 8px!important;background:#f8fafc!important;scrollbar-width:none!important;}"+
+        ".cv-v2-mobile-tabs::-webkit-scrollbar{display:none!important;}"+
+        ".cv-v2-step.mobile{display:flex!important;align-items:center!important;justify-content:center!important;min-height:0!important;padding:10px 13px!important;border:none!important;border-radius:999px!important;background:white!important;color:#6b7280!important;font-size:12px!important;font-weight:950!important;white-space:nowrap!important;box-shadow:0 8px 18px rgba(15,23,42,.06)!important;}"+
+        ".cv-v2-step.mobile.active{color:white!important;background:linear-gradient(135deg,var(--kv-primary,#1d4ed8),var(--kv-secondary,#64748b))!important;}"+
+        ".cv-v2-step.mobile.done{color:var(--kv-primary,#2563eb)!important;background:#dcfce7!important;}"+
+        ".cv-v2-main{display:block!important;padding:0 14px 24px!important;border:none!important;border-radius:0!important;box-shadow:none!important;background:#f8fafc!important;}"+
+        ".cv-v2-panel{padding-top:12px!important;}"+
+        ".cv-v2-panel h2{font-size:26px!important;line-height:1.05!important;margin-bottom:8px!important;}"+
+        ".cv-v2-panel-desc{font-size:14px!important;margin-bottom:16px!important;}"+
+        ".jcr-card{padding:18px!important;margin-bottom:14px!important;border-radius:22px!important;background:#fff!important;}"+
+        ".jcr-swatch-grid,.jcr-material-grid,.jcr-door-grid{display:grid!important;grid-template-columns:1fr!important;gap:10px!important;}"+
+        ".jcr-swatch,.jcr-material,.jcr-door-option{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;text-align:left!important;gap:13px!important;min-height:auto!important;padding:13px!important;border-radius:20px!important;}"+
+        ".jcr-dot{width:42px!important;height:42px!important;border-radius:14px!important;flex:0 0 42px!important;}"+
+        ".jcr-material-dot{width:48px!important;height:42px!important;border-radius:14px!important;flex:0 0 48px!important;}"+
+        ".jcr-door-preview{width:58px!important;max-width:58px!important;margin:0!important;flex:0 0 58px!important;}"+
+        ".jcr-door-name,.jcr-door-desc{text-align:left!important;}"+
+        ".cv-v2-panel-nav{display:none!important;}"+
+        ".cv-v2-mobile-bar{display:block!important;}"+
         "}";
       document.body.appendChild(style);
     }
@@ -2130,7 +2135,11 @@ packetBtn.addEventListener("click", function() {
       const oldWrap=oldHero && oldHero.nextElementSibling;
       if(!oldHero || !oldWrap || oldWrap.dataset.v2Done) return;
 
-      if(!document.querySelector(".jcr-swatch-grid .jcr-swatch") || !document.querySelector(".jcr-material-grid .jcr-material") || !document.getElementById("jcr_generate_btn")){
+      const swatchesReady=document.querySelector(".jcr-swatch-grid .jcr-swatch");
+      const materialsReady=document.querySelector(".jcr-material-grid .jcr-material");
+      const generateReady=document.getElementById("jcr_generate_btn");
+
+      if(!swatchesReady || !materialsReady || !generateReady){
         setTimeout(boot,300);
         return;
       }
@@ -2144,20 +2153,20 @@ packetBtn.addEventListener("click", function() {
       const shell=document.createElement("div");
       shell.className="cv-v2-shell";
       shell.innerHTML=
-        "<div class='cv-v2-desktop-shell'>"+
-          "<aside class='cv-v2-sidebar'><div class='cv-v2-brand'><div class='cv-v2-logo' id='cv_brand_logo'>KPM</div><div><h2 id='cv_brand_name'>Kitchen Design Studio</h2><p id='cv_brand_phone'></p></div></div><div class='cv-v2-steps'></div></aside>"+
-          "<main class='cv-v2-main'><div id='cv_desktop_panels'></div></main>"+
-          "<aside class='cv-v2-summary'><h3>Your Design</h3><p>Live selections</p><div class='cv-v2-preview' id='cv_v2_preview'>Photo</div><div id='cv_v2_summary'></div></aside>"+
-        "</div>"+
-        "<div class='cv-v2-mobile-shell'>"+
-          "<div class='cv-v2-mobile-head'><div class='cv-v2-mobile-brand'><div class='cv-v2-mobile-logo' id='cv_mobile_brand_logo'>KPM</div><div><h2 id='cv_mobile_brand_name'>Kitchen Design Studio</h2><p id='cv_mobile_brand_phone'></p></div></div><div class='cv-v2-progress'><span id='cv_v2_progress'></span></div></div>"+
-          "<nav class='cv-v2-mobile-tabs'></nav>"+
-          "<main class='cv-v2-mobile-main'><div id='cv_mobile_panels'></div></main>"+
-        "</div>";
+        "<aside class='cv-v2-sidebar'>"+
+          "<div class='cv-v2-brand'>"+
+            "<div class='cv-v2-logo' id='cv_brand_logo'>KPM</div>"+
+            "<div><h2 id='cv_brand_name'>Kitchen Design Studio</h2><p id='cv_brand_phone'></p></div>"+
+          "</div>"+
+          "<div class='cv-v2-steps'></div>"+
+          "<div class='cv-v2-progress'><span id='cv_v2_progress'></span></div>"+
+        "</aside>"+
+        "<nav class='cv-v2-mobile-tabs'></nav>"+
+        "<main class='cv-v2-main'><div id='cv_v2_panels'></div></main>"+
+        "<aside class='cv-v2-summary'><h3>Your Design</h3><p>Live selections</p><div class='cv-v2-preview' id='cv_v2_preview'>Photo</div><div id='cv_v2_summary'></div></aside>";
       oldHero.replaceWith(shell);
 
-      const panels=document.createElement("div");
-      panels.id="cv_v2_panels";
+      const panels=shell.querySelector("#cv_v2_panels");
       panels.appendChild(makePanel("upload","Upload Kitchen Photo","Start with a clear straight-on photo of the customer's kitchen.",[byText("Kitchen Photo")]));
       panels.appendChild(makePanel("colors","Cabinet Colors","Choose upper and base cabinet finishes.",[byText("Upper Cabinet Color"),byText("Base Cabinet Color")]));
       panels.appendChild(makePanel("doors","Door Style & Hardware","Pick the cabinet door style, upper cabinet height, and hardware.",[byText("Door Style"),byText("Upper Cabinets"),byText("Hardware")]));
@@ -2165,20 +2174,12 @@ packetBtn.addEventListener("click", function() {
       panels.appendChild(makePanel("review","Review & Generate","Confirm selections, then generate with the existing backend logic.",Array.from(oldWrap.children)));
       oldWrap.remove();
 
-      function isMobile(){ return window.matchMedia("(max-width:800px)").matches; }
-      function mountPanels(){
-        const host=document.getElementById(isMobile() ? "cv_mobile_panels" : "cv_desktop_panels");
-        if(host && panels.parentNode!==host) host.appendChild(panels);
-      }
-      mountPanels();
-      window.addEventListener("resize",mountPanels);
-
-      steps.forEach(function(s){
+      steps.forEach(function(s,index){
         const side=document.createElement("button");
         side.type="button";
         side.className="cv-v2-step";
         side.dataset.step=s.id;
-        side.textContent=s.desktop;
+        side.innerHTML="<div class='cv-v2-num'>"+(index+1)+"</div><div><strong>"+s.title+"</strong><span>"+s.note+"</span></div>";
         shell.querySelector(".cv-v2-steps").appendChild(side);
 
         const mobile=document.createElement("button");
@@ -2219,8 +2220,11 @@ packetBtn.addEventListener("click", function() {
           next.className="cv-v2-btn cv-v2-primary cv-v2-next";
           next.textContent=index===steps.length-1 ? "Generate Preview" : "Continue";
           next.onclick=function(){
-            if(index===steps.length-1) document.getElementById("jcr_generate_btn").click();
-            else go(index+1);
+            if(index===steps.length-1){
+              document.getElementById("jcr_generate_btn").click();
+            }else{
+              go(index+1);
+            }
           };
           nav.appendChild(next);
           panel.appendChild(nav);
@@ -2229,11 +2233,9 @@ packetBtn.addEventListener("click", function() {
 
       function go(i){
         idx=Math.max(0,Math.min(steps.length-1,i));
-
         document.querySelectorAll(".cv-v2-panel").forEach(function(p){
           p.classList.toggle("active",p.dataset.panel===steps[idx].id);
         });
-
         document.querySelectorAll(".cv-v2-step").forEach(function(b){
           const stepIndex=steps.findIndex(function(s){return s.id===b.dataset.step;});
           b.classList.toggle("active",stepIndex===idx);
@@ -2245,7 +2247,6 @@ packetBtn.addEventListener("click", function() {
 
         document.getElementById("cv_mobile_back").style.visibility=idx===0?"hidden":"visible";
         document.getElementById("cv_mobile_next").textContent=idx===steps.length-1?"Generate Preview":"Continue";
-
         updateShellSummary();
         window.scrollTo({top:0,behavior:"smooth"});
       }
@@ -2258,8 +2259,11 @@ packetBtn.addEventListener("click", function() {
 
       document.getElementById("cv_mobile_back").onclick=function(){go(idx-1);};
       document.getElementById("cv_mobile_next").onclick=function(){
-        if(idx===steps.length-1) document.getElementById("jcr_generate_btn").click();
-        else go(idx+1);
+        if(idx===steps.length-1){
+          document.getElementById("jcr_generate_btn").click();
+        }else{
+          go(idx+1);
+        }
       };
 
       document.addEventListener("change",updateShellSummary);
@@ -2270,8 +2274,7 @@ packetBtn.addEventListener("click", function() {
         const f=photo.files&&photo.files[0]; if(!f)return;
         const r=new FileReader();
         r.onload=function(e){
-          const preview=document.getElementById("cv_v2_preview");
-          if(preview) preview.innerHTML="<img src='"+e.target.result+"' alt='Kitchen photo'>";
+          document.getElementById("cv_v2_preview").innerHTML="<img src='"+e.target.result+"' alt='Kitchen photo'>";
         };
         r.readAsDataURL(f);
       });
@@ -2282,7 +2285,6 @@ packetBtn.addEventListener("click", function() {
 
         if(logo?.src){
           document.getElementById("cv_brand_logo").innerHTML="<img src='"+logo.src+"' alt='Company logo'>";
-          document.getElementById("cv_mobile_brand_logo").innerHTML="<img src='"+logo.src+"' alt='Company logo'>";
           document.querySelectorAll("[data-panel-logo]").forEach(function(el){
             el.innerHTML="<img src='"+logo.src+"' alt='Company logo'>";
           });
@@ -2290,11 +2292,14 @@ packetBtn.addEventListener("click", function() {
 
         document.getElementById("cv_brand_name").textContent = companyName;
         document.getElementById("cv_brand_phone").textContent = phoneText;
-        document.getElementById("cv_mobile_brand_name").textContent = companyName;
-        document.getElementById("cv_mobile_brand_phone").textContent = phoneText;
 
-        document.querySelectorAll("[data-panel-company]").forEach(function(el){ el.textContent = companyName; });
-        document.querySelectorAll("[data-panel-phone]").forEach(function(el){ el.textContent = phoneText; });
+        document.querySelectorAll("[data-panel-company]").forEach(function(el){
+          el.textContent = companyName;
+        });
+
+        document.querySelectorAll("[data-panel-phone]").forEach(function(el){
+          el.textContent = phoneText;
+        });
 
         updateShellSummary();
       },700);
