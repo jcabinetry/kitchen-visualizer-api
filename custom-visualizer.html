@@ -9,6 +9,7 @@ const KV_COMPANY = {
 </script>
   
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="custom-catalogs.js"></script>
 
 <style>
 *{box-sizing:border-box;}
@@ -390,6 +391,18 @@ const KV_COMPANY = {
     <input class="jcr-file-hidden" type="file" id="jcr_photo" accept="image/*">
   </div>
 
+  <div class="jcr-card" id="jcr_custom_catalog_card">
+    <label for="jcr_manufacturer">Cabinet Manufacturer</label>
+    <p class="jcr-section-note">Choose the cabinet brand this company offers.</p>
+    <select id="jcr_manufacturer"></select>
+
+    <div style="height:16px;"></div>
+
+    <label for="jcr_catalog_line">Cabinet Line</label>
+    <p class="jcr-section-note">Choose the product line. Door styles and finishes will update from that line.</p>
+    <select id="jcr_catalog_line"></select>
+  </div>
+
   <div class="jcr-card">
     <label for="jcr_color">Upper Cabinet Color</label>
     <p class="jcr-section-note">Choose the finish for the upper/wall cabinets.</p>
@@ -736,6 +749,8 @@ const KV_COMPANY = {
   const photoName = document.getElementById("jcr_photo_name");
   const mainCustomColorInput = document.getElementById("jcr_main_custom_color");
   const islandCustomColorInput = document.getElementById("jcr_island_custom_color");
+  const manufacturerInput = document.getElementById("jcr_manufacturer");
+  const catalogLineInput = document.getElementById("jcr_catalog_line");
   const colorInput = document.getElementById("jcr_color");
   const islandInput = document.getElementById("jcr_island");
   const styleInput = document.getElementById("jcr_style");
@@ -796,10 +811,14 @@ const KV_COMPANY = {
   const swatchColors = {
     "Same as Main":"linear-gradient(135deg,#f8fafc,#e5e7eb)",
     "White":"#ffffff",
+    "White Paint":"#ffffff",
     "Light Gray":"#d1d5db",
+    "Light Gray Paint":"#d1d5db",
     "Gray":"#6b7280",
     "Off White":"#f5f0e6",
+    "Off White Paint":"#f5f0e6",
     "Navy":"#1e3a8a",
+    "Navy Paint":"#1e3a8a",
     "Black":"#111827",
     "Natural Alder":"#b7794b",
     "Natural Beech":"#d6b47c",
@@ -816,6 +835,7 @@ const KV_COMPANY = {
     const grid = document.querySelector('.jcr-swatch-grid[data-select="' + selectId + '"]');
     if (!select || !grid) return;
 
+    grid.innerHTML = "";
     Array.from(select.options).forEach(function(option, index) {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -833,6 +853,123 @@ const KV_COMPANY = {
       grid.appendChild(btn);
     });
   }
+
+  function bindSwatchClicks(selectId) {
+    document.querySelectorAll('.jcr-swatch[data-select="' + selectId + '"]').forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        const select = document.getElementById(selectId);
+        select.value = btn.getAttribute("data-value");
+        document.querySelectorAll('.jcr-swatch[data-select="' + selectId + '"]').forEach(function(b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        updateCustomUploads();
+      });
+    });
+  }
+
+  function setSelectOptions(select, items, includeSameAsMain) {
+    if (!select) return;
+    select.innerHTML = "";
+    if (includeSameAsMain) {
+      const same = document.createElement("option");
+      same.value = "";
+      same.textContent = "Same as Main";
+      select.appendChild(same);
+    }
+    items.forEach(function(item) {
+      const option = document.createElement("option");
+      option.value = item.value;
+      option.textContent = item.label;
+      select.appendChild(option);
+    });
+  }
+
+  function getCustomCatalog() {
+    if (KV_COMPANY.catalog && KV_COMPANY.catalog.manufacturers) return KV_COMPANY.catalog;
+    if (window.CV_CUSTOM_CATALOGS && window.CV_CUSTOM_CATALOGS.defaultCatalog) return window.CV_CUSTOM_CATALOGS.defaultCatalog;
+    return { manufacturers: [] };
+  }
+
+  function getSelectedManufacturer(catalog) {
+    return (catalog.manufacturers || []).find(function(m) { return m.id === manufacturerInput.value; }) || (catalog.manufacturers || [])[0];
+  }
+
+  function getSelectedLine(manufacturer) {
+    if (!manufacturer) return null;
+    return (manufacturer.lines || []).find(function(line) { return line.id === catalogLineInput.value; }) || (manufacturer.lines || [])[0];
+  }
+
+  function renderDoorOptions(doors) {
+    const grid = document.getElementById("jcr_door_grid");
+    if (!grid || !doors || !doors.length) return;
+    grid.innerHTML = "";
+    doors.forEach(function(door, index) {
+      const card = document.createElement("div");
+      card.className = "jcr-door-option" + (index === 0 ? " active" : "");
+      card.setAttribute("data_value", door.value);
+      card.innerHTML =
+        (index === 0 ? '<div class="jcr-ribbon">Line Option</div>' : '') +
+        '<div class="jcr-door-preview"><img src="' + (door.image || "https://primary.jwwb.nl/public/m/q/r/temp-wfofpuxetbifsbcnmmvn/visualizer-shaker-image-high-tttcry.png") + '" alt="' + door.label + '"></div>' +
+        '<div class="jcr-door-name">' + door.label + '</div>' +
+        '<div class="jcr-door-desc">' + (door.desc || "Available cabinet door style") + '</div>';
+      card.addEventListener("click", function() {
+        document.querySelectorAll(".jcr-door-option").forEach(function(o) { o.classList.remove("active"); });
+        card.classList.add("active");
+        styleInput.value = door.value;
+      });
+      grid.appendChild(card);
+      if (index === 0) styleInput.value = door.value;
+    });
+  }
+
+  function applySelectedCatalogLine() {
+    const catalog = getCustomCatalog();
+    const manufacturer = getSelectedManufacturer(catalog);
+    const line = getSelectedLine(manufacturer);
+    if (!line) return;
+
+    renderDoorOptions(line.doors || []);
+    setSelectOptions(colorInput, line.finishes || [], false);
+    setSelectOptions(islandInput, (line.finishes || []).map(function(f) {
+      return { label: f.label, value: f.value.replace("cabinet finish", "base cabinet finish") };
+    }), true);
+
+    buildSwatches("jcr_color");
+    buildSwatches("jcr_island");
+    bindSwatchClicks("jcr_color");
+    bindSwatchClicks("jcr_island");
+    updateCustomUploads();
+  }
+
+  function initCustomCatalogControls() {
+    const catalog = getCustomCatalog();
+    if (!manufacturerInput || !catalogLineInput || !catalog.manufacturers || !catalog.manufacturers.length) return;
+
+    manufacturerInput.innerHTML = "";
+    catalog.manufacturers.forEach(function(manufacturer) {
+      const option = document.createElement("option");
+      option.value = manufacturer.id;
+      option.textContent = manufacturer.name;
+      manufacturerInput.appendChild(option);
+    });
+
+    function populateLines() {
+      const manufacturer = getSelectedManufacturer(catalog);
+      catalogLineInput.innerHTML = "";
+      (manufacturer.lines || []).forEach(function(line) {
+        const option = document.createElement("option");
+        option.value = line.id;
+        option.textContent = line.name;
+        catalogLineInput.appendChild(option);
+      });
+      applySelectedCatalogLine();
+    }
+
+    manufacturerInput.addEventListener("change", populateLines);
+    catalogLineInput.addEventListener("change", applySelectedCatalogLine);
+    populateLines();
+  }
+
+  initCustomCatalogControls();
 
   buildSwatches("jcr_color");
   buildSwatches("jcr_island");
@@ -852,16 +989,8 @@ const KV_COMPANY = {
     document.getElementById("flooring_custom_wrap").classList.toggle("active", flooringInput.value === "custom flooring reference");
   }
 
-  document.querySelectorAll(".jcr-swatch").forEach(function(btn) {
-    btn.addEventListener("click", function() {
-      const selectId = btn.getAttribute("data-select");
-      const select = document.getElementById(selectId);
-      select.value = btn.getAttribute("data-value");
-      document.querySelectorAll('.jcr-swatch[data-select="' + selectId + '"]').forEach(function(b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      updateCustomUploads();
-    });
-  });
+  bindSwatchClicks("jcr_color");
+  bindSwatchClicks("jcr_island");
   updateCustomUploads();
 
   document.querySelectorAll(".jcr-material").forEach(function(btn){btn.addEventListener("click",function(){const selectId=btn.getAttribute("data-select");const select=document.getElementById(selectId);select.value=btn.getAttribute("data-value");document.querySelectorAll('.jcr-material[data-select="'+selectId+'"]').forEach(function(b){b.classList.remove("active");});btn.classList.add("active");updateCustomUploads();});});
@@ -990,6 +1119,8 @@ const KV_COMPANY = {
     if (upperIsCustom) upperColorText = "the uploaded custom upper/wall cabinet finish reference image";
     if (baseIsCustom) baseColorText = "the uploaded custom base/lower cabinet finish reference image";
 
+    const selectedManufacturer = manufacturerInput && manufacturerInput.options[manufacturerInput.selectedIndex] ? manufacturerInput.options[manufacturerInput.selectedIndex].text : "";
+    const selectedCatalogLine = catalogLineInput && catalogLineInput.options[catalogLineInput.selectedIndex] ? catalogLineInput.options[catalogLineInput.selectedIndex].text : "";
     const doorStyle = styleInput.value || "shaker cabinet doors";
     const upperHeight = upperHeightInput.value || "keep existing upper cabinets exactly as they are";
     const hardware = hardwareInput.value || "matte black cabinet pulls";
@@ -1006,6 +1137,13 @@ Edit this exact kitchen photo into a realistic cabinet refacing color preview.
 This is a refacing-style visualization, not a remodel.
 Change cabinet finishes only.
 Keep the kitchen as close to the original uploaded photo as possible.
+
+CUSTOM CATALOG SELECTION:
+The cabinet dealer selected this manufacturer and cabinet line:
+Manufacturer: ${selectedManufacturer || "Not selected"}
+Cabinet Line: ${selectedCatalogLine || "Not selected"}
+Use only the selected manufacturer, line, door style, and finishes described below.
+Do not invent a cabinet line that was not selected.
 
 MOST IMPORTANT RULE:
 Preserve the exact existing cabinet layout and cabinet geometry.
@@ -1187,14 +1325,6 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     savedDesignB = currentDesign;
     status.innerText = "Design B saved.";
     updateDesignCompare();
-  });
-
-  document.querySelectorAll(".jcr-door-option").forEach(function(option) {
-    option.addEventListener("click", function() {
-      document.querySelectorAll(".jcr-door-option").forEach(function(o) { o.classList.remove("active"); });
-      option.classList.add("active");
-      styleInput.value = option.getAttribute("data_value");
-    });
   });
 
   photoInput.addEventListener("change", async function(e) {
