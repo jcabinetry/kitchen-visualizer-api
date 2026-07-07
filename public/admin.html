@@ -12,12 +12,66 @@
 <body>
   <div class="box">Loading admin dashboard...</div>
   <script>
+    const deleteCatalogPatch = `
+<script>
+(function(){
+  function installCatalogDelete(){
+    if (typeof renderCatalogLibrary !== "function" || typeof api !== "function" || typeof state !== "object" || typeof elements !== "object") {
+      setTimeout(installCatalogDelete, 300);
+      return;
+    }
+    const originalRenderCatalogLibrary = renderCatalogLibrary;
+    window.renderCatalogLibrary = renderCatalogLibrary = function(){
+      originalRenderCatalogLibrary();
+      if (!elements.catalogLibraryList) return;
+      const cards = elements.catalogLibraryList.querySelectorAll(".catalog-card");
+      cards.forEach(function(card, index){
+        const cat = state.catalogs[index];
+        if (!cat || card.querySelector(".delete-catalog-button")) return;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "danger delete-catalog-button";
+        btn.textContent = "Delete Catalog";
+        btn.style.marginTop = "10px";
+        btn.style.width = "100%";
+        btn.addEventListener("click", async function(){
+          const name = cat.name || cat.catalogId;
+          if (!confirm("Delete catalog " + name + "? This removes it from the saved catalog library.")) return;
+          try {
+            btn.disabled = true;
+            btn.textContent = "Deleting...";
+            await api("/api/catalogs?catalogId=" + encodeURIComponent(cat.catalogId), { method: "DELETE" });
+            state.catalogs = state.catalogs.filter(function(c){ return c.catalogId !== cat.catalogId; });
+            state.customers = state.customers.map(function(c){
+              if (!Array.isArray(c.catalogSelections)) return c;
+              return { ...c, catalogSelections: c.catalogSelections.filter(function(s){ return s.catalogId !== cat.catalogId; }) };
+            });
+            renderCatalogLibrary();
+            const selected = state.customers.find(function(c){ return c.companyKey === state.selectedKey; });
+            renderCustomerCatalogPicker(selected ? selected.catalogSelections || [] : []);
+            setStatus("Catalog deleted.");
+          } catch (err) {
+            setStatus(err.message || "Could not delete catalog.", true);
+            btn.disabled = false;
+            btn.textContent = "Delete Catalog";
+          }
+        });
+        card.appendChild(btn);
+      });
+    };
+    renderCatalogLibrary();
+  }
+  installCatalogDelete();
+})();
+<\/script>`;
+
     fetch("https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/main/admin.html?v=" + Date.now(), {cache:"no-store"})
       .then(function(response){
         if(!response.ok) throw new Error("Could not load admin file");
         return response.text();
       })
       .then(function(html){
+        html = html.replace("</body>", deleteCatalogPatch + "</body>");
         document.open();
         document.write(html);
         document.close();
