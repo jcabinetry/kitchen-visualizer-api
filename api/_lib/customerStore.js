@@ -115,6 +115,34 @@ function toList(value) {
   return [value];
 }
 
+function normalizeCatalogSelections(value, fallback = []) {
+  const parsed = parseMaybeJson(value);
+  const source = Array.isArray(parsed) ? parsed : Array.isArray(fallback) ? fallback : [];
+
+  return source
+    .map(function(item) {
+      if (!item || typeof item !== "object") return null;
+      const catalogId = String(item.catalogId || item.id || item.name || "").trim();
+      const manufacturerId = String(item.manufacturerId || item.manufacturer || catalogId || "").trim();
+      const lineIds = Array.isArray(item.lineIds)
+        ? item.lineIds.map(String).filter(Boolean)
+        : Array.isArray(item.lines)
+          ? item.lines.map(function(line) { return typeof line === "string" ? line : line?.id; }).map(String).filter(Boolean)
+          : [];
+
+      if (!catalogId && !manufacturerId) return null;
+
+      return {
+        catalogId,
+        manufacturerId,
+        lineIds,
+        autoUpdate: item.autoUpdate !== false,
+        lockedVersion: item.lockedVersion || ""
+      };
+    })
+    .filter(Boolean);
+}
+
 function normalizeCustomer(input = {}, existing = null) {
   let source = parseMaybeJson(input) || {};
   let existingSource = parseMaybeJson(existing) || null;
@@ -147,44 +175,50 @@ function normalizeCustomer(input = {}, existing = null) {
   const backgroundColor = textValue(source.backgroundColor, branding.backgroundColor, existingSource?.backgroundColor, existingBranding.backgroundColor, "#f8fafc");
   const cardColor = textValue(source.cardColor, branding.cardColor, existingSource?.cardColor, existingBranding.cardColor, "#ffffff");
   const accentColor = textValue(source.accentColor, branding.accentColor, existingSource?.accentColor, existingBranding.accentColor, "#f59e0b");
-  const websiteUrl = textValue(source.websiteUrl, source.website, branding.websiteUrl, branding.website, existingSource?.websiteUrl, existingSource?.website, existingBranding.websiteUrl, existingBranding.website);
+  const websiteUrl = textValue(source.websiteUrl, source.website, source.customerPageUrl, branding.websiteUrl, branding.website, branding.customerPageUrl, existingSource?.websiteUrl, existingSource?.website, existingSource?.customerPageUrl, existingBranding.websiteUrl, existingBranding.website, existingBranding.customerPageUrl);
   const estimateUrl = textValue(source.estimateUrl, branding.estimateUrl, existingSource?.estimateUrl, existingBranding.estimateUrl);
-  const ctaText = textValue(source.ctaText, branding.ctaText, existingSource?.ctaText, existingBranding.ctaText, "Request an Estimate");
+  const ctaText = textValue(source.ctaText, source.buttonText, branding.ctaText, branding.buttonText, existingSource?.ctaText, existingSource?.buttonText, existingBranding.ctaText, existingBranding.buttonText, "Request an Estimate");
+  const catalogSelections = normalizeCatalogSelections(source.catalogSelections, existingSource?.catalogSelections);
+  const selectedCatalogs = catalogSelections.map(function(item) { return item.catalogId; }).filter(Boolean);
 
-return {
-  companyKey,
-  companyName: textValue(source.companyName, existingSource?.companyName, companyKey),
-  status,
-  monthlyLimit: toPositiveInteger(source.monthlyLimit ?? existingSource?.monthlyLimit),
-  monthlyPrice: toMoneyNumber(source.monthlyPrice ?? source.price ?? source.subscriptionPrice ?? existingSource?.monthlyPrice ?? existingSource?.price ?? existingSource?.subscriptionPrice, 0),
-  plan: textValue(source.plan, existingSource?.plan),
-  phone,
-  email,
-  city,
-  websiteUrl,
-  estimateUrl,
-  logoUrl,
-  primaryColor,
-  secondaryColor,
-  accentColor,
-  backgroundColor,
-  cardColor,
-  ctaText,
-  branding: {
+  return {
+    companyKey,
+    companyName: textValue(source.companyName, existingSource?.companyName, companyKey),
+    status,
+    monthlyLimit: toPositiveInteger(source.monthlyLimit ?? existingSource?.monthlyLimit),
+    monthlyPrice: toMoneyNumber(source.monthlyPrice ?? source.price ?? source.subscriptionPrice ?? existingSource?.monthlyPrice ?? existingSource?.price ?? existingSource?.subscriptionPrice, 0),
+    plan: textValue(source.plan, existingSource?.plan),
+    phone,
+    email,
+    city,
+    websiteUrl,
+    estimateUrl,
     logoUrl,
     primaryColor,
     secondaryColor,
     accentColor,
     backgroundColor,
     cardColor,
-    websiteUrl,
-    estimateUrl,
-    contactEmail: email,
-    email,
-    phone,
-    city,
-    ctaText
-  },
+    ctaText,
+    catalogSelections,
+    selectedCatalogs,
+    branding: {
+      logoUrl,
+      primaryColor,
+      secondaryColor,
+      accentColor,
+      backgroundColor,
+      cardColor,
+      websiteUrl,
+      customerPageUrl: websiteUrl,
+      estimateUrl,
+      contactEmail: email,
+      email,
+      phone,
+      city,
+      ctaText,
+      buttonText: ctaText
+    },
     notes: String(source.notes ?? existingSource?.notes ?? "").trim(),
     createdAt: existingSource?.createdAt || now,
     updatedAt: now,
