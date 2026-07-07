@@ -87,11 +87,11 @@ window.CV_CUSTOM_CATALOGS = {
 (function () {
   const DEFAULT_DOOR_IMAGE = "https://primary.jwwb.nl/public/m/q/r/temp-wfofpuxetbifsbcnmmvn/visualizer-shaker-image-high-tttcry.png";
   const swatchColors = {
-    "Same as Main":"linear-gradient(135deg,#f8fafc,#e5e7eb)", "White":"#ffffff", "White Paint":"#ffffff", "Light Gray":"#d1d5db", "Light Gray Paint":"#d1d5db", "Gray":"#6b7280", "Off White":"#f5f0e6", "Off White Paint":"#f5f0e6", "Navy":"#1e3a8a", "Navy Paint":"#1e3a8a", "Black":"#111827", "Natural Alder":"#b7794b", "Natural Beech":"#d6b47c", "Natural Oak":"#c49a6c", "Natural Hickory":"#a66a3f", "Natural Maple":"#d8bc8a", "Natural White Oak":"#cdbb9b", "Natural Cherry":"#7f3f2a"
+    "Same as Main":"linear-gradient(135deg,#f8fafc,#e5e7eb)", "White":"#ffffff", "White Paint":"#ffffff", "PureStyle White":"#ffffff", "Frost":"#f4f1ea", "Stone Gray":"#8d8d88", "Flagstone":"#555b5d", "Burlap":"#b29b7b", "Sarsaparilla":"#2b211f", "Colada":"#f1eee7", "Mythic Blue":"#263b57", "Sage":"#8d947d", "Light Gray":"#d1d5db", "Light Gray Paint":"#d1d5db", "Gray":"#6b7280", "Off White":"#f5f0e6", "Off White Paint":"#f5f0e6", "Navy":"#1e3a8a", "Navy Paint":"#1e3a8a", "Black":"#111827", "Natural":"#c49a6c", "Cafe":"#7a5537", "Umber":"#5f432f", "Cocoa":"#4a3328", "Autumn Brown":"#7d4e2e", "Flagstone Stain":"#706a63", "Natural Alder":"#b7794b", "Natural Beech":"#d6b47c", "Natural Oak":"#c49a6c", "Natural Hickory":"#a66a3f", "Natural Maple":"#d8bc8a", "Natural White Oak":"#cdbb9b", "Natural Cherry":"#7f3f2a"
   };
 
   function qs(id) { return document.getElementById(id); }
-  function option(select, value, label) { const o = document.createElement("option"); o.value = value; o.textContent = label; select.appendChild(o); }
+  function option(select, value, label, meta = {}) { const o = document.createElement("option"); o.value = value; o.textContent = label; if (meta.swatch) o.dataset.swatch = meta.swatch; if (meta.image) o.dataset.image = meta.image; select.appendChild(o); }
   function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
   async function waitForVisualizer() {
@@ -106,6 +106,19 @@ window.CV_CUSTOM_CATALOGS = {
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error("Could not load " + url);
     return res.json();
+  }
+
+  function showCatalogStatus(message) {
+    const card = qs("jcr_custom_catalog_card");
+    if (!card) return;
+    let status = qs("jcr_catalog_status");
+    if (!status) {
+      status = document.createElement("div");
+      status.id = "jcr_catalog_status";
+      status.style.cssText = "margin-top:14px;padding:12px 14px;border-radius:14px;background:#eff6ff;color:#1e3a8a;font-size:13px;font-weight:900;line-height:1.45;";
+      card.appendChild(status);
+    }
+    status.textContent = message;
   }
 
   function filterCatalogBySelections(catalogs, selections) {
@@ -144,7 +157,16 @@ window.CV_CUSTOM_CATALOGS = {
       btn.setAttribute("data-value", opt.value);
       btn.setAttribute("data-select", selectId);
       btn.innerHTML = '<div class="jcr-dot"></div><span></span>';
-      btn.querySelector(".jcr-dot").style.background = swatchColors[opt.textContent] || "#e5e7eb";
+      const dot = btn.querySelector(".jcr-dot");
+      const swatch = opt.dataset.swatch || opt.dataset.image || "";
+      if (swatch) {
+        dot.style.background = 'center/cover no-repeat url("' + swatch + '")';
+        dot.style.width = "42px";
+        dot.style.height = "34px";
+        dot.style.borderRadius = "10px";
+      } else {
+        dot.style.background = swatchColors[opt.textContent] || "#e5e7eb";
+      }
       btn.querySelector("span").textContent = opt.textContent;
       btn.addEventListener("click", function () {
         select.value = opt.value;
@@ -165,11 +187,12 @@ window.CV_CUSTOM_CATALOGS = {
       const card = document.createElement("div");
       card.className = "jcr-door-option" + (index === 0 ? " active" : "");
       card.setAttribute("data_value", door.value || door.label);
+      const image = door.image || door.thumbnail || door.swatch || "";
       card.innerHTML = (index === 0 ? '<div class="jcr-ribbon">Catalog</div>' : '') +
-        '<div class="jcr-door-preview"><img src="' + (door.image || DEFAULT_DOOR_IMAGE) + '" alt=""></div>' +
+        '<div class="jcr-door-preview"><img src="' + (image || DEFAULT_DOOR_IMAGE) + '" alt=""></div>' +
         '<div class="jcr-door-name"></div><div class="jcr-door-desc"></div>';
       card.querySelector(".jcr-door-name").textContent = door.label || door.name || "Door Style";
-      card.querySelector(".jcr-door-desc").textContent = door.desc || "Available cabinet door style";
+      card.querySelector(".jcr-door-desc").textContent = door.desc || (image ? "Catalog image attached" : "Image crop pending");
       card.addEventListener("click", function () {
         grid.querySelectorAll(".jcr-door-option").forEach(c => c.classList.remove("active"));
         card.classList.add("active");
@@ -189,8 +212,9 @@ window.CV_CUSTOM_CATALOGS = {
     base.innerHTML = "";
     option(base, "", "Same as Main");
     finishes.forEach(f => {
-      option(upper, f.value || f.label, f.label || f.value);
-      option(base, String(f.value || f.label).replace("cabinet finish", "base cabinet finish"), f.label || f.value);
+      const swatch = f.swatch || f.image || f.thumbnail || "";
+      option(upper, f.value || f.label, f.label || f.value, { swatch });
+      option(base, String(f.value || f.label).replace("cabinet finish", "base cabinet finish"), f.label || f.value, { swatch });
     });
     buildSwatches("jcr_color");
     buildSwatches("jcr_island");
@@ -219,6 +243,10 @@ window.CV_CUSTOM_CATALOGS = {
       if (!line) return;
       renderDoors(line.doors || []);
       setFinishOptions(line);
+      const doorCount = (line.doors || []).length;
+      const finishCount = (line.finishes || []).length;
+      const imageCount = (line.doors || []).filter(d => d.image || d.thumbnail || d.swatch).length;
+      showCatalogStatus("Catalog loaded: " + doorCount + " door styles, " + finishCount + " finishes. " + imageCount + " door image assets attached.");
     }
 
     manufacturerInput.innerHTML = "";
@@ -234,13 +262,20 @@ window.CV_CUSTOM_CATALOGS = {
       if (!companyKey) return;
       const company = await fetchJson("/api/company?companyKey=" + encodeURIComponent(companyKey) + "&_=" + Date.now());
       const selections = company.catalogSelections || [];
-      if (!selections.length) return;
+      if (!selections.length) {
+        showCatalogStatus("No customer catalog selected in admin yet.");
+        return;
+      }
       const catalogs = await Promise.all(selections.map(s => fetchJson("/api/catalogs?catalogId=" + encodeURIComponent(s.catalogId) + "&_=" + Date.now()).catch(() => null)));
       const filtered = filterCatalogBySelections(catalogs.filter(Boolean), selections);
-      if (!filtered) return;
+      if (!filtered) {
+        showCatalogStatus("Catalog selected, but no matching lines were found. Re-save the customer catalog line selections in admin.");
+        return;
+      }
       window.CV_CUSTOM_CATALOGS.defaultCatalog = filtered;
       if (await waitForVisualizer()) applyCatalog(filtered);
     } catch (error) {
+      showCatalogStatus("Customer catalog could not load. Check admin selection and re-save customer.");
       console.warn("Customer catalog load skipped:", error);
     }
   }
