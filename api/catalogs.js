@@ -25,7 +25,7 @@ export default async function handler(req, res) {
       const catalogId = req.query.catalogId || req.query.id;
       if (catalogId) {
         const catalog = await getCatalog(catalogId);
-        if (!catalog) return res.status(404).json({ error: "Catalog not found." });
+        if (!catalog || catalog.status === "archived") return res.status(404).json({ error: "Catalog not found." });
 
         const includeVersions = String(req.query.versions || "") === "1";
         if (!includeVersions) return res.status(200).json(catalog);
@@ -34,7 +34,9 @@ export default async function handler(req, res) {
         return res.status(200).json({ ...catalog, versions });
       }
 
-      const catalogs = await listCatalogs();
+      const catalogs = (await listCatalogs()).filter(function(catalog) {
+        return catalog && catalog.status !== "archived";
+      });
       return res.status(200).json({ catalogs });
     }
 
