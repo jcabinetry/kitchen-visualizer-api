@@ -40,63 +40,112 @@ function cleanNameFromUrl(url) {
   }
 }
 
-function door(name, desc) {
+function door(name, desc, image = "") {
   return {
     id: cleanId(name),
     label: name,
     value: `Aristokraft ${name} cabinet door style`,
-    image: "",
+    image,
     desc: desc || "Aristokraft cabinet door style"
   };
 }
 
-function finish(name, type) {
+function finish(name, type, swatch = "") {
   return {
     id: cleanId(name),
     label: name,
     value: `Aristokraft ${name} ${type || "cabinet finish"}`,
-    image: "",
-    swatch: ""
+    image: swatch,
+    swatch
   };
 }
 
-function aristokraftCatalog(sourceUrl, version) {
-  const doors = [
-    door("Benton", "Shaker-style cabinet door"),
-    door("Brellin", "Wide rail shaker-style cabinet door"),
-    door("Briarcliff II", "Traditional raised-panel cabinet door"),
-    door("Durham", "Classic recessed-panel cabinet door"),
-    door("Ellis", "Simple shaker-style cabinet door"),
-    door("Glyn", "Clean transitional cabinet door"),
-    door("Lillian", "Decorative traditional cabinet door"),
-    door("Maddox", "Modern flat/recessed cabinet door"),
-    door("Quill", "Contemporary cabinet door"),
-    door("Sinclair", "Popular shaker-style cabinet door"),
-    door("Teagan", "Classic transitional cabinet door"),
-    door("Winstead", "Traditional raised-panel cabinet door")
+function unique(values) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function assetUrl(sourceUrl, path) {
+  try {
+    return new URL(path, sourceUrl).href;
+  } catch (_error) {
+    return "";
+  }
+}
+
+async function imageExists(url) {
+  try {
+    const response = await fetch(url, { method: "HEAD" });
+    return response.ok && String(response.headers.get("content-type") || "").startsWith("image/");
+  } catch (_error) {
+    return false;
+  }
+}
+
+async function discoverFlipbookImages(sourceUrl) {
+  const found = [];
+  if (!sourceUrl) return found;
+
+  try {
+    const htmlResponse = await fetch(sourceUrl, { cache: "no-store" });
+    const html = await htmlResponse.text().catch(function() { return ""; });
+    const matches = html.match(/(?:src|href)=["']([^"']+\.(?:jpg|jpeg|png|webp))(?:\?[^"']*)?["']/gi) || [];
+    matches.forEach(function(match) {
+      const inner = match.match(/["']([^"']+)/)?.[1];
+      if (inner) found.push(assetUrl(sourceUrl, inner));
+    });
+  } catch (_error) {}
+
+  found.push(assetUrl(sourceUrl, "files/assets/cover/1.jpg"));
+
+  const candidates = [];
+  for (let i = 1; i <= 36; i += 1) {
+    const padded = String(i).padStart(4, "0");
+    candidates.push(assetUrl(sourceUrl, `files/assets/mobile/pages/page${padded}.jpg`));
+    candidates.push(assetUrl(sourceUrl, `files/assets/common/page-html5-substrates/page${padded}_1.jpg`));
+  }
+
+  const checks = await Promise.all(candidates.map(async function(url) {
+    return (await imageExists(url)) ? url : "";
+  }));
+
+  return unique([...found, ...checks]);
+}
+
+async function aristokraftCatalog(sourceUrl, version) {
+  const catalogImages = await discoverFlipbookImages(sourceUrl);
+  const coverImage = catalogImages[0] || "";
+  const doorPageImages = catalogImages.slice(1, 14);
+  const finishPageImages = catalogImages.slice(14, 30);
+
+  const doorData = [
+    ["Benton", "Shaker-style cabinet door"],
+    ["Brellin", "Wide rail shaker-style cabinet door"],
+    ["Briarcliff II", "Traditional raised-panel cabinet door"],
+    ["Durham", "Classic recessed-panel cabinet door"],
+    ["Ellis", "Simple shaker-style cabinet door"],
+    ["Glyn", "Clean transitional cabinet door"],
+    ["Lillian", "Decorative traditional cabinet door"],
+    ["Maddox", "Modern flat/recessed cabinet door"],
+    ["Quill", "Contemporary cabinet door"],
+    ["Sinclair", "Popular shaker-style cabinet door"],
+    ["Teagan", "Classic transitional cabinet door"],
+    ["Winstead", "Traditional raised-panel cabinet door"]
   ];
 
-  const painted = [
-    finish("PureStyle White", "painted cabinet finish"),
-    finish("White", "painted cabinet finish"),
-    finish("Frost", "painted cabinet finish"),
-    finish("Stone Gray", "painted cabinet finish"),
-    finish("Flagstone", "painted cabinet finish"),
-    finish("Burlap", "painted cabinet finish"),
-    finish("Sarsaparilla", "painted cabinet finish"),
-    finish("Colada", "painted cabinet finish"),
-    finish("Mythic Blue", "painted cabinet finish"),
-    finish("Sage", "painted cabinet finish")
-  ];
+  const doors = doorData.map(function(item, index) {
+    return door(item[0], item[1], doorPageImages[index] || coverImage);
+  });
 
-  const wood = [
-    finish("Natural", "wood stain cabinet finish"),
-    finish("Cafe", "wood stain cabinet finish"),
-    finish("Umber", "wood stain cabinet finish"),
-    finish("Cocoa", "wood stain cabinet finish"),
-    finish("Autumn Brown", "wood stain cabinet finish"),
-    finish("Flagstone Stain", "wood stain cabinet finish")
-  ];
+  const paintedNames = ["PureStyle White", "White", "Frost", "Stone Gray", "Flagstone", "Burlap", "Sarsaparilla", "Colada", "Mythic Blue", "Sage"];
+  const woodNames = ["Natural", "Cafe", "Umber", "Cocoa", "Autumn Brown", "Flagstone Stain"];
+
+  const painted = paintedNames.map(function(name, index) {
+    return finish(name, "painted cabinet finish", finishPageImages[index] || coverImage);
+  });
+
+  const wood = woodNames.map(function(name, index) {
+    return finish(name, "wood stain cabinet finish", finishPageImages[index + painted.length] || coverImage);
+  });
 
   return {
     name: "Aristokraft",
@@ -104,7 +153,13 @@ function aristokraftCatalog(sourceUrl, version) {
     version,
     sourceType: "url",
     sourceUrl,
-    notes: "Starter extracted catalog with door styles, finish names, species, and image/swatch fields ready for cropped snippets.",
+    notes: `Imported with ${doors.length} door styles, ${painted.length + wood.length} finishes, and ${catalogImages.length} discovered catalog image assets. Exact cropped door/swatch snippets can replace page-level images as the image cropper is added.`,
+    extraction: {
+      sourceUrl,
+      imageAssets: catalogImages,
+      extractedAt: new Date().toISOString(),
+      status: catalogImages.length ? "assets-discovered" : "starter-data-only"
+    },
     manufacturers: [
       {
         id: "aristokraft",
@@ -141,7 +196,7 @@ function aristokraftCatalog(sourceUrl, version) {
   };
 }
 
-function starterCatalogFromImport(body) {
+async function starterCatalogFromImport(body) {
   const name = String(body.name || cleanNameFromUrl(body.sourceUrl || body.catalogUrl || body.url)).trim();
   const version = String(body.version || new Date().toISOString().slice(0, 10)).trim();
   const sourceUrl = String(body.sourceUrl || body.catalogUrl || body.url || "").trim();
@@ -183,9 +238,14 @@ export default async function handler(req, res) {
   if (!requireAdmin(req, res)) return;
 
   try {
-    const catalogShell = starterCatalogFromImport(req.body || {});
+    const catalogShell = await starterCatalogFromImport(req.body || {});
     const catalog = await saveCatalog(catalogShell);
-    return res.status(200).json({ catalog, message: "Catalog saved to library." });
+    return res.status(200).json({
+      catalog,
+      message: catalog.extraction?.status === "assets-discovered"
+        ? "Catalog imported with discovered image assets."
+        : "Catalog saved to library."
+    });
   } catch (error) {
     return res.status(400).json({ error: error?.message || "Catalog import failed." });
   }
