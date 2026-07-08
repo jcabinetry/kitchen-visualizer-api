@@ -135,3 +135,49 @@ window.CV_CUSTOM_CATALOGS = {
     ]
   }
 };
+
+(function paintSavedCatalogSwatches() {
+  function getCatalog() {
+    try {
+      if (typeof KV_COMPANY !== "undefined" && KV_COMPANY.catalog && KV_COMPANY.catalog.manufacturers) return KV_COMPANY.catalog;
+    } catch (_error) {}
+    return window.CV_CUSTOM_CATALOGS && window.CV_CUSTOM_CATALOGS.defaultCatalog;
+  }
+
+  function swatchMap() {
+    const catalog = getCatalog();
+    const map = new Map();
+    (catalog?.manufacturers || []).forEach(function(manufacturer) {
+      (manufacturer.lines || []).forEach(function(line) {
+        (line.finishes || []).forEach(function(finish) {
+          const label = String(finish.label || finish.name || "").trim();
+          const swatch = finish.swatch || finish.image || finish.thumbnail || "";
+          if (label && swatch) map.set(label.toLowerCase(), swatch);
+        });
+      });
+    });
+    return map;
+  }
+
+  function repaint() {
+    const map = swatchMap();
+    if (!map.size) return;
+    document.querySelectorAll(".jcr-swatch").forEach(function(button) {
+      const label = (button.querySelector("span")?.textContent || "").trim();
+      const swatch = map.get(label.toLowerCase());
+      const dot = button.querySelector(".jcr-dot");
+      if (!swatch || !dot) return;
+      dot.style.backgroundImage = "url(\"" + swatch + "\")";
+      dot.style.backgroundSize = "cover";
+      dot.style.backgroundPosition = "center";
+      dot.style.backgroundColor = "#fff";
+    });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", repaint);
+  else repaint();
+
+  const observer = new MutationObserver(function() { repaint(); });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  window.addEventListener("catalogs-updated", repaint);
+})();
