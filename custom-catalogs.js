@@ -118,8 +118,10 @@ window.CV_CUSTOM_CATALOGS = {
       (manufacturer.lines || []).forEach(function(line) {
         (line.doors || []).forEach(function(door) {
           const label = String(door.label || door.name || "").trim();
+          const value = String(door.value || "").trim();
           const image = door.image || door.thumbnail || "";
           if (label && image) map.set(label.toLowerCase(), image);
+          if (value && image) map.set(value.toLowerCase(), image);
         });
       });
     });
@@ -142,15 +144,33 @@ window.CV_CUSTOM_CATALOGS = {
     return active ? cssImageUrl(active.style.backgroundImage) : "";
   }
 
-  function selectedDoorImage() {
-    const activeImg = document.querySelector(".jcr-door-option.active .jcr-door-preview img");
-    if (activeImg && activeImg.src) return activeImg.src;
-    const selectedText = document.querySelector(".jcr-door-option.active .jcr-door-name")?.textContent || "";
-    return doorMap().get(selectedText.trim().toLowerCase()) || "";
+  function selectedDoorLabel() {
+    const select = document.getElementById("jcr_style");
+    if (select && select.options.length) {
+      const label = select.options[select.selectedIndex]?.textContent?.trim();
+      if (label) return label;
+      if (select.value) return select.value;
+    }
+    return document.querySelector(".jcr-door-option.active .jcr-door-name")?.textContent?.trim() || "";
   }
 
-  function selectedDoorLabel() {
-    return document.querySelector(".jcr-door-option.active .jcr-door-name")?.textContent?.trim() || "";
+  function selectedDoorImage() {
+    const map = doorMap();
+    const select = document.getElementById("jcr_style");
+    const label = selectedDoorLabel();
+    if (label) {
+      const fromLabel = map.get(label.toLowerCase());
+      if (fromLabel) return fromLabel;
+    }
+    if (select && select.value) {
+      const fromValue = map.get(String(select.value).trim().toLowerCase());
+      if (fromValue) return fromValue;
+    }
+    const activeText = document.querySelector(".jcr-door-option.active .jcr-door-name")?.textContent || "";
+    const fromActive = map.get(activeText.trim().toLowerCase());
+    if (fromActive) return fromActive;
+    const activeImg = document.querySelector(".jcr-door-option.active .jcr-door-preview img");
+    return activeImg && activeImg.src ? activeImg.src : "";
   }
 
   function rgbToHex(r, g, b) {
@@ -230,8 +250,9 @@ window.CV_CUSTOM_CATALOGS = {
       let target = input;
       try {
         const url = typeof input === "string" ? input : input?.url || "";
-        const isSharedGenerate = url.includes("/api/generate") && !url.includes("/api/generate-catalog");
-        if (isSharedGenerate && init?.body && typeof init.body === "string") {
+        const isGenerate = url.includes("/api/generate");
+        const shouldRedirect = isGenerate && !url.includes("/api/generate-catalog");
+        if (isGenerate && init?.body && typeof init.body === "string") {
           const body = JSON.parse(init.body);
           const upperSwatch = selectedSwatch("jcr_color");
           const baseSwatch = selectedSwatch("jcr_island") || upperSwatch;
@@ -261,7 +282,7 @@ window.CV_CUSTOM_CATALOGS = {
           if (doorLabel) body.style = "exact selected catalog door: " + doorLabel;
           body.prompt = String(body.prompt || "") + "\n\nCATALOG MATCH REQUIREMENTS:\nThe selected catalog door and swatches are hard requirements.\nDoor style to match exactly: " + (doorLabel || "not attached") + "\nDoor reference image: " + (doorImage ? "attached" : "not attached") + "\nUpper/wall finish swatch: " + (upperSwatch ? upperName + (upperHex ? " " + upperHex : "") + " attached" : "not attached") + "\nBase/lower cabinet finish swatch: " + (baseSwatch ? baseName + (baseHex ? " " + baseHex : "") + " attached" : "not attached") + "\nUse the exact visible color from each selected swatch. Match the selected catalog door slab/rail/stile/panel profile as closely as possible on every matching cabinet face. Use the base/lower finish for all base cabinets, including any island cabinets.";
           init = { ...init, body: JSON.stringify(body) };
-          target = typeof input === "string" ? url.replace("/api/generate", "/api/generate-catalog") : url.replace("/api/generate", "/api/generate-catalog");
+          if (shouldRedirect) target = url.replace("/api/generate", "/api/generate-catalog");
         }
       } catch (_error) {}
       return originalFetch(target, init);
