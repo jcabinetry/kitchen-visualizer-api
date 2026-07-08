@@ -1,4 +1,10 @@
-export { config } from "./generate.js";
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "35mb"
+    }
+  }
+};
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
