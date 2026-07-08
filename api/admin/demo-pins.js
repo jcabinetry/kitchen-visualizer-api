@@ -5,6 +5,7 @@ import {
   deactivateDemoPin,
   deleteDemoPin,
   isValidDurationHours,
+  listDemoPins,
   normalizeDemoPin,
   normalizeDurationHours,
   saveDemoPin
@@ -24,6 +25,11 @@ export default async function handler(req, res) {
   if (!requireAdmin(req, res)) return;
 
   try {
+    if (req.method === "GET") {
+      const demoPins = await listDemoPins();
+      return res.status(200).json({ demoPins });
+    }
+
     if (req.method === "POST") {
       const durationHours = normalizeDurationHours(req.body?.durationHours);
       const companyName = cleanCompanyName(req.body?.companyName);
