@@ -171,9 +171,11 @@ window.CV_CUSTOM_CATALOGS = {
     window.__catalogGenerateFetchPatched = true;
     const originalFetch = window.fetch.bind(window);
     window.fetch = function(input, init) {
+      let target = input;
       try {
         const url = typeof input === "string" ? input : input?.url || "";
-        if (url.includes("/api/generate") && init?.body && typeof init.body === "string") {
+        const isSharedGenerate = url.includes("/api/generate") && !url.includes("/api/generate-catalog");
+        if (isSharedGenerate && init?.body && typeof init.body === "string") {
           const body = JSON.parse(init.body);
           const upperSwatch = selectedSwatch("jcr_color");
           const baseSwatch = selectedSwatch("jcr_island") || upperSwatch;
@@ -195,9 +197,10 @@ window.CV_CUSTOM_CATALOGS = {
           if (doorLabel) body.style = doorLabel + " catalog door style";
           body.prompt = String(body.prompt || "") + "\n\nSELECTED CATALOG REFERENCES SENT WITH THIS REQUEST:\nDoor style image: " + (doorImage ? "attached" : "not attached") + "\nUpper/wall finish swatch: " + (upperSwatch ? upperName + " attached" : "not attached") + "\nBase/lower cabinet finish swatch: " + (baseSwatch ? baseName + " attached" : "not attached") + "\nUse the base/lower finish for all base cabinets, including any island cabinets. Do not treat this as island-only.";
           init = { ...init, body: JSON.stringify(body) };
+          target = typeof input === "string" ? url.replace("/api/generate", "/api/generate-catalog") : url.replace("/api/generate", "/api/generate-catalog");
         }
       } catch (_error) {}
-      return originalFetch(input, init);
+      return originalFetch(target, init);
     };
   }
 
