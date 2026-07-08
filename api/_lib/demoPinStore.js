@@ -1,7 +1,7 @@
 import { getRedis } from "./redisClient.js";
 
 const DEMO_PIN_PREFIX = "visualizer:demo-pin:";
-const DEMO_TYPES = new Set(["showroom", "lead", "custom"]);
+const DEMO_TYPES = new Set(["showroom", "lead", "custom", "all"]);
 const DURATIONS = new Set([24, 48, 72, 168, 336, 720]);
 
 function pinKey(pin) {
