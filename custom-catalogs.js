@@ -87,6 +87,8 @@ window.CV_CUSTOM_CATALOGS = {
 };
 
 (function catalogVisualizerBridge() {
+  const colorCache = new Map();
+
   function getCatalog() {
     try {
       if (typeof KV_COMPANY !== "undefined" && KV_COMPANY.catalog && KV_COMPANY.catalog.manufacturers) return KV_COMPANY.catalog;
@@ -151,6 +153,60 @@ window.CV_CUSTOM_CATALOGS = {
     return document.querySelector(".jcr-door-option.active .jcr-door-name")?.textContent?.trim() || "";
   }
 
+  function rgbToHex(r, g, b) {
+    return "#" + [r, g, b].map(function(value) {
+      return Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0");
+    }).join("");
+  }
+
+  function readAverageHex(imageUrl) {
+    if (!imageUrl) return Promise.resolve("");
+    if (colorCache.has(imageUrl)) return Promise.resolve(colorCache.get(imageUrl));
+    return new Promise(function(resolve) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function() {
+        try {
+          const canvas = document.createElement("canvas");
+          const size = 40;
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, size, size);
+          const data = ctx.getImageData(0, 0, size, size).data;
+          let r = 0, g = 0, b = 0, count = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            const alpha = data[i + 3];
+            if (alpha < 180) continue;
+            const max = Math.max(data[i], data[i + 1], data[i + 2]);
+            const min = Math.min(data[i], data[i + 1], data[i + 2]);
+            if (max > 245 && min > 235) continue;
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+            count++;
+          }
+          if (!count) {
+            for (let i = 0; i < data.length; i += 4) {
+              r += data[i];
+              g += data[i + 1];
+              b += data[i + 2];
+              count++;
+            }
+          }
+          const hex = count ? rgbToHex(Math.round(r / count), Math.round(g / count), Math.round(b / count)) : "";
+          colorCache.set(imageUrl, hex);
+          resolve(hex);
+        } catch (_error) {
+          colorCache.set(imageUrl, "");
+          resolve("");
+        }
+      };
+      img.onerror = function() { resolve(""); };
+      img.src = imageUrl;
+    });
+  }
+
   function repaint() {
     const map = swatchMap();
     if (!map.size) return;
@@ -170,7 +226,7 @@ window.CV_CUSTOM_CATALOGS = {
     if (window.__catalogGenerateFetchPatched) return;
     window.__catalogGenerateFetchPatched = true;
     const originalFetch = window.fetch.bind(window);
-    window.fetch = function(input, init) {
+    window.fetch = async function(input, init) {
       let target = input;
       try {
         const url = typeof input === "string" ? input : input?.url || "";
@@ -185,6 +241,8 @@ window.CV_CUSTOM_CATALOGS = {
           const baseSelect = document.getElementById("jcr_island");
           const upperName = colorSelect?.options[colorSelect.selectedIndex]?.textContent || "";
           const baseName = baseSelect?.value === "" ? upperName : (baseSelect?.options[baseSelect.selectedIndex]?.textContent || upperName);
+          const upperHex = await readAverageHex(upperSwatch);
+          const baseHex = await readAverageHex(baseSwatch);
           const refs = Array.isArray(body.referenceImages) ? body.referenceImages.filter(Boolean) : [];
           if (doorImage) refs.unshift(doorImage);
           if (upperSwatch) refs.unshift(upperSwatch);
@@ -192,10 +250,16 @@ window.CV_CUSTOM_CATALOGS = {
           body.referenceImages = Array.from(new Set(refs)).slice(0, 8);
           if (upperSwatch) body.mainCustomReference = upperSwatch;
           if (baseSwatch) body.islandCustomReference = baseSwatch;
-          body.color = upperName ? "upper/wall cabinet finish: " + upperName : body.color;
-          body.island = baseName ? "base/lower cabinet finish: " + baseName + " applied to all base cabinets and any island cabinets" : body.island;
-          if (doorLabel) body.style = doorLabel + " catalog door style";
-          body.prompt = String(body.prompt || "") + "\n\nSELECTED CATALOG REFERENCES SENT WITH THIS REQUEST:\nDoor style image: " + (doorImage ? "attached" : "not attached") + "\nUpper/wall finish swatch: " + (upperSwatch ? upperName + " attached" : "not attached") + "\nBase/lower cabinet finish swatch: " + (baseSwatch ? baseName + " attached" : "not attached") + "\nUse the base/lower finish for all base cabinets, including any island cabinets. Do not treat this as island-only.";
+          body.catalogDoorReference = doorImage || null;
+          body.catalogDoorName = doorLabel || "";
+          body.upperSwatchName = upperName || "";
+          body.baseSwatchName = baseName || "";
+          body.upperSwatchHex = upperHex || null;
+          body.baseSwatchHex = baseHex || upperHex || null;
+          body.color = upperName ? "exact selected upper/wall cabinet swatch: " + upperName + (upperHex ? " " + upperHex : "") : body.color;
+          body.island = baseName ? "exact selected base/lower cabinet swatch: " + baseName + (baseHex ? " " + baseHex : "") + " applied to all base cabinets and any island cabinets" : body.island;
+          if (doorLabel) body.style = "exact selected catalog door: " + doorLabel;
+          body.prompt = String(body.prompt || "") + "\n\nCATALOG MATCH REQUIREMENTS:\nThe selected catalog door and swatches are hard requirements.\nDoor style to match exactly: " + (doorLabel || "not attached") + "\nDoor reference image: " + (doorImage ? "attached" : "not attached") + "\nUpper/wall finish swatch: " + (upperSwatch ? upperName + (upperHex ? " " + upperHex : "") + " attached" : "not attached") + "\nBase/lower cabinet finish swatch: " + (baseSwatch ? baseName + (baseHex ? " " + baseHex : "") + " attached" : "not attached") + "\nUse the exact visible color from each selected swatch. Match the selected catalog door slab/rail/stile/panel profile as closely as possible on every matching cabinet face. Use the base/lower finish for all base cabinets, including any island cabinets.";
           init = { ...init, body: JSON.stringify(body) };
           target = typeof input === "string" ? url.replace("/api/generate", "/api/generate-catalog") : url.replace("/api/generate", "/api/generate-catalog");
         }
