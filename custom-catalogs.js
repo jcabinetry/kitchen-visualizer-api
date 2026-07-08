@@ -144,33 +144,35 @@ window.CV_CUSTOM_CATALOGS = {
     return active ? cssImageUrl(active.style.backgroundImage) : "";
   }
 
+  function activeDoorCard() {
+    return document.querySelector(".jcr-door-option.active");
+  }
+
   function selectedDoorLabel() {
+    const active = activeDoorCard();
+    const activeLabel = active?.querySelector(".jcr-door-name")?.textContent?.trim();
+    if (activeLabel) return activeLabel;
     const select = document.getElementById("jcr_style");
-    if (select && select.options.length) {
-      const label = select.options[select.selectedIndex]?.textContent?.trim();
-      if (label) return label;
-      if (select.value) return select.value;
-    }
-    return document.querySelector(".jcr-door-option.active .jcr-door-name")?.textContent?.trim() || "";
+    if (select && select.value) return select.value;
+    return "";
   }
 
   function selectedDoorImage() {
+    const active = activeDoorCard();
+    const activeImg = active?.querySelector(".jcr-door-preview img");
+    if (activeImg && activeImg.src) return activeImg.src;
     const map = doorMap();
-    const select = document.getElementById("jcr_style");
     const label = selectedDoorLabel();
     if (label) {
       const fromLabel = map.get(label.toLowerCase());
       if (fromLabel) return fromLabel;
     }
+    const select = document.getElementById("jcr_style");
     if (select && select.value) {
       const fromValue = map.get(String(select.value).trim().toLowerCase());
       if (fromValue) return fromValue;
     }
-    const activeText = document.querySelector(".jcr-door-option.active .jcr-door-name")?.textContent || "";
-    const fromActive = map.get(activeText.trim().toLowerCase());
-    if (fromActive) return fromActive;
-    const activeImg = document.querySelector(".jcr-door-option.active .jcr-door-preview img");
-    return activeImg && activeImg.src ? activeImg.src : "";
+    return "";
   }
 
   function rgbToHex(r, g, b) {
@@ -188,7 +190,7 @@ window.CV_CUSTOM_CATALOGS = {
       img.onload = function() {
         try {
           const canvas = document.createElement("canvas");
-          const size = 40;
+          const size = 80;
           canvas.width = size;
           canvas.height = size;
           const ctx = canvas.getContext("2d");
@@ -201,6 +203,7 @@ window.CV_CUSTOM_CATALOGS = {
             const max = Math.max(data[i], data[i + 1], data[i + 2]);
             const min = Math.min(data[i], data[i + 1], data[i + 2]);
             if (max > 245 && min > 235) continue;
+            if (max < 18 && min < 18) continue;
             r += data[i];
             g += data[i + 1];
             b += data[i + 2];
@@ -280,7 +283,7 @@ window.CV_CUSTOM_CATALOGS = {
           body.color = upperName ? "exact selected upper/wall cabinet swatch: " + upperName + (upperHex ? " " + upperHex : "") : body.color;
           body.island = baseName ? "exact selected base/lower cabinet swatch: " + baseName + (baseHex ? " " + baseHex : "") + " applied to all base cabinets and any island cabinets" : body.island;
           if (doorLabel) body.style = "exact selected catalog door: " + doorLabel;
-          body.prompt = String(body.prompt || "") + "\n\nCATALOG MATCH REQUIREMENTS:\nThe selected catalog door and swatches are hard requirements.\nDoor style to match exactly: " + (doorLabel || "not attached") + "\nDoor reference image: " + (doorImage ? "attached" : "not attached") + "\nUpper/wall finish swatch: " + (upperSwatch ? upperName + (upperHex ? " " + upperHex : "") + " attached" : "not attached") + "\nBase/lower cabinet finish swatch: " + (baseSwatch ? baseName + (baseHex ? " " + baseHex : "") + " attached" : "not attached") + "\nUse the exact visible color from each selected swatch. Match the selected catalog door slab/rail/stile/panel profile as closely as possible on every matching cabinet face. Use the base/lower finish for all base cabinets, including any island cabinets.";
+          body.prompt = String(body.prompt || "") + "\n\nCATALOG MATCH REQUIREMENTS:\nThe selected catalog door and swatches are hard requirements.\nDoor style to match exactly: " + (doorLabel || "not attached") + "\nDoor reference image: " + (doorImage ? "attached" : "not attached") + "\nUpper/wall finish swatch: " + (upperSwatch ? upperName + (upperHex ? " " + upperHex : "") + " attached" : "not attached") + "\nBase/lower cabinet finish swatch: " + (baseSwatch ? baseName + (baseHex ? " " + baseHex : "") + " attached" : "not attached") + "\nUse the exact visible color from each selected swatch. The swatch image is the color target; ignore any text, borders, shadows, or white background in the swatch image. Match the selected catalog door slab/rail/stile/panel profile as closely as possible on every matching cabinet face. Use the base/lower finish for all base cabinets, including any island cabinets.";
           init = { ...init, body: JSON.stringify(body) };
           if (shouldRedirect) target = url.replace("/api/generate", "/api/generate-catalog");
         }
