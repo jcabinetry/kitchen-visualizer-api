@@ -38,6 +38,11 @@ function toList(value) {
   return [value];
 }
 
+function normalizeSourceUrls(source, old) {
+  const values = [source.sourceUrls, source.sourceUrl, old?.sourceUrls, old?.sourceUrl].flat().filter(Boolean);
+  return Array.from(new Set(values.map(v => String(v).trim()).filter(Boolean)));
+}
+
 function normalizeCatalog(input = {}, existing = null) {
   let source = parseMaybeJson(input) || {};
   let old = parseMaybeJson(existing) || null;
@@ -57,14 +62,19 @@ function normalizeCatalog(input = {}, existing = null) {
       ? old.manufacturers
       : [];
 
+  const sourceUrls = normalizeSourceUrls(source, old);
+
   return {
     catalogId,
     name: name || catalogId,
     status: source.status === "archived" ? "archived" : "active",
     version: String(source.version || old?.version || "1.0").trim(),
     sourceType: String(source.sourceType || old?.sourceType || "manual").trim(),
-    sourceUrl: String(source.sourceUrl || old?.sourceUrl || "").trim(),
+    sourceUrl: String(source.sourceUrl || sourceUrls[0] || old?.sourceUrl || "").trim(),
+    sourceUrls,
     notes: String(source.notes || old?.notes || "").trim(),
+    extraction: source.extraction || old?.extraction || null,
+    stats: source.stats || old?.stats || null,
     manufacturers,
     createdAt: old?.createdAt || now,
     updatedAt: now
@@ -108,6 +118,9 @@ export async function saveCatalog(input) {
       savedAt: catalog.updatedAt,
       sourceType: catalog.sourceType,
       sourceUrl: catalog.sourceUrl,
+      sourceUrls: catalog.sourceUrls,
+      extraction: catalog.extraction,
+      stats: catalog.stats,
       manufacturers: catalog.manufacturers
     })
   ]);
