@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cabinet Visualizer Demo Links</title>
+<style>
+  :root{--blue:#1e3a8a;--blue-soft:#eff6ff;--blue-line:#dbeafe;--ink:#0f172a;--text:#334155;--muted:#475569;--page:#f8fafc;--white:#fff;--shadow:0 18px 45px rgba(30,58,138,.15)}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:Arial,sans-serif;background:#eef4fb;color:var(--text)}
+  .cv-wrap{max-width:1250px;margin:40px auto;padding:40px;font-family:Arial,sans-serif;background:var(--page);border-radius:28px}
+  .cv-title{font-size:56px;font-family:Georgia,serif;color:var(--blue);margin:0 0 12px;text-align:center;line-height:1.08}
+  .cv-subtitle{font-size:22px;color:var(--muted);max-width:880px;margin:auto;line-height:1.6;text-align:center}
+  .cv-banner{background:var(--blue);color:white;padding:18px;border-radius:16px;text-align:center;font-size:22px;font-weight:bold;margin:35px auto;max-width:980px}
+  .cv-section{margin-top:35px;background:var(--blue-soft);padding:36px;border-radius:24px;border:1px solid #bfdbfe}
+  .cv-section.white{background:white;border:1px solid var(--blue-line)}
+  .cv-section h2{text-align:center;font-size:36px;color:var(--blue);margin:0 0 12px}
+  .cv-section p{font-size:20px;color:var(--muted);max-width:900px;margin:0 auto;text-align:center;line-height:1.6}
+  .demo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;margin-top:30px}
+  .demo-card{background:white;border:1px solid var(--blue-line);border-radius:22px;padding:28px;box-shadow:0 12px 28px rgba(30,58,138,.10);display:grid;gap:14px;align-content:start;min-height:100%}
+  .demo-card.featured{border:3px solid var(--blue)}
+  .demo-card h2{font-size:30px;color:var(--blue);margin:0;text-align:left}
+  .demo-card p{font-size:17px;color:var(--muted);line-height:1.55;margin:0;text-align:left}
+  .demo-pill{display:inline-block;width:max-content;background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue-line);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:bold}
+  .cv-btn{display:block;background:var(--blue);color:white!important;padding:15px;border-radius:12px;text-decoration:none;font-size:18px;font-weight:bold;text-align:center;margin-top:auto}
+  .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:28px}
+  .step{background:white;border:1px solid var(--blue-line);border-radius:20px;padding:24px;box-shadow:0 10px 24px rgba(30,58,138,.10)}
+  .step strong{display:block;color:var(--blue);font-size:24px;margin-bottom:8px}
+  .step span{display:block;color:var(--text);font-size:17px;line-height:1.5}
+  .cv-cta{margin-top:45px;background:var(--blue);color:white;padding:44px;border-radius:24px;text-align:center}
+  .cv-cta h2{font-size:40px;margin:0 0 16px;font-family:Georgia,serif}
+  .cv-cta p{font-size:20px;color:#dbeafe;max-width:820px;margin:0 auto;line-height:1.6}
+  @media(max-width:900px){.demo-grid,.steps{grid-template-columns:1fr}.cv-title{font-size:42px}.cv-section h2{font-size:30px}}
+  @media(max-width:768px){.cv-wrap{margin:15px auto;padding:20px;border-radius:18px}.cv-title{font-size:36px}.cv-subtitle{font-size:17px}.cv-banner{font-size:16px;padding:16px;line-height:1.5}.cv-section{padding:24px}.demo-card{padding:24px}.demo-card h2{font-size:28px}.cv-btn{width:100%;font-size:18px}.cv-cta{padding:30px 22px}.cv-cta h2{font-size:30px}.cv-cta p{font-size:17px}}
+</style>
+</head>
+<body>
+  <main class="cv-wrap">
+    <h1 class="cv-title">Cabinet Visualizer Demos</h1>
+    <p class="cv-subtitle">Explore each demo version with the temporary PIN you were given. One PIN unlocks all three demo experiences until it expires.</p>
+
+    <div class="cv-banner">Have your temporary demo PIN ready before opening a demo.</div>
+
+    <section class="cv-section white" style="margin-top:0;">
+      <h2>Choose a Demo Version</h2>
+      <p>Each page opens with a PIN screen first. Enter the same temporary PIN on any demo below.</p>
+      <div class="demo-grid">
+        <article class="demo-card featured">
+          <span class="demo-pill">Showroom / Sales Team</span>
+          <h2>Showroom Demo</h2>
+          <p>Best for in-person sales conversations, showroom displays, and guided design presentations.</p>
+          <a class="cv-btn" href="demo-showroom-visualizer.html">Open Showroom Demo</a>
+        </article>
+        <article class="demo-card">
+          <span class="demo-pill">Website Lead Capture</span>
+          <h2>Lead Gen Demo</h2>
+          <p>Shows the website-ready visualizer flow built to collect customer interest and project details.</p>
+          <a class="cv-btn" href="demo-lead-visualizer.html">Open Lead Gen Demo</a>
+        </article>
+        <article class="demo-card">
+          <span class="demo-pill">Branded Customer Tool</span>
+          <h2>Custom Visualizer Demo</h2>
+          <p>Preview the full branded customer experience with demo company styling and design packet features.</p>
+          <a class="cv-btn" href="demo-custom-visualizer.html">Open Custom Demo</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="cv-section">
+      <h2>How to Use Your Demo PIN</h2>
+      <div class="steps">
+        <div class="step"><strong>1. Pick a demo</strong><span>Choose Showroom, Lead Gen, or Custom Visualizer from the cards above.</span></div>
+        <div class="step"><strong>2. Enter the PIN</strong><span>Use the temporary demo PIN provided by your visualizer representative.</span></div>
+        <div class="step"><strong>3. Try the tools</strong><span>Upload a kitchen photo, test colors and styles, and preview the branded experience.</span></div>
+      </div>
+    </section>
+
+    <section class="cv-cta">
+      <h2>Ready to See It in Action?</h2>
+      <p>Start with the version that matches your business goal, then use the same PIN to explore the others.</p>
+    </section>
+  </main>
+</body>
+</html>
