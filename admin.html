@@ -4,10 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cabinet Visualizer Admin</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:Inter,Arial,sans-serif;color:#172033;background:#f5f7fb}</style>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:Inter,Arial,sans-serif;color:#172033;background:#f5f7fb}.boot{width:min(520px,calc(100vw - 32px));background:#fff;border:1px solid #d9dee8;border-radius:14px;box-shadow:0 10px 30px rgba(23,32,51,.08);padding:22px}.boot h1{margin:0 0 8px;font-size:24px}.boot p{margin:0 0 16px;color:#647084;line-height:1.5}.demo-link{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 14px;border-radius:10px;background:#2457a6;color:#fff;text-decoration:none;font-weight:900}
+</style>
 </head>
 <body>
-<div>Loading admin...</div>
+<div class="boot"><h1>Loading admin...</h1><p>The Temporary Demo Access card loads inside this admin page. If it does not appear, open it directly below.</p><a class="demo-link" href="temporary-demo-access.html">Open Temporary Demo Access</a></div>
 <script>
 const ADMIN_SOURCE="https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/5fef209fd27b1d7906408b9258124637fe58eb6a/admin.html";
 const DEMO_CSS='.demo-access-box{margin:16px;border:1px solid var(--line);border-radius:14px;background:#fafbfe;padding:14px;display:grid;gap:12px}.demo-access-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.demo-access-result{display:none;border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px;line-height:1.55}.demo-access-result.active{display:block}.demo-pin-value{font-size:30px;font-weight:950;letter-spacing:.08em;color:var(--green)}@media(max-width:760px){.demo-access-grid{grid-template-columns:1fr}}';
@@ -26,7 +28,7 @@ function patchAdmin(html){
 fetch(ADMIN_SOURCE,{cache:'no-store'})
   .then(function(response){if(!response.ok)throw new Error('Could not load admin page.');return response.text();})
   .then(function(html){document.open();document.write(patchAdmin(html));document.close();})
-  .catch(function(error){document.body.innerHTML='<main style="max-width:520px;padding:24px"><h1>Admin failed to load</h1><p>'+error.message+'</p><p><a href="temporary-demo-access.html">Open Temporary Demo Access</a></p></main>';});
+  .catch(function(error){document.querySelector('.boot p').textContent='Admin failed to load: '+error.message;});
 </script>
 </body>
 </html>
