@@ -14,7 +14,7 @@ function isFinishType(item){return /(finish|color|colour|swatch|stain|paint|glaz
 function isGenericGuess(item){const n=slug(item?.name);return /^(door|door-style|cabinet-door|shaker-door|shaker-style-door|flat-panel-door|slab-door|raised-panel-door|recessed-panel-door|finish|color|colour|paint|stain|wood-finish|swatch|sample)$/.test(n)}
 function attachAssets(lines,items){const withAssets=uniqueItems(items).filter(item=>itemAsset(item)&&!isGenericGuess(item));lines.forEach(line=>{(line.doors||[]).forEach(door=>{const found=withAssets.find(item=>isDoorType(item)&&matchesLabel(door.label,item));if(found){door.image=itemAsset(found);door.thumbnail=itemAsset(found);door.imageStatus="ready";}});(line.finishes||[]).forEach(finish=>{const found=withAssets.find(item=>isFinishType(item)&&matchesLabel(finish.label,item));if(found){finish.swatch=itemAsset(found);finish.image=itemAsset(found);finish.thumbnail=itemAsset(found);finish.swatchStatus="ready";}})});return lines}
 function imagePlanFromItems(items){return uniqueItems(items).filter(item=>item.imageHint||item.bbox).map(item=>({type:item.type||"item",name:item.name||"",pdf:item.pdf||"",page:item.page||"",hint:item.imageHint||"",bbox:item.bbox||null,bboxKind:item.bboxKind||""}))}
-function cleanBbox(bbox,type){if(!Array.isArray(bbox)||bbox.length<4)return null;let [x,y,w,h]=bbox.map(Number);if(!isFinite(x)||!isFinite(y)||!isFinite(w)||!isFinite(h))return null;x=Math.max(0,Math.min(1000,x));y=Math.max(0,Math.min(1000,y));w=Math.max(0,Math.min(1000-x,w));h=Math.max(0,Math.min(1000-y,h));if(w<14||h<10)return null;if(isFinishType({type})&&(w>320||h>240))return null;if(isDoorType({type})&&(w>620||h>760))return null;return [Math.round(x),Math.round(y),Math.round(w),Math.round(h)]}
+function cleanBbox(bbox,type){if(!Array.isArray(bbox)||bbox.length<4)return null;let [x,y,w,h]=bbox.map(Number);if(!isFinite(x)||!isFinite(y)||!isFinite(w)||!isFinite(h))return null;x=Math.max(0,Math.min(1000,x));y=Math.max(0,Math.min(1000,y));w=Math.max(0,Math.min(1000-x,w));h=Math.max(0,Math.min(1000-y,h));if(w<12||h<10)return null;if(isFinishType({type})&&(w>360||h>260))return null;if(isDoorType({type})&&(w>760||h>880))return null;return [Math.round(x),Math.round(y),Math.round(w),Math.round(h)]}
 
 async function ai(content,max=12000){
   if(!process.env.OPENAI_API_KEY)throw new Error("OPENAI_API_KEY is not configured.");
@@ -28,20 +28,21 @@ async function scanPages(name,pages){
   const content=[{type:"input_text",text:`Look at these cabinet catalog page images and list visible cabinet catalog options. Return JSON only: {"items":[{"type":"door|finish|species|line|other","name":"exact visible product/finish name","description":"short note","pdf":"file name","page":"page number","imageHint":"where exact sample appears","bbox":[x,y,width,height],"bboxKind":"door|swatch|none","confidence":0.0}],"notes":""}.
 
 Name rules:
-- List every readable cabinet option label you can see, even if you cannot crop an image for it.
-- Include all readable finish/color names from color charts, swatch grids, finish tables, door cards, and captions.
-- Include all readable door style names from door grids and captions.
+- List every readable cabinet option label you can see, even when you cannot crop an image for it.
+- Include all readable finish/color names from color charts, swatch grids, finish tables, door cards, legends, captions, and lists.
+- Include all readable door style names from door grids, captions, labels above samples, labels below samples, and selection-guide pages.
 - Use exact printed catalog labels only. Do not invent generic names from appearance.
-- Do not output names like "Shaker-style Door", "Slab Door", "Flat-panel Door", "cabinet door", "finish", or "swatch" unless those exact words are the printed product name.
+- Do not output generic names like "Shaker-style Door", "Slab Door", "Flat-panel Door", "cabinet door", "finish", or "swatch" unless those exact words are the printed product name.
 
 Image bbox rules:
-- bbox uses tight normalized 0-1000 page coordinates.
-- Only include bbox when the exact labeled item has a visible isolated sample on that same page.
-- Door bbox must include only the door front/sample. Do not include a room photo, cover image, page banner, logo, text, finish rows, or neighboring doors.
-- Finish/color bbox must include only the color/material chip itself. Do not include the printed finish name, label text, whole row, whole card, whole page, or neighboring chips.
+- bbox uses normalized 0-1000 page coordinates.
+- Finish/color bbox must be tight and include only the color/material chip itself. Do not include printed finish name, label text, whole row, whole card, whole page, or neighboring chips.
 - The visualizer already prints the finish name below the swatch, so the swatch image must be just the color/material.
+- Door bbox should include the whole door sample/front. It is OK if it includes a small white margin so the door is not chopped off. Do not include finish chip rows, room photos, cover images, page banners, logos, or neighboring doors.
+- On door-grid pages, product names are often above or below the door sample; connect each visible door sample to the nearest exact door-style label.
+- On color-grid pages, connect each chip to the nearest readable finish/color label, but crop only the chip.
 - If the item name is readable but the exact chip/door crop is uncertain, include the item with bbox null and bboxKind "none".
-- Prefer a missing image over a wrong or off-center image. Manufacturer: ${name}.`}];
+- Prefer a missing image over a wrong image, but do not skip readable names. Manufacturer: ${name}.`}];
   pages.slice(0,4).forEach((p,n)=>{content.push({type:"input_text",text:`Image ${n+1}: ${p.fileName||"PDF"}, page ${p.pageNumber||n+1}`});content.push({type:"input_image",image_url:p.imageBase64})});
   const result=await ai(content,12000);
   return uniqueItems((Array.isArray(result.items)?result.items:[]).map(item=>{const type=String(item.type||"other");return {type,name:String(item.name||"").trim(),description:String(item.description||""),pdf:String(item.pdf||item.fileName||""),page:String(item.page||""),imageHint:String(item.imageHint||item.hint||""),bbox:cleanBbox(item.bbox,type),bboxKind:String(item.bboxKind||""),confidence:Number(item.confidence||0)||0}}).filter(item=>item.name&&!isGenericGuess(item)));
@@ -49,7 +50,7 @@ Image bbox rules:
 
 async function buildCatalog(name,items){
   const text=JSON.stringify(compactItems(items)).slice(0,150000);
-  const content=[{type:"input_text",text:`Convert these extracted cabinet catalog page items into a saved cabinet catalog. Return JSON only: {"lines":[{"name":"collection","description":"","doors":[{"name":"door style","description":"","image":"","imageStatus":"needs-image"}],"finishes":[{"name":"finish/color","description":"","swatch":"","swatchStatus":"needs-image"}],"species":["species"]}],"imagePlan":[{"type":"door or swatch","name":"item name","pdf":"file name","page":"page number","hint":"where the picture/swatch appears","bbox":[x,y,width,height]}],"notes":""}. Put exact visible door style names under doors, color/paint/stain/finish names under finishes, and wood/material names under species. Preserve all finish/color names even when no swatch crop is available. Do not invent names, do not create generic visual names, and do not leave it empty if readable items exist. Manufacturer: ${name}. Items: ${text}`}];
+  const content=[{type:"input_text",text:`Convert these extracted cabinet catalog page items into a saved cabinet catalog. Return JSON only: {"lines":[{"name":"collection","description":"","doors":[{"name":"door style","description":"","image":"","imageStatus":"needs-image"}],"finishes":[{"name":"finish/color","description":"","swatch":"","swatchStatus":"needs-image"}],"species":["species"]}],"imagePlan":[{"type":"door or swatch","name":"item name","pdf":"file name","page":"page number","hint":"where the picture/swatch appears","bbox":[x,y,width,height]}],"notes":""}. Put exact visible door style names under doors, color/paint/stain/finish names under finishes, and wood/material names under species. Preserve all finish/color names and all door style names even when no image crop is available. Do not invent names, do not create generic visual names, and do not leave it empty if readable items exist. Manufacturer: ${name}. Items: ${text}`}];
   return await ai(content,18000);
 }
 
@@ -93,7 +94,7 @@ export default async function handler(req,res){
     const readyDoors=lines.reduce((s,l)=>s+(l.doors||[]).filter(d=>d.image).length,0);
     const readySwatches=lines.reduce((s,l)=>s+(l.finishes||[]).filter(f=>f.swatch).length,0);
     const imagePlan=(Array.isArray(extracted.imagePlan)&&extracted.imagePlan.length?extracted.imagePlan:imagePlanFromItems(sourceItems));
-    const catalog=await saveCatalog({catalogId,name,version:new Date().toISOString().slice(0,10),sourceType:"pdf-page-images",sourceUrl:sourceUrls[0]||"page-images",sourceUrls,notes:extracted.notes||"PDF page images extracted.",extraction:{engine:"v8-name-first-clean-swatch-crops",status:(readyDoors||readySwatches)?"ready-with-images":"ready-needs-images",updatedAt:new Date().toISOString(),method,imagePlan},stats:{sources:sourceUrls.length,pdfSources:sourceUrls.length,pageImages,items:sourceItems.length,lines:lines.length,doors:lines.reduce((s,l)=>s+l.doors.length,0),finishes:lines.reduce((s,l)=>s+l.finishes.length,0),doorImages:readyDoors,swatchImages:readySwatches,species:Array.from(new Set(lines.flatMap(l=>l.species||[]))).length},manufacturers:[{id:slug(name),name,sourceUrl:sourceUrls[0]||"page-images",sourceUrls,lines}]});
+    const catalog=await saveCatalog({catalogId,name,version:new Date().toISOString().slice(0,10),sourceType:"pdf-page-images",sourceUrl:sourceUrls[0]||"page-images",sourceUrls,notes:extracted.notes||"PDF page images extracted.",extraction:{engine:"v9-balanced-door-chip-crops",status:(readyDoors||readySwatches)?"ready-with-images":"ready-needs-images",updatedAt:new Date().toISOString(),method,imagePlan},stats:{sources:sourceUrls.length,pdfSources:sourceUrls.length,pageImages,items:sourceItems.length,lines:lines.length,doors:lines.reduce((s,l)=>s+l.doors.length,0),finishes:lines.reduce((s,l)=>s+l.finishes.length,0),doorImages:readyDoors,swatchImages:readySwatches,species:Array.from(new Set(lines.flatMap(l=>l.species||[]))).length},manufacturers:[{id:slug(name),name,sourceUrl:sourceUrls[0]||"page-images",sourceUrls,lines}]});
     res.status(200).json({catalog,message:"Catalog extracted from PDF page images."});
   }catch(e){res.status(400).json({error:e?.message||"Page image extraction failed."})}
 }
