@@ -17,6 +17,10 @@ export function normalizeDurationHours(value) {
   return Number.isFinite(hours) ? hours : 0;
 }
 
+export function normalizeDemoPin(value) {
+  return String(value || "").trim();
+}
+
 export function isValidDemoType(value) {
   return DEMO_TYPES.has(normalizeDemoType(value));
 }
@@ -42,4 +46,25 @@ export async function getDemoPin(pin) {
   if (!record) return null;
   if (Date.now() >= new Date(record.expiresAt).getTime()) return null;
   return record;
+}
+
+export async function deactivateDemoPin(pin) {
+  const safePin = normalizeDemoPin(pin);
+  const record = await getDemoPin(safePin);
+  if (!record) throw new Error("Demo PIN not found or expired.");
+  const updated = {
+    ...record,
+    status: "inactive",
+    deactivatedAt: new Date().toISOString()
+  };
+  await saveDemoPin(updated);
+  return updated;
+}
+
+export async function deleteDemoPin(pin) {
+  const redis = getRedis();
+  const safePin = normalizeDemoPin(pin);
+  if (!safePin) throw new Error("Demo PIN is required.");
+  await redis.del(pinKey(safePin));
+  return { pin: safePin, deleted: true };
 }
