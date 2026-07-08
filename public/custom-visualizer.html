@@ -12,16 +12,21 @@
 <body>
   <div class="loader">
     <h2>Loading Custom Cabinet Visualizer...</h2>
-    <p>This test page is connected to the custom catalog development file.</p>
+    <p>Loading the catalog-enabled visualizer.</p>
   </div>
 
   <script>
-    fetch("https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/main/custom-visualizer.html?ts=" + Date.now(), { cache: "no-store" })
+    const cacheBust = Date.now();
+    fetch("https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/main/custom-visualizer.html?ts=" + cacheBust, { cache: "no-store" })
       .then(function(response) {
         if (!response.ok) throw new Error("Could not load custom visualizer.");
         return response.text();
       })
       .then(function(html) {
+        html = html.replace('src="custom-catalogs.js"', 'src="custom-catalogs.js?v=' + cacheBust + '"');
+        html = html.replaceAll("https://kitchen-visualizer-api.vercel.app/api/generate", "https://kitchen-visualizer-api.vercel.app/api/generate-catalog");
+        html = html.replaceAll("Change cabinet finishes only.", "Change the selected cabinet finish colors, selected catalog door style, countertops, backsplash, and flooring according to the selected options.");
+        html = html.replaceAll("This is a refacing-style visualization, not a remodel.", "This is a catalog-based design visualization. Apply every selected option that the customer chose.");
         document.open();
         document.write(html);
         document.close();
