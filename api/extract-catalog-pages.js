@@ -4,6 +4,7 @@ import { saveCatalog, cleanCatalogId } from "./_lib/catalogStore.js";
 function slug(v){return String(v||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,90)}
 function admin(req,res){const t=process.env.ADMIN_API_TOKEN||process.env.ADMIN_TOKEN||"";if(!t)return true;const s=req.headers["x-admin-token"]||req.headers.authorization?.replace(/^Bearer\s+/i,"");if(s===t)return true;res.status(401).json({error:"Unauthorized."});return false}
 function parseJson(text){const raw=String(text||"").trim();try{return JSON.parse(raw)}catch(e){}const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error("AI did not return JSON.");return JSON.parse(m[0])}
+function responseText(data){if(data?.output_text)return data.output_text;const parts=[];(data?.output||[]).forEach(o=>(o.content||[]).forEach(c=>{if(typeof c.text==="string")parts.push(c.text);if(typeof c.output_text==="string")parts.push(c.output_text)}));return parts.join("\n")||JSON.stringify(data)}
 function uniqueItems(items){const seen=new Set();return (items||[]).filter(item=>{const key=slug((item.type||"")+"-"+(item.name||"")+"-"+(item.pdf||"")+"-"+(item.page||""));if(!key||seen.has(key))return false;seen.add(key);return true})}
 
 async function ai(content,max=12000){
@@ -11,7 +12,7 @@ async function ai(content,max=12000){
   const r=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${process.env.OPENAI_API_KEY}`},body:JSON.stringify({model:process.env.CATALOG_VISION_MODEL||process.env.CATALOG_EXTRACT_MODEL||"gpt-4.1",input:[{role:"user",content}],max_output_tokens:max})});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(d?.error?.message||"Page image extraction failed.");
-  return parseJson(d.output_text||JSON.stringify(d));
+  return parseJson(responseText(d));
 }
 
 async function scanPages(name,pages){
