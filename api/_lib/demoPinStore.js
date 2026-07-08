@@ -72,8 +72,12 @@ export async function listDemoPins() {
 
   return records
     .filter(Boolean)
-    .filter(function(record) { return record.status === "active"; })
-    .sort(function(a, b) { return new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime(); });
+    .sort(function(a, b) {
+      const aStatus = a.status === "active" ? 0 : 1;
+      const bStatus = b.status === "active" ? 0 : 1;
+      if (aStatus !== bStatus) return aStatus - bStatus;
+      return new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime();
+    });
 }
 
 export async function deactivateDemoPin(pin) {
@@ -85,6 +89,20 @@ export async function deactivateDemoPin(pin) {
     status: "inactive",
     deactivatedAt: new Date().toISOString()
   };
+  await saveDemoPin(updated);
+  return updated;
+}
+
+export async function reactivateDemoPin(pin) {
+  const safePin = normalizeDemoPin(pin);
+  const record = await getDemoPin(safePin);
+  if (!record) throw new Error("Demo PIN not found or expired.");
+  const updated = {
+    ...record,
+    status: "active",
+    reactivatedAt: new Date().toISOString()
+  };
+  delete updated.deactivatedAt;
   await saveDemoPin(updated);
   return updated;
 }
