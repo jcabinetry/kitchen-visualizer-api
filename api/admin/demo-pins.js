@@ -8,6 +8,7 @@ import {
   listDemoPins,
   normalizeDemoPin,
   normalizeDurationHours,
+  reactivateDemoPin,
   saveDemoPin
 } from "../_lib/demoPinStore.js";
 
@@ -58,10 +59,18 @@ export default async function handler(req, res) {
       const action = String(req.body?.action || "deactivate").trim().toLowerCase();
 
       if (!pin) return res.status(400).json({ error: "Enter a demo PIN." });
-      if (action !== "deactivate") return res.status(400).json({ error: "Unsupported demo PIN action." });
 
-      const demoPin = await deactivateDemoPin(pin);
-      return res.status(200).json({ demoPin });
+      if (action === "deactivate") {
+        const demoPin = await deactivateDemoPin(pin);
+        return res.status(200).json({ demoPin });
+      }
+
+      if (action === "reactivate") {
+        const demoPin = await reactivateDemoPin(pin);
+        return res.status(200).json({ demoPin });
+      }
+
+      return res.status(400).json({ error: "Unsupported demo PIN action." });
     }
 
     if (req.method === "DELETE") {
