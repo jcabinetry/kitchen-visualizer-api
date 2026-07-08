@@ -27,6 +27,10 @@
         html = html.replaceAll("https://kitchen-visualizer-api.vercel.app/api/generate", "https://kitchen-visualizer-api.vercel.app/api/generate-catalog");
         html = html.replaceAll("Change cabinet finishes only.", "Change the selected cabinet finish colors, selected catalog door style, countertops, backsplash, and flooring according to the selected options.");
         html = html.replaceAll("This is a refacing-style visualization, not a remodel.", "This is a catalog-based design visualization. Apply every selected option that the customer chose.");
+        html = html.replace(
+          "body: JSON.stringify({\n          image: uploadedImageData,",
+          "body: JSON.stringify({\n          image: uploadedImageData,\n          catalogDoorReference: (document.querySelector(\".jcr-door-option.active .jcr-door-preview img\") || {}).src || null,\n          catalogDoorName: (document.querySelector(\".jcr-door-option.active .jcr-door-name\") || {}).textContent || null,"
+        );
         document.open();
         document.write(html);
         document.close();
