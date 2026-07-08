@@ -1,51 +1,3 @@
-const DEMO_PROFILES = {
-  showroom: {
-    companyName: "Demo Showroom Cabinetry",
-    ctaText: "Create Demo Design Packet"
-  },
-  lead: {
-    companyName: "Demo Lead Gen Cabinetry",
-    ctaText: "Request My Demo Estimate"
-  },
-  custom: {
-    companyName: "Demo Custom Cabinet Studio",
-    ctaText: "Create Demo Design Packet"
-  }
-};
-
-function demoCompany(demoType) {
-  const base = DEMO_PROFILES[demoType] || DEMO_PROFILES.custom;
-  return {
-    ...base,
-    companyKey: "DEMO",
-    monthlyLimit: 9999,
-    phone: "(555) 010-2026",
-    email: "demo@kpmtechnology.com",
-    city: "Denver, CO",
-    estimateUrl: "https://example.com/demo-estimate",
-    logoUrl: "https://dummyimage.com/420x140/172033/ffffff.png&text=KPM+Demo+Cabinetry",
-    primaryColor: "#2457a6",
-    secondaryColor: "#647084",
-    accentColor: "#16785f",
-    backgroundColor: "#f5f7fb",
-    cardColor: "#ffffff",
-    branding: {
-      phone: "(555) 010-2026",
-      email: "demo@kpmtechnology.com",
-      contactEmail: "demo@kpmtechnology.com",
-      city: "Denver, CO",
-      estimateUrl: "https://example.com/demo-estimate",
-      logoUrl: "https://dummyimage.com/420x140/172033/ffffff.png&text=KPM+Demo+Cabinetry",
-      primaryColor: "#2457a6",
-      secondaryColor: "#647084",
-      accentColor: "#16785f",
-      backgroundColor: "#f5f7fb",
-      cardColor: "#ffffff",
-      ctaText: base.ctaText
-    }
-  };
-}
-
 function safeCompanyScript(company) {
   return "const KV_COMPANY = " + JSON.stringify(company).replace(/<\//g, "<\\/") + ";";
 }
@@ -68,16 +20,18 @@ function runScriptInOrder(oldScript) {
 async function loadDemoVisualizer(demoType, expiresAt) {
   const mount = document.getElementById("visualizerMount");
   const expiresText = document.getElementById("expiresText");
-  const company = demoCompany(demoType);
   expiresText.textContent = expiresAt ? "PIN expires " + new Date(expiresAt).toLocaleString() : "";
 
-  const response = await fetch("custom-visualizer.html", { cache: "no-store" });
+  const response = await fetch(
+    "https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/main/custom-visualizer.html?ts=" + Date.now(),
+    { cache: "no-store" }
+  );
   if (!response.ok) throw new Error("Could not load demo visualizer.");
 
   let html = await response.text();
   html = html.replace(
     /const urlParams = new URLSearchParams\(window\.location\.search\);[\s\S]*?const KV_COMPANY = \{[\s\S]*?\};/,
-    safeCompanyScript(company)
+    safeCompanyScript({ companyKey: "DEMO", demoType })
   );
 
   mount.innerHTML = html;
