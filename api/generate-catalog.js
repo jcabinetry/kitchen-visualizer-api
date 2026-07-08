@@ -113,18 +113,22 @@ function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorRef
   const baseColorText = hasBaseReference ? `uploaded base/lower swatch reference for ${details.baseName}${details.baseHex ? ` (${details.baseHex})` : ""}` : details.baseName;
   const doorText = hasDoorReference ? `uploaded catalog door reference for ${details.doorName}` : details.doorName;
   return `
-Edit this exact kitchen photo into a realistic design preview.
-Keep the same kitchen photo, same camera angle, same room, same appliances, same cabinet box layout, same openings, and same door/drawer count.
-Do not create a new kitchen. Do not use a generic default style.
+Edit this exact kitchen photo into a realistic refacing preview, not a redesign.
+Keep the same kitchen photo, same camera angle, same room, same lighting, same appliances, same cabinet box layout, same openings, same door/drawer count, same walls, and same decor.
+Do not create a new kitchen. Do not invent a default cabinet style. Do not invent wood grain unless the selected swatch visibly contains wood grain.
 
 CATALOG CABINET REQUIREMENTS:
 Door style: ${doorText}.
 Upper/wall cabinet finish: ${upperColorText}.
 Base/lower cabinet finish: ${baseColorText}.
+The attached selected-catalog-door-reference image is the door style source of truth.
+The attached selected-upper-swatch-reference image is the upper/wall color source of truth.
+The attached selected-base-swatch-reference image is the base/lower color source of truth.
 Apply the selected upper/wall swatch color to every upper cabinet surface.
 Apply the selected base/lower swatch color to every lower cabinet surface below the countertops, including any island cabinets.
-Use the selected catalog door image as the required visual target for the door/drawer face profile. Match the slab, rail, stile, panel, and edge profile as closely as possible without changing the cabinet layout.
-Do not substitute white shaker, generic shaker, generic slab, or generic raised panel unless that exact catalog door was selected.
+If the selected swatch is a flat paint color, render flat painted cabinets. Do not add wood grain, stain, or texture.
+Use the selected catalog door image as the required visual target for the door/drawer face profile while preserving the original cabinet locations and counts.
+Do not substitute white shaker, generic shaker, generic slab, generic raised panel, or random wood cabinets unless that exact catalog door and swatch were selected.
 
 OTHER SELECTED SURFACE CHANGES:
 ${details.countertop ? `Change the countertops to: ${details.countertop}. Preserve the same countertop shape, edge, overhang, sink cutout, and appliance openings.` : "Keep countertops unchanged."}
@@ -132,7 +136,7 @@ ${details.backsplash ? `Change the backsplash to: ${details.backsplash}. Preserv
 ${details.flooring ? `Change the flooring to: ${details.flooring}. Preserve the same floor perspective, scale, shadows, cabinets, appliances, and room layout.` : "Keep flooring unchanged."}
 
 FINAL CHECK:
-The final image must show the selected catalog color, selected catalog door style, and any selected countertop, backsplash, and flooring changes. If a selected item is not applied, the image is wrong.
+The final image must look like the original kitchen photo with only the selected surfaces refinished. The cabinet color must match the selected swatch image. The cabinet door profile must follow the selected catalog door reference image. If a selected catalog reference is ignored, the image is wrong.
 `.trim();
 }
 
@@ -177,12 +181,20 @@ export default async function handler(req, res) {
     }
 
     const mainReference = body.mainCustomReference || body.mainCustomColorImage || body.mainCustomColorData || null;
-    const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || null;
+    const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || mainReference;
     const doorReference = body.catalogDoorReference || null;
     const countertopReference = body.countertopCustomReference || null;
     const backsplashReference = body.backsplashCustomReference || null;
     const flooringReference = body.flooringCustomReference || null;
     const extraReferences = Array.isArray(body.referenceImages) ? body.referenceImages.filter(Boolean) : [];
+
+    if (!doorReference) {
+      return res.status(400).json({ error: "Catalog door image was not sent. Select a catalog door again and generate after the page finishes loading." });
+    }
+    if (!mainReference) {
+      return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
+    }
+
     const selectedPrompt = buildCatalogPrompt(body, !!mainReference, !!baseReference, !!doorReference);
 
     const form = new FormData();
@@ -190,8 +202,8 @@ export default async function handler(req, res) {
     form.append("prompt", selectedPrompt);
     form.append("size", "1536x1024");
     appendImage(form, body.image, "kitchen");
-    if (doorReference) appendImage(form, doorReference, "selected-catalog-door-reference");
-    if (mainReference) appendImage(form, mainReference, "selected-upper-swatch-reference");
+    appendImage(form, doorReference, "selected-catalog-door-reference");
+    appendImage(form, mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "selected-base-swatch-reference");
     if (countertopReference) appendImage(form, countertopReference, "selected-countertop-reference");
     if (backsplashReference) appendImage(form, backsplashReference, "selected-backsplash-reference");
