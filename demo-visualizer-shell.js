@@ -1,16 +1,13 @@
 const DEMO_PROFILES = {
   showroom: {
-    companyKey: "demo-showroom",
     companyName: "Demo Showroom Cabinetry",
     ctaText: "Create Demo Design Packet"
   },
   lead: {
-    companyKey: "demo-lead",
     companyName: "Demo Lead Gen Cabinetry",
     ctaText: "Request My Demo Estimate"
   },
   custom: {
-    companyKey: "demo-custom",
     companyName: "Demo Custom Cabinet Studio",
     ctaText: "Create Demo Design Packet"
   }
@@ -20,6 +17,7 @@ function demoCompany(demoType) {
   const base = DEMO_PROFILES[demoType] || DEMO_PROFILES.custom;
   return {
     ...base,
+    companyKey: "DEMO",
     monthlyLimit: 9999,
     phone: "(555) 010-2026",
     email: "demo@kpmtechnology.com",
