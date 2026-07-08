@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" data-demo-type="custom">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo Custom Visualizer</title>
+<link rel="stylesheet" href="demo-visualizer.css">
+</head>
+<body>
+<section id="pinShell" class="pin-shell">
+  <form id="pinForm" class="pin-card">
+    <h1>Demo Custom Visualizer</h1>
+    <p>Enter the temporary demo PIN to unlock this demo experience.</p>
+    <label>Temporary PIN<input id="pinInput" inputmode="numeric" autocomplete="one-time-code" required></label>
+    <button id="pinButton" type="submit">Unlock Demo</button>
+    <div id="pinError" class="pin-error"></div>
+  </form>
+</section>
+<main id="demoShell" hidden>
+  <div class="demo-top"><strong>Demo Custom Visualizer</strong><span id="expiresText"></span></div>
+  <div id="visualizerMount"></div>
+</main>
+<script src="demo-visualizer-shell.js"></script>
+</body>
+</html>
