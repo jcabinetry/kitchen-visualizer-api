@@ -52,6 +52,21 @@ function safeCompanyScript(company) {
   return "const KV_COMPANY = " + JSON.stringify(company).replace(/<\//g, "<\\/") + ";";
 }
 
+function runScriptInOrder(oldScript) {
+  return new Promise(function(resolve, reject) {
+    const script = document.createElement("script");
+    script.async = false;
+    Array.from(oldScript.attributes).forEach(function(attr) {
+      script.setAttribute(attr.name, attr.value);
+    });
+    script.onload = resolve;
+    script.onerror = reject;
+    script.textContent = oldScript.textContent;
+    oldScript.replaceWith(script);
+    if (!script.src) resolve();
+  });
+}
+
 async function loadDemoVisualizer(demoType, expiresAt) {
   const mount = document.getElementById("visualizerMount");
   const expiresText = document.getElementById("expiresText");
@@ -68,14 +83,10 @@ async function loadDemoVisualizer(demoType, expiresAt) {
   );
 
   mount.innerHTML = html;
-  mount.querySelectorAll("script").forEach(function(oldScript) {
-    const script = document.createElement("script");
-    Array.from(oldScript.attributes).forEach(function(attr) {
-      script.setAttribute(attr.name, attr.value);
-    });
-    script.textContent = oldScript.textContent;
-    oldScript.replaceWith(script);
-  });
+  const scripts = Array.from(mount.querySelectorAll("script"));
+  for (const script of scripts) {
+    await runScriptInOrder(script);
+  }
 }
 
 (function initDemoPinGate() {
