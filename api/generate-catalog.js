@@ -107,6 +107,20 @@ function selectedDetails(body) {
   };
 }
 
+function doorSpecificInstruction(doorName) {
+  const name = String(doorName || "").toLowerCase();
+  if (name.includes("raised")) {
+    return "Because the selected door is a raised-panel style, show a raised center panel with shaped/beveled profile detail. Do not render it as an inset, recessed-panel, flat shaker, or slab door.";
+  }
+  if (name.includes("slab")) {
+    return "Because the selected door is a slab style, show a plain flat slab face. Do not add shaker rails, raised panels, or recessed panels.";
+  }
+  if (name.includes("shaker")) {
+    return "Because the selected door is a shaker style, match the selected shaker proportions and rail/stile profile from the reference image. Do not substitute a different shaker profile.";
+  }
+  return "Match the visible panel shape, edge profile, rail/stile proportions, and center-panel depth from the selected catalog door reference image.";
+}
+
 function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference) {
   const details = selectedDetails(body);
   const upperColorText = hasMainReference ? `uploaded upper/wall swatch reference for ${details.upperName}${details.upperHex ? ` (${details.upperHex})` : ""}` : details.upperName;
@@ -127,7 +141,12 @@ The attached selected-base-swatch-reference image is the base/lower color source
 Apply the selected upper/wall swatch color to every upper cabinet surface.
 Apply the selected base/lower swatch color to every lower cabinet surface below the countertops, including any island cabinets.
 If the selected swatch is a flat paint color, render flat painted cabinets. Do not add wood grain, stain, or texture.
-Use the selected catalog door image as the required visual target for the door/drawer face profile while preserving the original cabinet locations and counts.
+
+DOOR PROFILE REQUIREMENT:
+Use the selected catalog door reference image as the strict visual target for each visible cabinet door and drawer front.
+${doorSpecificInstruction(details.doorName)}
+Preserve the original kitchen's exact number, size, and location of doors and drawers, but change the visible face/profile to match the selected catalog door reference.
+Do not render an inset/recessed door unless the selected catalog reference is visibly inset/recessed.
 Do not substitute white shaker, generic shaker, generic slab, generic raised panel, or random wood cabinets unless that exact catalog door and swatch were selected.
 
 OTHER SELECTED SURFACE CHANGES:
