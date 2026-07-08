@@ -83,16 +83,27 @@ async function sendLimitEmail({ companyKey, companyName, used, limit, customerNa
   await redisSet(alertSentKey, "yes");
 }
 
+function parseMaterial(prompt, heading, pattern) {
+  const text = String(prompt || "");
+  if (!text.includes(heading)) return "";
+  const match = text.match(pattern);
+  return match ? String(match[1] || "").trim() : "";
+}
+
 function selectedDetails(body) {
+  const prompt = body.prompt || "";
+  const countertopFromPrompt = parseMaterial(prompt, "COUNTERTOP INSTRUCTION", /COUNTERTOP INSTRUCTION:\s*Replace only the visible countertop surfaces with\s+(.+?)\.\s+Preserve/is);
+  const backsplashFromPrompt = parseMaterial(prompt, "BACKSPLASH INSTRUCTION", /BACKSPLASH INSTRUCTION:\s*Replace only the visible backsplash area with\s+(.+?)\.\s+Preserve/is);
+  const flooringFromPrompt = parseMaterial(prompt, "FLOORING INSTRUCTION", /FLOORING INSTRUCTION:\s*Replace only the visible flooring with\s+(.+?)\.\s+Preserve/is);
   return {
     doorName: body.catalogDoorName || body.style || "selected catalog door",
     upperName: body.upperSwatchName || body.color || "selected upper/wall swatch",
     baseName: body.baseSwatchName || body.island || body.upperSwatchName || body.color || "selected base/lower swatch",
     upperHex: body.upperSwatchHex || "",
     baseHex: body.baseSwatchHex || body.upperSwatchHex || "",
-    countertop: body.countertop || "",
-    backsplash: body.backsplash || "",
-    flooring: body.flooring || ""
+    countertop: body.countertop || countertopFromPrompt,
+    backsplash: body.backsplash || backsplashFromPrompt,
+    flooring: body.flooring || flooringFromPrompt
   };
 }
 
