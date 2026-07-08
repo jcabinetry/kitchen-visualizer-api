@@ -2,9 +2,7 @@ import { requireAdmin } from "../_lib/adminAuth.js";
 import { setCorsHeaders } from "../_lib/cors.js";
 import {
   createDemoPin,
-  isValidDemoType,
   isValidDurationHours,
-  normalizeDemoType,
   normalizeDurationHours,
   saveDemoPin
 } from "../_lib/demoPinStore.js";
@@ -23,12 +21,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const demoType = normalizeDemoType(req.body?.demoType);
     const durationHours = normalizeDurationHours(req.body?.durationHours);
-
-    if (!isValidDemoType(demoType)) {
-      return res.status(400).json({ error: "Choose a valid demo type." });
-    }
 
     if (!isValidDurationHours(durationHours)) {
       return res.status(400).json({ error: "Choose a valid duration." });
@@ -38,7 +31,7 @@ export default async function handler(req, res) {
     const expiresAt = new Date(createdAt.getTime() + durationHours * 60 * 60 * 1000);
     const demoPin = {
       pin: createDemoPin(),
-      demoType,
+      demoType: "all",
       createdAt: createdAt.toISOString(),
       expiresAt: expiresAt.toISOString(),
       status: "active"
