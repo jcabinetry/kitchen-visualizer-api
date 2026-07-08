@@ -39,14 +39,30 @@
     return name ? name.textContent.trim() : "";
   }
 
+  function catalogData() {
+    try {
+      if (typeof KV_COMPANY !== "undefined" && KV_COMPANY.catalog && KV_COMPANY.catalog.manufacturers) return KV_COMPANY.catalog;
+    } catch (_error) {}
+    return (window.CV_CUSTOM_CATALOGS && window.CV_CUSTOM_CATALOGS.defaultCatalog) || { manufacturers: [] };
+  }
+
+  function selectedSwatchLabel(selectId) {
+    const activeLabel = document.querySelector('.jcr-swatch.active[data-select="' + selectId + '"] span')?.textContent?.trim();
+    if (activeLabel) return activeLabel;
+    const select = document.getElementById(selectId);
+    return select && select.options[select.selectedIndex] ? select.options[select.selectedIndex].textContent.trim() : "";
+  }
+
   function selectedSwatch(selectId) {
     const active = document.querySelector('.jcr-swatch.active[data-select="' + selectId + '"] .jcr-dot');
     if (active) {
-      const image = cssImageUrl(active.style.backgroundImage);
-      if (image) return image;
+      const inlineImage = cssImageUrl(active.style.backgroundImage);
+      if (inlineImage) return inlineImage;
+      const computedImage = cssImageUrl(getComputedStyle(active).backgroundImage);
+      if (computedImage) return computedImage;
     }
-    const label = document.querySelector('.jcr-swatch.active[data-select="' + selectId + '"] span')?.textContent?.trim() || "";
-    const catalog = (window.KV_COMPANY && window.KV_COMPANY.catalog) || (window.CV_CUSTOM_CATALOGS && window.CV_CUSTOM_CATALOGS.defaultCatalog) || {};
+    const label = selectedSwatchLabel(selectId);
+    const catalog = catalogData();
     let found = "";
     (catalog.manufacturers || []).forEach(function(manufacturer) {
       (manufacturer.lines || []).forEach(function(line) {
@@ -69,10 +85,9 @@
         const doorName = activeDoorName();
         const upperSwatch = selectedSwatch("jcr_color");
         const baseSwatch = selectedSwatch("jcr_island") || upperSwatch;
-        const colorSelect = document.getElementById("jcr_color");
+        const upperName = selectedSwatchLabel("jcr_color");
         const baseSelect = document.getElementById("jcr_island");
-        const upperName = colorSelect && colorSelect.options[colorSelect.selectedIndex] ? colorSelect.options[colorSelect.selectedIndex].textContent : "";
-        const baseName = baseSelect && baseSelect.value === "" ? upperName : (baseSelect && baseSelect.options[baseSelect.selectedIndex] ? baseSelect.options[baseSelect.selectedIndex].textContent : upperName);
+        const baseName = baseSelect && baseSelect.value === "" ? upperName : (selectedSwatchLabel("jcr_island") || upperName);
         const refs = Array.isArray(body.referenceImages) ? body.referenceImages.filter(Boolean) : [];
         if (doorImage) refs.unshift(doorImage);
         if (upperSwatch) refs.unshift(upperSwatch);
