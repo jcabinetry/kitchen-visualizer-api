@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Temporary Demo Access</title>
+<style>
+:root{--ink:#172033;--muted:#647084;--line:#d9dee8;--panel:#fff;--page:#f5f7fb;--blue:#2457a6;--green:#16785f;--red:#b42318;--shadow:0 10px 30px rgba(23,32,51,.08)}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--ink);background:var(--page)}button,input,select{font:inherit}button{border:0;border-radius:10px;cursor:pointer;min-height:40px;padding:0 14px;font-weight:800}button:disabled{cursor:wait;opacity:.7}input,select{width:100%;min-height:40px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);padding:9px 11px;outline:none}.shell{width:min(760px,calc(100vw - 32px));margin:0 auto;padding:32px 0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}.panel-header{padding:16px;border-bottom:1px solid var(--line)}h1,h2{margin:0}h1{font-size:28px;margin-bottom:18px}h2{font-size:18px}.card-body{padding:16px;display:grid;gap:14px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase}.primary{background:var(--blue);color:#fff}.neutral{background:#eef1f6;color:var(--ink)}.actions{display:flex;gap:8px;flex-wrap:wrap}.result{display:none;border:1px solid var(--line);border-radius:12px;background:#fafbfe;padding:14px;line-height:1.6}.result.active{display:block}.pin{font-size:34px;font-weight:950;letter-spacing:.08em;color:var(--green)}.status{min-height:22px;color:var(--muted);font-size:13px}.status.error{color:var(--red)}@media(max-width:640px){.form-grid{grid-template-columns:1fr}.actions{display:grid}.actions button{width:100%}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <h1>Cabinet Visualizer Admin</h1>
+  <section class="panel">
+    <div class="panel-header"><h2>Temporary Demo Access</h2></div>
+    <div class="card-body">
+      <label>Admin API token<input id="adminToken" type="password" autocomplete="current-password" required></label>
+      <div class="form-grid">
+        <label>Demo Type<select id="demoType"><option value="showroom">Showroom</option><option value="lead">Lead Gen</option><option value="custom">Custom Visualizer</option></select></label>
+        <label>Duration<select id="durationHours"><option value="24">24 hours</option><option value="48">48 hours</option><option value="72">72 hours</option><option value="168">7 days</option><option value="336">14 days</option><option value="720">30 days</option></select></label>
+      </div>
+      <button class="primary" id="generateButton" type="button">Generate Demo PIN</button>
+      <div id="result" class="result">
+        <div>PIN</div><div id="pin" class="pin"></div>
+        <div><strong>Demo type:</strong> <span id="resultType"></span></div>
+        <div><strong>Expiration:</strong> <span id="expiresAt"></span></div>
+        <div class="actions"><button class="neutral" id="copyPin" type="button">Copy PIN</button><button class="neutral" id="copyInstructions" type="button">Copy demo instructions</button></div>
+      </div>
+      <div id="status" class="status"></div>
+    </div>
+  </section>
+</main>
+<script>
+const pages={showroom:"demo-showroom-visualizer.html",lead:"demo-lead-visualizer.html",custom:"demo-custom-visualizer.html"};
+let currentPin="";let currentInstructions="";
+const token=document.getElementById("adminToken"),demoType=document.getElementById("demoType"),durationHours=document.getElementById("durationHours"),generateButton=document.getElementById("generateButton"),result=document.getElementById("result"),pin=document.getElementById("pin"),resultType=document.getElementById("resultType"),expiresAt=document.getElementById("expiresAt"),statusLine=document.getElementById("status");
+function setStatus(message,isError=false){statusLine.textContent=message||"";statusLine.classList.toggle("error",isError)}
+function typeLabel(value){return value==="lead"?"Lead Gen":value==="custom"?"Custom Visualizer":"Showroom"}
+function demoUrl(type){return new URL(pages[type], window.location.href).href}
+async function copyText(text,message){await navigator.clipboard.writeText(text);setStatus(message)}
+generateButton.addEventListener("click",async function(){
+  setStatus("Generating...");generateButton.disabled=true;
+  try{
+    const response=await fetch("/api/admin/demo-pins",{method:"POST",headers:{"Content-Type":"application/json","X-Admin-Token":token.value.trim()},cache:"no-store",body:JSON.stringify({demoType:demoType.value,durationHours:Number(durationHours.value)})});
+    const data=await response.json().catch(function(){return{}});
+    if(!response.ok)throw new Error(data.error||"Could not generate demo PIN.");
+    const record=data.demoPin;currentPin=record.pin;
+    const url=demoUrl(record.demoType);
+    currentInstructions=`Open ${url}\nEnter temporary PIN: ${record.pin}\nDemo type: ${typeLabel(record.demoType)}\nExpires: ${new Date(record.expiresAt).toLocaleString()}`;
+    pin.textContent=record.pin;resultType.textContent=typeLabel(record.demoType);expiresAt.textContent=new Date(record.expiresAt).toLocaleString();result.classList.add("active");setStatus("Demo PIN generated.");
+  }catch(error){setStatus(error.message,true)}finally{generateButton.disabled=false}
+});
+document.getElementById("copyPin").addEventListener("click",function(){copyText(currentPin,"PIN copied.")});
+document.getElementById("copyInstructions").addEventListener("click",function(){copyText(currentInstructions,"Demo instructions copied.")});
+</script>
+</body>
+</html>
