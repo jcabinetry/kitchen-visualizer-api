@@ -17,6 +17,82 @@
 
   <script>
     const cacheBust = Date.now();
+    const runtimePatch = `
+<script>
+(function(){
+  if (window.__directCatalogRequestPatch) return;
+  window.__directCatalogRequestPatch = true;
+
+  function cssImageUrl(value) {
+    const raw = String(value || "").trim();
+    const match = raw.match(/^url\\(["']?(.*?)["']?\\)$/i);
+    return match ? match[1] : "";
+  }
+
+  function activeDoorImage() {
+    const img = document.querySelector(".jcr-door-option.active .jcr-door-preview img");
+    return img && img.src ? img.src : "";
+  }
+
+  function activeDoorName() {
+    const name = document.querySelector(".jcr-door-option.active .jcr-door-name");
+    return name ? name.textContent.trim() : "";
+  }
+
+  function selectedSwatch(selectId) {
+    const active = document.querySelector('.jcr-swatch.active[data-select="' + selectId + '"] .jcr-dot');
+    if (active) {
+      const image = cssImageUrl(active.style.backgroundImage);
+      if (image) return image;
+    }
+    const label = document.querySelector('.jcr-swatch.active[data-select="' + selectId + '"] span')?.textContent?.trim() || "";
+    const catalog = (window.KV_COMPANY && window.KV_COMPANY.catalog) || (window.CV_CUSTOM_CATALOGS && window.CV_CUSTOM_CATALOGS.defaultCatalog) || {};
+    let found = "";
+    (catalog.manufacturers || []).forEach(function(manufacturer) {
+      (manufacturer.lines || []).forEach(function(line) {
+        (line.finishes || []).forEach(function(finish) {
+          const finishLabel = String(finish.label || finish.name || "").trim();
+          if (!found && label && finishLabel.toLowerCase() === label.toLowerCase()) found = finish.swatch || finish.image || finish.thumbnail || "";
+        });
+      });
+    });
+    return found;
+  }
+
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = function(input, init) {
+    try {
+      const url = typeof input === "string" ? input : input && input.url ? input.url : "";
+      if (url.includes("/api/generate") && init && typeof init.body === "string") {
+        const body = JSON.parse(init.body);
+        const doorImage = activeDoorImage();
+        const doorName = activeDoorName();
+        const upperSwatch = selectedSwatch("jcr_color");
+        const baseSwatch = selectedSwatch("jcr_island") || upperSwatch;
+        const colorSelect = document.getElementById("jcr_color");
+        const baseSelect = document.getElementById("jcr_island");
+        const upperName = colorSelect && colorSelect.options[colorSelect.selectedIndex] ? colorSelect.options[colorSelect.selectedIndex].textContent : "";
+        const baseName = baseSelect && baseSelect.value === "" ? upperName : (baseSelect && baseSelect.options[baseSelect.selectedIndex] ? baseSelect.options[baseSelect.selectedIndex].textContent : upperName);
+        const refs = Array.isArray(body.referenceImages) ? body.referenceImages.filter(Boolean) : [];
+        if (doorImage) refs.unshift(doorImage);
+        if (upperSwatch) refs.unshift(upperSwatch);
+        if (baseSwatch && baseSwatch !== upperSwatch) refs.unshift(baseSwatch);
+        body.referenceImages = Array.from(new Set(refs)).slice(0, 8);
+        body.catalogDoorReference = doorImage || body.catalogDoorReference || null;
+        body.catalogDoorName = doorName || body.catalogDoorName || "";
+        body.mainCustomReference = upperSwatch || body.mainCustomReference || null;
+        body.islandCustomReference = baseSwatch || body.islandCustomReference || upperSwatch || null;
+        body.upperSwatchName = upperName || body.upperSwatchName || "";
+        body.baseSwatchName = baseName || body.baseSwatchName || upperName || "";
+        init = Object.assign({}, init, { body: JSON.stringify(body) });
+      }
+    } catch (_error) {}
+    return originalFetch(input, init);
+  };
+})();
+<\/script>
+`;
+
     fetch("https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/main/custom-visualizer.html?ts=" + cacheBust, { cache: "no-store" })
       .then(function(response) {
         if (!response.ok) throw new Error("Could not load custom visualizer.");
@@ -27,10 +103,7 @@
         html = html.replaceAll("https://kitchen-visualizer-api.vercel.app/api/generate", "https://kitchen-visualizer-api.vercel.app/api/generate-catalog");
         html = html.replaceAll("Change cabinet finishes only.", "Change the selected cabinet finish colors, selected catalog door style, countertops, backsplash, and flooring according to the selected options.");
         html = html.replaceAll("This is a refacing-style visualization, not a remodel.", "This is a catalog-based design visualization. Apply every selected option that the customer chose.");
-        html = html.replace(
-          "body: JSON.stringify({\n          image: uploadedImageData,",
-          "body: JSON.stringify({\n          image: uploadedImageData,\n          catalogDoorReference: (document.querySelector(\".jcr-door-option.active .jcr-door-preview img\") || {}).src || null,\n          catalogDoorName: (document.querySelector(\".jcr-door-option.active .jcr-door-name\") || {}).textContent || null,"
-        );
+        html = html + runtimePatch;
         document.open();
         document.write(html);
         document.close();
