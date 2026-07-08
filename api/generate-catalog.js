@@ -83,35 +83,60 @@ async function sendLimitEmail({ companyKey, companyName, used, limit, customerNa
   await redisSet(alertSentKey, "yes");
 }
 
+function selectedDetails(body) {
+  return {
+    doorName: body.catalogDoorName || body.style || "selected catalog door",
+    upperName: body.upperSwatchName || body.color || "selected upper/wall swatch",
+    baseName: body.baseSwatchName || body.island || body.upperSwatchName || body.color || "selected base/lower swatch",
+    upperHex: body.upperSwatchHex || "",
+    baseHex: body.baseSwatchHex || body.upperSwatchHex || ""
+  };
+}
+
 function buildFallbackPrompt(body, hasMainReference, hasBaseReference) {
-  const upperColorText = hasMainReference ? "the uploaded upper cabinet finish reference image" : body.color || "white painted cabinets";
-  const baseColorText = hasBaseReference ? "the uploaded base/lower cabinet finish reference image" : body.island || "the same finish as the upper cabinets";
+  const details = selectedDetails(body);
+  const upperColorText = hasMainReference ? `the uploaded upper/wall swatch reference image for ${details.upperName}${details.upperHex ? ` (${details.upperHex})` : ""}` : body.color || "white painted cabinets";
+  const baseColorText = hasBaseReference ? `the uploaded base/lower swatch reference image for ${details.baseName}${details.baseHex ? ` (${details.baseHex})` : ""}` : body.island || "the same finish as the upper cabinets";
   return `
 Edit this exact kitchen photo into a cabinet refacing preview.
-Preserve the exact existing cabinet layout, camera angle, room, appliance openings, door count, drawer count, and cabinet geometry.
+Preserve the existing kitchen layout, camera angle, room, appliance openings, door count, drawer count, and cabinet box geometry.
 Apply this upper/wall cabinet finish to every upper cabinet surface: ${upperColorText}.
 Apply this base/lower cabinet finish to every lower cabinet surface below the countertops: ${baseColorText}.
-Use this selected door style as the required visual/profile reference without changing the original cabinet layout: ${body.style || "existing cabinet door style"}.
+Replace the visible cabinet door/drawer face profile with this exact selected catalog door style: ${details.doorName}.
+Use the attached catalog door image as the required door profile reference.
 Use this hardware style: ${body.hardware || "keep hardware close to original placement"}.
 ${body.countertop ? `Change only countertops to ${body.countertop}.` : "Keep countertops unchanged."}
 ${body.backsplash ? `Change only backsplash to ${body.backsplash}.` : "Keep backsplash unchanged."}
 ${body.flooring ? `Change only flooring to ${body.flooring}.` : "Keep flooring unchanged."}
 Do not generate generic white shaker unless white shaker is the selected catalog choice.
-Final output must look like the same kitchen with the selected catalog door style and selected catalog finish applied.
+Final output must look like the same kitchen with the exact selected catalog door style and exact selected catalog swatch colors applied.
 `.trim();
 }
 
-function hardenPrompt(prompt) {
+function hardenPrompt(prompt, body) {
+  const details = selectedDetails(body || {});
   return `
 ${String(prompt || "").trim()}
 
 CATALOG SELECTION IS A HARD REQUIREMENT:
-Use the exact selected catalog door style and selected finish/color. Do not substitute generic white shaker, generic shaker, or any default cabinet style/color unless that is exactly what the user selected.
-If reference images are attached, use them as visual reference images:
-- door reference image = cabinet door profile/style reference
-- upper/base swatch reference images = cabinet finish/color references
-The kitchen layout must stay the same, but the visible cabinet finish and door face/profile should follow the selected catalog references as closely as possible.
-Base/lower cabinet finish means every lower cabinet, including any island cabinets. It is not island-only.
+The render must use the selected catalog assets, not defaults.
+
+EXACT DOOR REQUIREMENT:
+Selected door: ${details.doorName}
+Use the attached catalog door reference image as the required door/drawer face profile target.
+Match the selected door's slab/rail/stile/panel shape and profile on the visible cabinet doors and drawer fronts while preserving the original cabinet locations and counts.
+Do not substitute generic shaker, generic slab, generic raised panel, or white shaker unless that exact door was selected.
+
+EXACT COLOR REQUIREMENT:
+Upper/wall swatch: ${details.upperName}${details.upperHex ? ` ${details.upperHex}` : ""}
+Base/lower swatch: ${details.baseName}${details.baseHex ? ` ${details.baseHex}` : ""}
+Use the visible swatch color as the color target. If a hex value is provided, match that color family and brightness as closely as possible under the kitchen lighting.
+Upper/wall cabinet surfaces must use the upper/wall swatch.
+Every lower/base cabinet surface below the countertop must use the base/lower swatch, including any island cabinets.
+
+PRESERVE THE PHOTO:
+Keep the same kitchen, same perspective, same appliances, same cabinet layout, same door/drawer count, and same openings.
+Only change cabinet color/finish and visible door face style/profile according to the selected catalog references.
 `.trim();
 }
 
@@ -157,18 +182,20 @@ export default async function handler(req, res) {
 
     const mainReference = body.mainCustomReference || body.mainCustomColorImage || body.mainCustomColorData || null;
     const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || null;
+    const doorReference = body.catalogDoorReference || null;
     const extraReferences = Array.isArray(body.referenceImages) ? body.referenceImages.filter(Boolean) : [];
-    const selectedPrompt = body.prompt ? hardenPrompt(body.prompt) : hardenPrompt(buildFallbackPrompt(body, !!mainReference, !!baseReference));
+    const selectedPrompt = body.prompt ? hardenPrompt(body.prompt, body) : hardenPrompt(buildFallbackPrompt(body, !!mainReference, !!baseReference), body);
 
     const form = new FormData();
     form.append("model", "gpt-image-1");
     form.append("prompt", selectedPrompt);
     form.append("size", "1536x1024");
     appendImage(form, body.image, "kitchen");
-    if (mainReference) appendImage(form, mainReference, "upper-finish-reference");
-    if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "base-finish-reference");
+    if (doorReference) appendImage(form, doorReference, "selected-catalog-door-reference");
+    if (mainReference) appendImage(form, mainReference, "selected-upper-swatch-reference");
+    if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "selected-base-swatch-reference");
     extraReferences.slice(0, 6).forEach(function(ref, index) {
-      if (ref && ref !== mainReference && ref !== baseReference) appendImage(form, ref, `catalog-reference-${index + 1}`);
+      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference) appendImage(form, ref, `catalog-reference-${index + 1}`);
     });
 
     const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: form });
