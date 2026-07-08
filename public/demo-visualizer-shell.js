@@ -2,6 +2,12 @@ function safeCompanyScript(company) {
   return "const KV_COMPANY = " + JSON.stringify(company).replace(/<\//g, "<\\/") + ";";
 }
 
+function demoSourceUrl(demoType) {
+  if (demoType === "lead") return "lead-visualizer.html";
+  if (demoType === "showroom") return "showroom-visualizer.html";
+  return "https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/main/custom-visualizer.html?ts=" + Date.now();
+}
+
 function runScriptInOrder(oldScript) {
   return new Promise(function(resolve, reject) {
     const script = document.createElement("script");
@@ -22,10 +28,7 @@ async function loadDemoVisualizer(demoType, expiresAt) {
   const expiresText = document.getElementById("expiresText");
   expiresText.textContent = expiresAt ? "PIN expires " + new Date(expiresAt).toLocaleString() : "";
 
-  const response = await fetch(
-    "https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/main/custom-visualizer.html?ts=" + Date.now(),
-    { cache: "no-store" }
-  );
+  const response = await fetch(demoSourceUrl(demoType), { cache: "no-store" });
   if (!response.ok) throw new Error("Could not load demo visualizer.");
 
   let html = await response.text();
