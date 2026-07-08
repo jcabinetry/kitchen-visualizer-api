@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "resend": "^3.2.0",
-    "@upstash/redis": "^1.35.3"
+    "@upstash/redis": "^1.35.3",
+    "pdf-parse": "^1.1.1",
+    "resend": "^3.2.0"
   }
 }
