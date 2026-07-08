@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" data-demo-type="lead">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo Lead Gen Visualizer</title>
+<link rel="stylesheet" href="demo-visualizer.css">
+</head>
+<body>
+<section id="pinShell" class="pin-shell">
+  <form id="pinForm" class="pin-card">
+    <h1>Demo Lead Gen Visualizer</h1>
+    <p>Enter the temporary demo PIN to unlock this demo experience.</p>
+    <label>Temporary PIN<input id="pinInput" inputmode="numeric" autocomplete="one-time-code" required></label>
+    <button id="pinButton" type="submit">Unlock Demo</button>
+    <div id="pinError" class="pin-error"></div>
+  </form>
+</section>
+<main id="demoShell" hidden>
+  <div class="demo-top"><strong>Demo Lead Gen Visualizer</strong><span id="expiresText"></span></div>
+  <section class="lead-card">
+    <h2>Demo Lead Profile</h2>
+    <div class="lead-grid">
+      <input value="Taylor Morgan" aria-label="Name">
+      <input value="(555) 014-2026" aria-label="Phone">
+      <input value="taylor@example.com" aria-label="Email">
+      <textarea aria-label="Project notes">Demo prospect wants cabinet refacing, quartz counters, and a brighter showroom-style preview.</textarea>
+    </div>
+  </section>
+  <div id="visualizerMount"></div>
+</main>
+<script src="demo-visualizer-shell.js"></script>
+</body>
+</html>
