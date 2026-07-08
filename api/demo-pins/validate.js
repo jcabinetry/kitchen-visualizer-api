@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     const pin = String(req.body?.pin || "").trim();
     const demoType = normalizeDemoType(req.body?.demoType);
 
-    if (!pin || !isValidDemoType(demoType)) {
+    if (!pin || !isValidDemoType(demoType) || demoType === "all") {
       return res.status(400).json({ valid: false, error: "Enter a valid demo PIN." });
     }
 
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ valid: false, error: "PIN not found or expired." });
     }
 
-    if (demoPin.demoType !== demoType) {
+    if (demoPin.demoType !== "all" && demoPin.demoType !== demoType) {
       return res.status(403).json({ valid: false, error: "This PIN is for a different demo." });
     }
 
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ valid: false, error: "This PIN has expired." });
     }
 
-    return res.status(200).json({ valid: true, demoType: demoPin.demoType, expiresAt: demoPin.expiresAt });
+    return res.status(200).json({ valid: true, demoType, access: demoPin.demoType, expiresAt: demoPin.expiresAt });
   } catch (error) {
     return res.status(400).json({ valid: false, error: error?.message || "Demo PIN validation failed." });
   }
