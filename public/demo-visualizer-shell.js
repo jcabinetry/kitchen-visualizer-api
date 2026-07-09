@@ -8,6 +8,11 @@ function demoSourceUrl(demoType) {
   return "https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/main/custom-visualizer.html?ts=" + Date.now();
 }
 
+function selectedCompanyKey() {
+  const params = new URLSearchParams(window.location.search);
+  return String(params.get("companyKey") || "DEMO").trim() || "DEMO";
+}
+
 function runScriptInOrder(oldScript) {
   return new Promise(function(resolve, reject) {
     const script = document.createElement("script");
@@ -34,7 +39,7 @@ async function loadDemoVisualizer(demoType, expiresAt) {
   let html = await response.text();
   html = html.replace(
     /const urlParams = new URLSearchParams\(window\.location\.search\);[\s\S]*?const KV_COMPANY = \{[\s\S]*?\};/,
-    safeCompanyScript({ companyKey: "DEMO", demoType })
+    safeCompanyScript({ companyKey: selectedCompanyKey(), demoType })
   );
 
   if (demoType === "custom") {
