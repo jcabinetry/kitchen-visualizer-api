@@ -37,6 +37,10 @@ async function loadDemoVisualizer(demoType, expiresAt) {
     safeCompanyScript({ companyKey: "DEMO", demoType })
   );
 
+  if (demoType === "custom") {
+    html = html.replace('src="custom-catalogs.js"', 'src="demo-custom-catalogs.js?v=' + Date.now() + '"');
+  }
+
   mount.innerHTML = html;
   const scripts = Array.from(mount.querySelectorAll("script"));
   for (const script of scripts) {
