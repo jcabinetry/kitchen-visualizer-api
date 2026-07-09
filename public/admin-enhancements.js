@@ -73,6 +73,41 @@
     });
   }
 
+  function setupControlCenterIntro(shell){
+    if($(".admin-control-center",shell))return;
+    const summary=$(".summary-grid",shell);
+    if(!summary)return;
+    const intro=document.createElement("section");
+    intro.className="admin-control-center";
+    intro.setAttribute("aria-label","Admin home");
+    intro.innerHTML='<div class="admin-control-copy"><span class="admin-section-kicker">Admin Home</span><h2>Cabinet Visualizer Control Center</h2><p>Manage customer accounts, revenue, demos, and catalog operations from one workspace.</p></div><div class="admin-control-status"><span>Workspace</span><strong>Live Customer Operations</strong></div>';
+    shell.insertBefore(intro,summary);
+  }
+
+  function setupKpiLabels(){
+    const metrics=[
+      ["#activeCustomers","Active Customers","active",1],
+      ["#monthlyRevenue","MRR","mrr",2],
+      ["#annualRevenue","ARR","arr",3],
+      ["#totalPreviews","Monthly Usage","usage",4],
+      ["#activeDemoPinsMetric","Demo PINs","demo",5],
+      ["#manufacturerCatalogsMetric","Catalogs","catalogs",6],
+      ["#totalCustomers","Total Customers","secondary",7],
+      ["#avgRevenue","Avg Revenue","secondary",8],
+      ["#aiSpend","AI Cost","secondary",9],
+      ["#grossProfit","Gross Profit","secondary",10]
+    ];
+    metrics.forEach(function(item){
+      const strong=$(item[0]);
+      const card=strong&&strong.closest(".metric");
+      if(!card)return;
+      const label=$("span",card);
+      if(label)label.textContent=item[1];
+      card.setAttribute("data-premium-metric",item[2]);
+      card.style.setProperty("--metric-order",String(item[3]));
+    });
+  }
+
   function setupDashboardCards(){
     const grid=$(".summary-grid");
     if(!grid)return;
@@ -86,6 +121,7 @@
       activeDemoPinsMetric:".demo-access-panel",
       manufacturerCatalogsMetric:".catalog-manager-panel"
     };
+    setupKpiLabels();
     $all(".metric",grid).forEach(function(card){
       card.setAttribute("tabindex","0");
       card.setAttribute("role","button");
