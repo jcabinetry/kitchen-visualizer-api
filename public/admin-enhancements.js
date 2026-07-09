@@ -123,6 +123,45 @@
     };
     setupKpiLabels();
     $all(".metric",grid).forEach(function(card){
+      card.setAttribute("tabindex","0");
+      card.setAttribute("role","button");
+      card.setAttribute("aria-label","Open dashboard section");
+      function go(){
+        const strong=$("strong",card);
+        const id=strong&&strong.id;
+        const target=$(targets[id]||".customer-list");
+        if(target)target.scrollIntoView({behavior:"smooth",block:"start"});
+      }
+      card.addEventListener("click",go);
+      card.addEventListener("keydown",function(event){if(event.key==="Enter"||event.key===" "){event.preventDefault();go();}});
+    });
+  }
+
+
+  function setupQuickDrawer(){
+    if($("#adminQuickDrawer"))return;
+    const drawer=document.createElement("div");
+    drawer.id="adminQuickDrawer";
+    drawer.className="admin-quick-drawer";
+    drawer.innerHTML='<div class="admin-quick-scrim" data-close-quick="1"></div><aside class="admin-quick-panel" aria-label="Customer workspace"><div id="adminQuickContent"></div></aside>';
+    document.body.appendChild(drawer);
+    drawer.addEventListener("click",function(event){if(event.target.matches("[data-close-quick]"))closeQuickDrawer();});
+    document.addEventListener("keydown",function(event){if(event.key==="Escape")closeQuickDrawer();});
+    const rows=$("#customerRows");
+    if(!rows)return;
+    rows.addEventListener("click",function(event){
+      const workspace=event.target.closest('button[data-action="workspace"]');
+      if(!workspace)return;
+      const card=workspace.closest(".customer-card");
+      if(card)openQuickDrawer(card);
+    });
+    addWorkspaceButtons();
+    const observer=new MutationObserver(addWorkspaceButtons);
+    observer.observe(rows,{childList:true,subtree:false});
+  }
+
+  function addWorkspaceButtons(){
+    $all("#customerRows .customer-card").forEach(function(card){
       card.removeAttribute("tabindex");
       card.removeAttribute("role");
       card.removeAttribute("aria-label");
