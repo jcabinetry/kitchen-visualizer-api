@@ -9,6 +9,10 @@ function pinKey(pin) {
   return DEMO_PIN_PREFIX + String(pin || "").trim();
 }
 
+function pinFromKey(key) {
+  return String(key || "").replace(DEMO_PIN_PREFIX, "").trim();
+}
+
 export function normalizeDemoType(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -62,16 +66,29 @@ export async function getDemoPin(pin) {
 
 export async function listDemoPins() {
   const redis = getRedis();
-  const pins = await redis.smembers(DEMO_PIN_INDEX_KEY).catch(function() { return []; });
+  const indexedPins = await redis.smembers(DEMO_PIN_INDEX_KEY).catch(function() { return []; });
+  const looseKeys = await redis.keys(DEMO_PIN_PREFIX + "*").catch(function() { return []; });
+  const pins = Array.from(new Set([
+    ...indexedPins,
+    ...looseKeys.map(pinFromKey)
+  ]))
+    .map(normalizeDemoPin)
+    .filter(Boolean);
+
   const records = await Promise.all(
     pins.map(async function(pin) {
       const record = await getDemoPin(pin);
       return record;
     })
   );
+  const liveRecords = records.filter(Boolean);
+  const livePins = liveRecords.map(function(record) { return record.pin; }).filter(Boolean);
 
-  return records
-    .filter(Boolean)
+  if (livePins.length) {
+    await redis.sadd(DEMO_PIN_INDEX_KEY, ...livePins).catch(function() {});
+  }
+
+  return liveRecords
     .sort(function(a, b) {
       const aStatus = a.status === "active" ? 0 : 1;
       const bStatus = b.status === "active" ? 0 : 1;
