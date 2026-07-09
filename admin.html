@@ -13,8 +13,7 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:Inter
 <script>
 const ADMIN_WRAPPER_SOURCE='https://raw.githubusercontent.com/jcabinetry/kitchen-visualizer-api/8a79513784285f33d7cdd025de63facd8145fe29/admin.html';
 const HIDE_OLD_CATALOG_IMPORT='.catalog-box:has(#catalogLibraryList){display:none!important}';
-const ADMIN_ENHANCEMENT_CSS='<link rel="stylesheet" href="/admin-enhancements.css?v=1">';
-const ADMIN_ENHANCEMENT_JS='<script src="/admin-enhancements.js?v=1" defer><\/script>';
+const FINAL_ADMIN_ENHANCEMENT_PATCH="function patchAdmin(html){\n  return html\n    .replace('</head>','<link rel=\"stylesheet\" href=\"/admin-enhancements.css?v=2\"></head>')\n    .replace('</body>','<script src=\"/admin-enhancements.js?v=2\" defer><\\/script></body>')";
 function patchAdminWrapper(html){
   let patched=html;
   if(!patched.includes(HIDE_OLD_CATALOG_IMPORT)){
@@ -24,10 +23,7 @@ function patchAdminWrapper(html){
     );
   }
   if(!patched.includes('admin-enhancements.css')){
-    patched=patched.replace('</head>',ADMIN_ENHANCEMENT_CSS+'</head>');
-  }
-  if(!patched.includes('admin-enhancements.js')){
-    patched=patched.replace('</body>',ADMIN_ENHANCEMENT_JS+'</body>');
+    patched=patched.replace('function patchAdmin(html){\n  return html',FINAL_ADMIN_ENHANCEMENT_PATCH);
   }
   return patched;
 }
