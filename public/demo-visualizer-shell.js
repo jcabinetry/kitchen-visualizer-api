@@ -9,8 +9,8 @@ function demoSourceUrl(demoType) {
 }
 
 function selectedCompanyKey() {
-  const params = new URLSearchParams(window.location.search);
-  return String(params.get("companyKey") || "DEMO").trim() || "DEMO";
+  const root = document.documentElement;
+  return String(root.dataset.companyKey || window.DEMO_COMPANY_KEY || "DEMO").trim() || "DEMO";
 }
 
 function runScriptInOrder(oldScript) {
