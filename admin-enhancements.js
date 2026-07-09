@@ -73,6 +73,41 @@
     });
   }
 
+  function setupControlCenterIntro(shell){
+    if($(".admin-control-center",shell))return;
+    const summary=$(".summary-grid",shell);
+    if(!summary)return;
+    const intro=document.createElement("section");
+    intro.className="admin-control-center";
+    intro.setAttribute("aria-label","Admin home");
+    intro.innerHTML='<div class="admin-control-copy"><span class="admin-section-kicker">Admin Home</span><h2>Cabinet Visualizer Control Center</h2><p>Manage customer accounts, revenue, demos, and catalog operations from one workspace.</p></div><div class="admin-control-status"><span>Workspace</span><strong>Live Customer Operations</strong></div>';
+    shell.insertBefore(intro,summary);
+  }
+
+  function setupKpiLabels(){
+    const metrics=[
+      ["#activeCustomers","Active Customers","active",1],
+      ["#monthlyRevenue","MRR","mrr",2],
+      ["#annualRevenue","ARR","arr",3],
+      ["#totalPreviews","Monthly Usage","usage",4],
+      ["#activeDemoPinsMetric","Demo PINs","demo",5],
+      ["#manufacturerCatalogsMetric","Catalogs","catalogs",6],
+      ["#totalCustomers","Total Customers","secondary",7],
+      ["#avgRevenue","Avg Revenue","secondary",8],
+      ["#aiSpend","AI Cost","secondary",9],
+      ["#grossProfit","Gross Profit","secondary",10]
+    ];
+    metrics.forEach(function(item){
+      const strong=$(item[0]);
+      const card=strong&&strong.closest(".metric");
+      if(!card)return;
+      const label=$("span",card);
+      if(label)label.textContent=item[1];
+      card.setAttribute("data-premium-metric",item[2]);
+      card.style.setProperty("--metric-order",String(item[3]));
+    });
+  }
+
   function setupDashboardCards(){
     const grid=$(".summary-grid");
     if(!grid)return;
@@ -86,9 +121,11 @@
       activeDemoPinsMetric:".demo-access-panel",
       manufacturerCatalogsMetric:".catalog-manager-panel"
     };
+    setupKpiLabels();
     $all(".metric",grid).forEach(function(card){
       card.setAttribute("tabindex","0");
       card.setAttribute("role","button");
+      card.setAttribute("aria-label","Open dashboard section");
       function go(){
         const strong=$("strong",card);
         const id=strong&&strong.id;
@@ -100,75 +137,104 @@
     });
   }
 
-  function ensureMetric(grid,id,label,value,type){
-    if($("#"+id))return;
-    const card=document.createElement("div");
-    card.className="metric";
-    card.setAttribute("data-premium-metric",type);
-    card.innerHTML='<span>'+safe(label)+'</span><strong id="'+id+'">'+safe(value)+'</strong>';
-    grid.appendChild(card);
-  }
-
-  async function updatePremiumMetrics(){
-    const catalogMetric=$("#manufacturerCatalogsMetric");
-    if(catalogMetric){
-      let count=0;
-      try{if(typeof state!=="undefined"&&Array.isArray(state.catalogs))count=state.catalogs.length;}catch(_){count=0;}
-      if(!count)count=$all("#catalogLibraryList .catalog-card").length;
-      catalogMetric.textContent=String(count||0);
-    }
-    const demoMetric=$("#activeDemoPinsMetric");
-    if(demoMetric&&typeof api==="function"){
-      try{
-        const data=await api("/api/admin/demo-pins");
-        const active=(data.demoPins||[]).filter(function(pin){return (pin.status||"active")==="active"&&(!pin.expiresAt||new Date(pin.expiresAt)>new Date());}).length;
-        demoMetric.textContent=String(active);
-      }catch(_){
-        if(demoMetric.textContent==="--")demoMetric.textContent="0";
-      }
-    }
-  }
-
-  function filterVisibleCatalogs(query){
-    const q=String(query||"").trim().toLowerCase();
-    $all("#catalogLibraryList .catalog-card").forEach(function(card){
-      card.classList.toggle("admin-filter-dim",!!q&&!card.textContent.toLowerCase().includes(q));
-    });
-  }
 
   function setupQuickDrawer(){
     if($("#adminQuickDrawer"))return;
     const drawer=document.createElement("div");
     drawer.id="adminQuickDrawer";
     drawer.className="admin-quick-drawer";
-    drawer.innerHTML='<div class="admin-quick-scrim" data-close-quick="1"></div><aside class="admin-quick-panel" aria-label="Customer quick view"><div id="adminQuickContent"></div></aside>';
+    drawer.innerHTML='<div class="admin-quick-scrim" data-close-quick="1"></div><aside class="admin-quick-panel" aria-label="Customer workspace"><div id="adminQuickContent"></div></aside>';
     document.body.appendChild(drawer);
     drawer.addEventListener("click",function(event){if(event.target.matches("[data-close-quick]"))closeQuickDrawer();});
     document.addEventListener("keydown",function(event){if(event.key==="Escape")closeQuickDrawer();});
-
     const rows=$("#customerRows");
     if(!rows)return;
     rows.addEventListener("click",function(event){
-      if(event.target.closest("button,a,input,select,textarea,label"))return;
-      const card=event.target.closest(".customer-card");
+      const workspace=event.target.closest('button[data-action="workspace"]');
+      if(!workspace)return;
+      const card=workspace.closest(".customer-card");
       if(card)openQuickDrawer(card);
     });
-    rows.addEventListener("keydown",function(event){
-      if(event.key!=="Enter"&&event.key!==" ")return;
-      const card=event.target.closest(".customer-card");
-      if(card){event.preventDefault();openQuickDrawer(card);}
-    });
-    makeCardsFocusable();
-    const observer=new MutationObserver(makeCardsFocusable);
+    addWorkspaceButtons();
+    const observer=new MutationObserver(addWorkspaceButtons);
     observer.observe(rows,{childList:true,subtree:false});
   }
 
-  function makeCardsFocusable(){
+  function addWorkspaceButtons(){
     $all("#customerRows .customer-card").forEach(function(card){
-      card.setAttribute("tabindex","0");
-      card.setAttribute("role","button");
-      card.setAttribute("aria-label","Open customer quick view");
+      card.removeAttribute("tabindex");
+      card.removeAttribute("role");
+      card.removeAttribute("aria-label");
+      const actions=$(".row-actions",card);
+      const key=text(".company-name small",card);
+      if(actions&&!$('button[data-action="workspace"]',actions)){
+        const button=document.createElement("button");
+        button.className="primary";
+        button.type="button";
+        button.dataset.action="workspace";
+        button.dataset.key=key;
+        button.textContent="Workspace";
+        actions.insertBefore(button,actions.firstChild);
+      }
     });
+  }
+
+  function customerRecord(key){
+    try{
+      if(typeof state!=="undefined"&&Array.isArray(state.customers))return state.customers.find(function(customer){return customer.companyKey===key})||null;
+    }catch(_){return null;}
+    return null;
+  }
+
+  function recordValue(record,keys,fallback){
+    if(!record)return fallback||"-";
+    for(const key of keys){
+      const parts=key.split(".");
+      let value=record;
+      for(const part of parts){value=value&&value[part];}
+      if(value!==undefined&&value!==null&&String(value).trim()!=="")return value;
+    }
+    return fallback||"-";
+  }
+
+  function formatDate(value){
+    if(!value)return "-";
+    const date=new Date(value);
+    if(Number.isNaN(date.getTime()))return "-";
+    return date.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+  }
+
+  function parseMoney(value){
+    const number=Number(String(value||"").replace(/[^0-9.-]/g,""));
+    return Number.isFinite(number)?number:0;
+  }
+
+  function usageDetails(record,card){
+    const usageText=byLabel("Usage",card);
+    const match=String(usageText||"").match(/([0-9,]+)\s*\/\s*([0-9,]+)/);
+    const used=Number(String(recordValue(record,["usage.used","usage.count","usage.previews"],match?match[1]:0)).replace(/,/g,""))||0;
+    const limit=Number(String(recordValue(record,["monthlyLimit"],match?match[2]:0)).replace(/,/g,""))||0;
+    const remaining=Math.max((limit||0)-used,0);
+    const percent=limit?Math.min(100,Math.round((used/limit)*100)):0;
+    const monthly=parseMoney(byLabel("Monthly Price",card))||Number(recordValue(record,["monthlyPrice","billing.monthlyPrice"],0))||0;
+    const aiCost=used*.04;
+    const profit=Math.max(monthly-aiCost,0);
+    return {used,limit,remaining,percent,aiCost,profit};
+  }
+
+  function catalogSummary(record){
+    const selections=Array.isArray(record&&record.catalogSelections)?record.catalogSelections:[];
+    let catalogs=[];
+    try{if(typeof state!=="undefined"&&Array.isArray(state.catalogs))catalogs=state.catalogs;}catch(_){catalogs=[];}
+    if(!selections.length)return {count:0,html:'<div class="admin-workspace-empty">No assigned catalogs.</div>'};
+    const rows=selections.map(function(selection){
+      const catalog=catalogs.find(function(item){return item.catalogId===selection.catalogId})||{};
+      const manufacturer=safe(catalog.name||selection.manufacturerId||selection.catalogId||"Catalog");
+      const enabled=(selection.lineIds||[]).length;
+      const lineText=enabled?enabled+" enabled line"+(enabled===1?"":"s"):"All available lines";
+      return '<div class="admin-workspace-catalog"><strong>'+manufacturer+'</strong><span>'+safe(lineText)+'</span></div>';
+    }).join("");
+    return {count:selections.length,html:rows};
   }
 
   function openQuickDrawer(card){
@@ -178,22 +244,40 @@
     const logo=$(".logo-box",card);
     const title=text(".company-name b",card)||"Customer";
     const key=text(".company-name small",card);
-    const plan=text(".plan-badge",card)||"-";
-    const status=text(".badge",card)||"-";
-    const monthly=byLabel("Monthly Price",card);
-    const email=byLabel("Email",card);
-    const phone=byLabel("Phone",card);
-    const city=byLabel("City",card);
-    const catalogs=byLabel("Catalogs",card);
-    const usage=byLabel("Usage",card);
-    const actionButtons=$all(".row-actions button",card);
-    content.innerHTML='<div class="admin-quick-head"><div class="admin-quick-brand"><div class="logo-box">'+(logo?logo.innerHTML:"")+'</div><div class="admin-quick-title"><strong>'+safe(title)+'</strong><span>'+safe(key)+'</span></div></div><button class="admin-quick-close" type="button" data-close-quick="1">X</button></div><div class="badge-row"><span class="plan-badge">'+safe(plan)+'</span><span class="badge '+(status.toLowerCase().includes("inactive")?"archived":"")+'">'+safe(status)+'</span></div><div class="admin-quick-grid"><div class="info"><span>Monthly Price</span><strong>'+safe(monthly)+'</strong></div><div class="info"><span>Usage</span><strong>'+safe(usage)+'</strong></div><div class="info"><span>Email</span><strong>'+safe(email)+'</strong></div><div class="info"><span>Phone</span><strong>'+safe(phone)+'</strong></div><div class="info"><span>City</span><strong>'+safe(city)+'</strong></div><div class="info"><span>Catalogs</span><strong>'+safe(catalogs)+'</strong></div></div><div class="admin-quick-actions" id="adminQuickActions"></div>';
+    const record=customerRecord(key);
+    const plan=text(".plan-badge",card)||recordValue(record,["plan"],"-");
+    const status=text(".badge",card)||recordValue(record,["status"],"-");
+    const monthly=byLabel("Monthly Price",card)||recordValue(record,["monthlyPrice"],"-");
+    const email=byLabel("Email",card)||recordValue(record,["email","branding.email","branding.contactEmail"],"-");
+    const phone=byLabel("Phone",card)||recordValue(record,["phone","branding.phone"],"-");
+    const city=byLabel("City",card)||recordValue(record,["city","branding.city"],"-");
+    const website=recordValue(record,["customerPageUrl","websiteUrl","branding.customerPageUrl","branding.websiteUrl"],"-");
+    const notes=recordValue(record,["notes"],"");
+    const created=formatDate(recordValue(record,["createdAt","created","createdDate"],""));
+    const updated=formatDate(recordValue(record,["updatedAt","lastUpdated","modifiedAt"],""));
+    const usage=usageDetails(record,card);
+    const catalogs=catalogSummary(record);
+    const actionButtons=$all(".row-actions button",card).filter(function(button){return (button.dataset.action||"")!=="workspace"});
+    const health=status.toLowerCase().includes("inactive")||usage.percent>=95?"Needs Attention":"Healthy";
+    const healthStars=health==="Healthy"?"★★★★★":"★★★☆☆";
+    content.innerHTML='<div class="admin-workspace"><div class="admin-workspace-head"><div class="admin-quick-brand"><div class="logo-box">'+(logo?logo.innerHTML:"")+'</div><div class="admin-quick-title"><span class="admin-section-kicker">Customer Workspace</span><strong>'+safe(title)+'</strong><span>'+safe(key)+'</span></div></div><button class="admin-quick-close" type="button" data-close-quick="1">X</button></div><div class="admin-workspace-body"><section class="admin-workspace-card admin-workspace-profile"><div class="badge-row"><span class="plan-badge">'+safe(plan)+'</span><span class="badge '+(status.toLowerCase().includes("inactive")?"archived":"")+'">'+safe(status)+'</span></div><div class="admin-health-card"><span>'+safe(healthStars)+'</span><strong>'+safe(health)+'</strong><small>Health score placeholder</small></div><div class="admin-workspace-grid"><div class="info"><span>Monthly Price</span><strong>'+safe(monthly)+'</strong></div><div class="info"><span>Created</span><strong>'+safe(created)+'</strong></div><div class="info"><span>Last Updated</span><strong>'+safe(updated)+'</strong></div><div class="info"><span>City</span><strong>'+safe(city)+'</strong></div><div class="info"><span>Phone</span><strong>'+safe(phone)+'</strong></div><div class="info"><span>Email</span><strong>'+safe(email)+'</strong></div><div class="info admin-workspace-full"><span>Website</span><strong>'+safe(website)+'</strong></div></div></section><section class="admin-workspace-card"><h3>Usage</h3><div class="admin-workspace-usage"><div class="usage-bar '+(usage.percent>=100?"over":usage.percent>=80?"warn":"")+'"><span style="--value:'+usage.percent+'%"></span></div><strong>'+usage.percent+'%</strong></div><div class="admin-workspace-grid"><div class="info"><span>Visualizations Used</span><strong>'+usage.used.toLocaleString()+'</strong></div><div class="info"><span>Monthly Limit</span><strong>'+usage.limit.toLocaleString()+'</strong></div><div class="info"><span>Remaining</span><strong>'+usage.remaining.toLocaleString()+'</strong></div><div class="info"><span>Estimated AI Cost</span><strong>$'+usage.aiCost.toFixed(2)+'</strong></div><div class="info admin-workspace-full"><span>Estimated Monthly Profit</span><strong>$'+usage.profit.toFixed(2)+'</strong></div></div></section><section class="admin-workspace-card"><div class="admin-workspace-section-head"><h3>Catalogs</h3><button class="neutral" id="workspaceOpenCatalogs" type="button">Open Catalog Manager</button></div><div class="info"><span>Catalog Count</span><strong>'+catalogs.count+'</strong></div><div class="admin-workspace-catalogs">'+catalogs.html+'</div></section><section class="admin-workspace-card"><div class="admin-workspace-section-head"><h3>Demo</h3><button class="neutral" id="workspaceOpenDemo" type="button">Open Demo Manager</button></div><div class="admin-workspace-actions"><button class="primary" id="workspaceGenerateDemo" type="button">Generate Demo PIN</button><button class="neutral" id="workspaceViewDemoPins" type="button">View Active Demo PINs</button><button class="link-button" id="workspaceCopyDemoLink" type="button">Copy Demo Link</button></div></section><section class="admin-workspace-card"><h3>Notes</h3><p class="admin-workspace-notes">'+safe(notes||"No notes available.")+'</p></section><section class="admin-workspace-card"><h3>Recent Activity</h3><p class="admin-workspace-empty">Activity history coming soon.</p></section></div><div class="admin-workspace-quick"><div class="admin-quick-actions" id="adminQuickActions"></div></div></div>';
     const quickActions=$("#adminQuickActions",content);
     actionButtons.forEach(function(button){
       const clone=button.cloneNode(true);
       clone.addEventListener("click",function(){button.click();if((button.dataset.action||"")==="edit")closeQuickDrawer();});
       quickActions.appendChild(clone);
     });
+    const scrollToPanel=function(selector){const target=$(selector);if(target){closeQuickDrawer();target.scrollIntoView({behavior:"smooth",block:"start"});}};
+    const openCatalog=$("#workspaceOpenCatalogs",content);
+    if(openCatalog)openCatalog.addEventListener("click",function(){const button=$("#cvCatBtn");if(button)button.click();});
+    const openDemo=$("#workspaceOpenDemo",content);
+    if(openDemo)openDemo.addEventListener("click",function(){scrollToPanel(".demo-access-panel");});
+    const viewDemo=$("#workspaceViewDemoPins",content);
+    if(viewDemo)viewDemo.addEventListener("click",function(){const toggle=$("#activeDemoPins")&&$("#activeDemoPins").previousElementSibling;if(toggle&&toggle.classList.contains("admin-list-toggle")&&!toggle.classList.contains("open"))toggle.click();scrollToPanel(".demo-access-panel");});
+    const generateDemo=$("#workspaceGenerateDemo",content);
+    if(generateDemo)generateDemo.addEventListener("click",function(){const input=$("#demoCompanyName");if(input)input.value=title;const button=$("#generateDemoPinButton");if(button)button.click();scrollToPanel(".demo-access-panel");});
+    const copyDemo=$("#workspaceCopyDemoLink",content);
+    if(copyDemo)copyDemo.addEventListener("click",function(){copyText(new URL("demo-links.html",window.location.href).href,"Demo link copied.");});
     document.body.classList.add("modal-lock");
     drawer.classList.add("active");
   }
