@@ -30,6 +30,8 @@ body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,
 .kv-lead-stage-head h2{margin:0;font-size:clamp(28px,3vw,40px);letter-spacing:0;line-height:1.05;color:var(--kv-text,#0f172a);}
 .kv-lead-stage-head p{margin:8px 0 0;color:var(--kv-muted,#64748b);line-height:1.5;}
 .kv-lead-grid-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;}
+.kv-lead-cabinet-stack,.kv-lead-material-stack{display:grid;grid-template-columns:1fr;gap:14px;}
+.kv-lead-control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start;margin-bottom:14px;}
 .kv-lead-stage .jcr-card{margin-bottom:16px!important;box-shadow:var(--kv-shadow-sm)!important;border-color:var(--kv-border,#dbe5f1)!important;}
 .kv-lead-stage .jcr-card:last-child{margin-bottom:0!important;}
 .kv-lead-stage-nav{display:flex;justify-content:space-between;gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--kv-border,#dbe5f1);}
@@ -61,11 +63,16 @@ body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,
 .kv-premium-lead,.kv-premium-lead *{max-width:100%;}
 .kv-premium-lead{overflow-x:hidden;}
 .kv-premium-lead .jcr-card{min-width:0;overflow:hidden;}
-.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))!important;gap:12px!important;width:100%!important;max-width:100%!important;justify-content:center;}
-.kv-premium-lead .jcr-swatch,.kv-premium-lead .jcr-material{width:100%!important;min-width:0!important;max-width:100%!important;min-height:96px!important;padding:14px 10px!important;overflow:hidden;}
-.kv-premium-lead .jcr-swatch span,.kv-premium-lead .jcr-material span{overflow-wrap:anywhere;line-height:1.2;}
-.kv-premium-lead .jcr-door-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))!important;gap:16px!important;width:100%!important;max-width:100%!important;}
-.kv-premium-lead .jcr-door-option{min-width:0!important;max-width:100%!important;transform:none!important;padding:20px!important;}
+.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(115px,1fr))!important;gap:10px!important;width:100%!important;max-width:100%!important;justify-content:center;}
+.kv-premium-lead .jcr-swatch,.kv-premium-lead .jcr-material{width:100%!important;min-width:0!important;max-width:100%!important;min-height:78px!important;padding:10px 8px!important;gap:6px!important;overflow:hidden;}
+.kv-premium-lead .jcr-dot{width:34px!important;height:34px!important;}
+.kv-premium-lead .jcr-material-dot{width:40px!important;height:28px!important;border-radius:9px!important;}
+.kv-premium-lead .jcr-swatch span,.kv-premium-lead .jcr-material span{overflow-wrap:anywhere;line-height:1.15;font-size:12px!important;}
+.kv-premium-lead .jcr-door-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important;width:100%!important;max-width:100%!important;}
+.kv-premium-lead .jcr-door-option{min-width:0!important;max-width:100%!important;transform:none!important;padding:16px!important;}
+.kv-premium-lead .jcr-door-preview{margin-bottom:10px!important;max-width:180px!important;border-radius:14px!important;}
+.kv-premium-lead .jcr-door-name{font-size:17px!important;}
+.kv-premium-lead .jcr-door-desc{font-size:12px!important;margin-top:4px!important;}
 .kv-premium-lead .jcr-door-option:hover{transform:translateY(-2px)!important;}
 .kv-premium-lead .jcr-door-option.active::after{content:"";width:32px;height:32px;border-radius:50%;background:var(--kv-primary);right:12px;top:12px;}
 .kv-premium-lead .jcr-door-option.active::before{content:"";position:absolute;right:22px;top:21px;width:10px;height:6px;border-left:3px solid #fff;border-bottom:3px solid #fff;transform:rotate(-45deg);z-index:2;}
@@ -82,9 +89,10 @@ body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,
 .kv-premium-lead .jcr-slider-handle::before,.kv-premium-lead .jcr-slider-handle::after{content:"";position:absolute;top:50%;width:8px;height:8px;border-top:2px solid var(--kv-primary);border-left:2px solid var(--kv-primary);}
 .kv-premium-lead .jcr-slider-handle::before{left:13px;transform:translateY(-50%) rotate(-45deg);}
 .kv-premium-lead .jcr-slider-handle::after{right:13px;transform:translateY(-50%) rotate(135deg);}
-@media(max-width:1180px){.kv-lead-shell{grid-template-columns:240px minmax(0,1fr);}.kv-lead-summary{grid-column:1/-1;position:static;}.kv-lead-review-grid{grid-template-columns:1fr;}}
-@media(max-width:860px){body{padding-bottom:86px;}.kv-premium-lead .kv-wrap{width:min(100% - 22px,760px)!important;margin:14px auto!important;}.kv-lead-topbar{display:block;border-radius:26px;padding:16px;}.kv-lead-brand{align-items:flex-start;}.kv-lead-logo{width:58px;height:58px;border-radius:18px;}.kv-lead-shell{display:block;}.kv-lead-progress{display:none;}.kv-lead-mobile-tabs{display:flex;}.kv-lead-main{padding:18px;border-radius:26px;}.kv-lead-summary{display:none;}.kv-lead-grid-two{grid-template-columns:1fr;}.kv-lead-stage-head{display:block;}.kv-lead-stage-nav{display:none;}.kv-lead-mobile-bar{display:block;}.kv-premium-lead #jcr_generate_btn{width:100%;}}
-@media(max-width:560px){.kv-lead-title h2{font-size:27px!important;}.kv-lead-main{padding:14px;}.kv-lead-stage .jcr-card{padding:18px!important;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(128px,1fr))!important;}.kv-lead-mobile-bar-inner{grid-template-columns:auto 1fr auto;}.kv-lead-mobile-bar .kv-btn-secondary,.kv-lead-mobile-bar .kv-btn-ghost{min-width:72px;}}
+@media(max-width:1180px){.kv-lead-shell{grid-template-columns:240px minmax(0,1fr);}.kv-lead-summary{grid-column:1/-1;position:static;}.kv-lead-review-grid{grid-template-columns:1fr;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))!important;}}
+@media(max-width:860px){body{padding-bottom:86px;}.kv-premium-lead .kv-wrap{width:min(100% - 22px,760px)!important;margin:14px auto!important;}.kv-lead-topbar{display:block;border-radius:26px;padding:16px;}.kv-lead-brand{align-items:flex-start;}.kv-lead-logo{width:58px;height:58px;border-radius:18px;}.kv-lead-shell{display:block;}.kv-lead-progress{display:none;}.kv-lead-mobile-tabs{display:flex;}.kv-lead-main{padding:18px;border-radius:26px;}.kv-lead-summary{display:none;}.kv-lead-grid-two,.kv-lead-control-grid{grid-template-columns:1fr;}.kv-lead-stage-head{display:block;}.kv-lead-stage-nav{display:none;}.kv-lead-mobile-bar{display:block;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;}.kv-premium-lead #jcr_generate_btn{width:100%;}}
+@media(max-width:600px){.kv-premium-lead .jcr-door-grid{grid-template-columns:1fr!important;}}
+@media(max-width:560px){.kv-lead-title h2{font-size:27px!important;}.kv-lead-main{padding:14px;}.kv-lead-stage .jcr-card{padding:14px!important;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))!important;}.kv-lead-mobile-bar-inner{grid-template-columns:auto 1fr auto;}.kv-lead-mobile-bar .kv-btn-secondary,.kv-lead-mobile-bar .kv-btn-ghost{min-width:72px;}}
 </style>
 </head>
 <body class="kv-premium-body kv-premium-scope kv-premium-lead"><div class="kv-wrap" style="max-width:1800px;margin:40px auto;padding:44px;position:relative;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:28px;font-family:Arial,sans-serif;box-shadow:0 30px 90px rgba(15,23,42,0.12);border:1px solid #e5e7eb;">
@@ -1736,9 +1744,10 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     const actions=document.createElement("div"); actions.className="kv-lead-photo-actions"; actions.innerHTML='<button class="kv-btn kv-btn-secondary" type="button" data-replace-photo>Replace Photo</button>';
     uploadBody.appendChild(preview); uploadBody.appendChild(actions);
 
-    const cabGrid=document.createElement("div"); cabGrid.className="kv-lead-grid-two"; cabinetBody.appendChild(cabGrid); moveAll([upperCard,baseCard], cabGrid);
+    const cabGrid=document.createElement("div"); cabGrid.className="kv-lead-cabinet-stack"; cabinetBody.appendChild(cabGrid); moveAll([upperCard,baseCard], cabGrid);
     moveAll([doorCard], doorBody);
-    const detailGrid=document.createElement("div"); detailGrid.className="kv-lead-grid-two"; detailsBody.appendChild(detailGrid); moveAll(detailCards, detailGrid);
+    const detailControls=document.createElement("div"); detailControls.className="kv-lead-control-grid"; detailsBody.appendChild(detailControls); moveAll(detailCards.slice(0,2), detailControls);
+    const detailGrid=document.createElement("div"); detailGrid.className="kv-lead-material-stack"; detailsBody.appendChild(detailGrid); moveAll(detailCards.slice(2), detailGrid);
 
     const reviewGrid=document.createElement("div"); reviewGrid.className="kv-lead-review-grid";
     reviewGrid.innerHTML='<div><div class="kv-lead-review-photo" id="kv_lead_review_photo">Upload photo</div></div><div><div class="kv-summary-list" id="kv_lead_review_summary"></div></div>';
