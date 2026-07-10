@@ -89,10 +89,21 @@ body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,
 .kv-premium-lead .jcr-slider-handle::before,.kv-premium-lead .jcr-slider-handle::after{content:"";position:absolute;top:50%;width:8px;height:8px;border-top:2px solid var(--kv-primary);border-left:2px solid var(--kv-primary);}
 .kv-premium-lead .jcr-slider-handle::before{left:13px;transform:translateY(-50%) rotate(-45deg);}
 .kv-premium-lead .jcr-slider-handle::after{right:13px;transform:translateY(-50%) rotate(135deg);}
+.kv-premium-lead #jcr_before_img,.kv-premium-lead #jcr_after_img,.kv-premium-lead #jcr_design_a_img,.kv-premium-lead #jcr_design_b_img{pointer-events:auto!important;cursor:zoom-in;}
+.kv-lead-cta{display:none;margin-top:24px;padding:24px;border:1px solid var(--kv-border,#dbe5f1);border-radius:24px;background:linear-gradient(180deg,#ffffff,#f8fafc);box-shadow:var(--kv-shadow-sm);}
+.kv-lead-cta.active{display:block;}
+.kv-lead-cta h3{margin:0;font-size:26px;line-height:1.1;color:var(--kv-text,#0f172a);}
+.kv-lead-cta p{margin:8px 0 0;color:var(--kv-muted,#64748b);line-height:1.5;}
+.kv-lead-cta-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;}
+.kv-lead-cta-actions a{min-height:50px;text-decoration:none;}
+.kv-lead-lightbox{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(2,6,23,.86);backdrop-filter:blur(10px);}
+.kv-lead-lightbox.active{display:flex;}
+.kv-lead-lightbox img{max-width:min(1100px,94vw);max-height:86vh;border-radius:24px;box-shadow:0 30px 90px rgba(0,0,0,.45);background:#111827;}
+.kv-lead-lightbox-close{position:absolute;top:18px;right:18px;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(15,23,42,.72);color:#fff;font-size:26px;line-height:1;cursor:pointer;}
 @media(max-width:1180px){.kv-lead-shell{grid-template-columns:240px minmax(0,1fr);}.kv-lead-summary{grid-column:1/-1;position:static;}.kv-lead-review-grid{grid-template-columns:1fr;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))!important;}}
 @media(max-width:860px){body{padding-bottom:86px;}.kv-premium-lead .kv-wrap{width:min(100% - 22px,760px)!important;margin:14px auto!important;}.kv-lead-topbar{display:block;border-radius:26px;padding:16px;}.kv-lead-brand{align-items:flex-start;}.kv-lead-logo{width:58px;height:58px;border-radius:18px;}.kv-lead-shell{display:block;}.kv-lead-progress{display:none;}.kv-lead-mobile-tabs{display:flex;}.kv-lead-main{padding:18px;border-radius:26px;}.kv-lead-summary{display:none;}.kv-lead-grid-two,.kv-lead-control-grid{grid-template-columns:1fr;}.kv-lead-stage-head{display:block;}.kv-lead-stage-nav{display:none;}.kv-lead-mobile-bar{display:block;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;}.kv-premium-lead #jcr_generate_btn{width:100%;}}
 @media(max-width:600px){.kv-premium-lead .jcr-door-grid{grid-template-columns:1fr!important;}}
-@media(max-width:560px){.kv-lead-title h2{font-size:27px!important;}.kv-lead-main{padding:14px;}.kv-lead-stage .jcr-card{padding:14px!important;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))!important;}.jcr-design-actions,.jcr-design-secondary-row{display:grid!important;grid-template-columns:1fr;}.jcr-design-secondary-row .jcr-btn-dark,.jcr-design-secondary-row .jcr-btn-light{width:100%;min-width:0;}.kv-lead-mobile-bar-inner{grid-template-columns:auto 1fr auto;}.kv-lead-mobile-bar .kv-btn-secondary,.kv-lead-mobile-bar .kv-btn-ghost{min-width:72px;}}
+@media(max-width:560px){.kv-lead-title h2{font-size:27px!important;}.kv-lead-main{padding:14px;}.kv-lead-stage .jcr-card{padding:14px!important;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))!important;}.jcr-design-actions,.jcr-design-secondary-row{display:grid!important;grid-template-columns:1fr;}.jcr-design-secondary-row .jcr-btn-dark,.jcr-design-secondary-row .jcr-btn-light{width:100%;min-width:0;}.kv-lead-cta-actions{display:grid;grid-template-columns:1fr;}.kv-lead-lightbox{padding:14px;}.kv-lead-lightbox img{border-radius:18px;}.kv-lead-mobile-bar-inner{grid-template-columns:auto 1fr auto;}.kv-lead-mobile-bar .kv-btn-secondary,.kv-lead-mobile-bar .kv-btn-ghost{min-width:72px;}}
 </style>
 </head>
 <body class="kv-premium-body kv-premium-scope kv-premium-lead"><div class="kv-wrap" style="max-width:1800px;margin:40px auto;padding:44px;position:relative;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:28px;font-family:Arial,sans-serif;box-shadow:0 30px 90px rgba(15,23,42,0.12);border:1px solid #e5e7eb;">
@@ -659,6 +670,21 @@ const KV_COMPANY = {
   </div>
 </div>
 
+<div id="kv_lead_customer_cta" class="kv-lead-cta" aria-live="polite">
+  <h3>Ready for the next step?</h3>
+  <p id="kv_lead_cta_copy">Connect with your cabinet specialist to review your design.</p>
+  <div class="kv-lead-cta-actions">
+    <a id="kv_lead_estimate_cta" class="kv-btn kv-btn-primary" target="_blank" rel="noopener" style="display:none;">Request a Free Estimate</a>
+    <a id="kv_lead_phone_cta" class="kv-btn kv-btn-secondary" style="display:none;"></a>
+    <a id="kv_lead_website_cta" class="kv-btn kv-btn-ghost" target="_blank" rel="noopener" style="display:none;">Visit Website</a>
+  </div>
+</div>
+
+<div id="kv_lead_lightbox" class="kv-lead-lightbox" aria-hidden="true" role="dialog" aria-label="Expanded design image">
+  <button id="kv_lead_lightbox_close" class="kv-lead-lightbox-close" type="button" aria-label="Close image">&times;</button>
+  <img id="kv_lead_lightbox_img" alt="Expanded design preview">
+</div>
+
 
 <div id="jcr_monthly_counter" style="position:absolute;right:16px;bottom:12px;font-size:12px;line-height:1;color:#6b7280;opacity:.8;font-family:Arial,sans-serif;z-index:999999;background:rgba(255,255,255,.85);padding:3px 6px;border-radius:8px;border:1px solid rgba(229,231,235,.9);">0</div>
 
@@ -743,7 +769,6 @@ const KV_COMPANY = {
     logo.src = KV_COMPANY.logoUrl;
     logo.style.display = "block";
   }
-
   let uploadedImageData = "";
   let uploadedMainCustomColorData = "";
   let uploadedIslandCustomColorData = "";
@@ -800,6 +825,13 @@ const KV_COMPANY = {
   const designAText = document.getElementById("jcr_design_a_text");
   const designBText = document.getElementById("jcr_design_b_text");
   const selectedSummary = document.getElementById("jcr_selected_summary");
+  const customerCta = document.getElementById("kv_lead_customer_cta");
+  const estimateCta = document.getElementById("kv_lead_estimate_cta");
+  const phoneCta = document.getElementById("kv_lead_phone_cta");
+  const websiteCta = document.getElementById("kv_lead_website_cta");
+  const lightbox = document.getElementById("kv_lead_lightbox");
+  const lightboxImg = document.getElementById("kv_lead_lightbox_img");
+  const lightboxClose = document.getElementById("kv_lead_lightbox_close");
   const summaryMainColor = document.getElementById("jcr_summary_main_color");
   const summaryIslandColor = document.getElementById("jcr_summary_island_color");
   const summaryDoorStyle = document.getElementById("jcr_summary_door_style");
@@ -814,6 +846,70 @@ const KV_COMPANY = {
   const leadNotes = document.getElementById("lead_notes");
 
   const monthlyCounter = document.getElementById("jcr_monthly_counter");
+
+  function normalizeUrl(url) {
+    if (!url || typeof url !== "string") return "";
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    return /^https?:\/\//i.test(trimmed) ? trimmed : "https://" + trimmed;
+  }
+
+  function getCompanyWebsite() {
+    return KV_COMPANY.website || KV_COMPANY.websiteUrl || KV_COMPANY.url || KV_COMPANY.companyWebsite || "";
+  }
+
+  function updateCustomerCta() {
+    if (!customerCta) return;
+    const estimateUrl = normalizeUrl(KV_COMPANY.estimateUrl || KV_COMPANY.estimateURL || "");
+    const websiteUrl = normalizeUrl(getCompanyWebsite());
+    const phone = (KV_COMPANY.phone || "").trim();
+    let hasAction = false;
+
+    if (estimateCta) {
+      estimateCta.style.display = estimateUrl ? "inline-flex" : "none";
+      if (estimateUrl) {
+        estimateCta.href = estimateUrl;
+        hasAction = true;
+      }
+    }
+
+    if (phoneCta) {
+      phoneCta.style.display = phone ? "inline-flex" : "none";
+      if (phone) {
+        phoneCta.href = "tel:" + phone.replace(/[^\d+]/g, "");
+        phoneCta.innerText = "Call " + phone;
+        hasAction = true;
+      }
+    }
+
+    if (websiteCta) {
+      websiteCta.style.display = websiteUrl ? "inline-flex" : "none";
+      if (websiteUrl) {
+        websiteCta.href = websiteUrl;
+        hasAction = true;
+      }
+    }
+
+    customerCta.classList.toggle("active", hasAction);
+  }
+  updateCustomerCta();
+
+  function openLeadLightbox(src, alt) {
+    if (!lightbox || !lightboxImg || !src) return;
+    lightboxImg.src = src;
+    lightboxImg.alt = alt || "Expanded design preview";
+    lightbox.classList.add("active");
+    lightbox.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeLeadLightbox() {
+    if (!lightbox || !lightboxImg) return;
+    lightbox.classList.remove("active");
+    lightbox.setAttribute("aria-hidden", "true");
+    lightboxImg.src = "";
+    document.body.style.overflow = "";
+  }
 
   function updateMonthlyCounterFromServer(data) {
     if (!monthlyCounter || !data) return;
@@ -1676,6 +1772,23 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     downloadDesignPacket();
   });
 
+  [beforeImg, afterImg, designAImg, designBImg].forEach(function(img) {
+    if (!img) return;
+    img.addEventListener("click", function(event) {
+      if (!img.src) return;
+      event.stopPropagation();
+      openLeadLightbox(img.src, img.alt);
+    });
+  });
+
+  if (lightboxClose) lightboxClose.addEventListener("click", closeLeadLightbox);
+  if (lightbox) lightbox.addEventListener("click", function(event) {
+    if (event.target === lightbox) closeLeadLightbox();
+  });
+  document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") closeLeadLightbox();
+  });
+
   button.addEventListener("click", async function() {
     if (!leadName.value || !leadPhone.value || !leadEmail.value) { status.innerText = "Please enter your name, phone, and email first."; return; }
     if (!uploadedImageData) { status.innerText = "Upload a kitchen photo first."; return; }
@@ -1750,6 +1863,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
         designWorkflowState = "awaitingA";
       }
       refreshDesignActionButtons();
+      updateCustomerCta();
       updateSelectedSummary();
       updateCompareSlider(50);
 
@@ -1848,6 +1962,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     const result=qs("#jcr_result_wrap");
     const selected=qs("#jcr_selected_summary");
     const compare=qs("#jcr_design_compare_box");
+    const cta=qs("#kv_lead_customer_cta");
     const counter=qs("#jcr_monthly_counter");
 
     const topbar=document.createElement("header");
@@ -1926,7 +2041,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
     const empty=document.createElement("div"); empty.className="kv-lead-results-empty"; empty.id="kv_lead_results_empty"; empty.textContent="Your before/after preview will appear here after generation succeeds.";
     resultsBody.appendChild(empty);
-    moveAll([success,result,selected,compare], resultsBody);
+    moveAll([success,result,selected,compare,cta], resultsBody);
     if(counter) wrap.appendChild(counter);
 
     const mobileBar=document.createElement("div"); mobileBar.className="kv-lead-mobile-bar";
@@ -1957,7 +2072,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     qsa("[data-lead-back],[data-mobile-back]").forEach(function(btn){btn.addEventListener("click",function(){go(-1);});});
     qsa("[data-lead-next]").forEach(function(btn){btn.addEventListener("click",function(){go(1);});});
     const mobilePrimary=qs("[data-mobile-primary]");
-    if(mobilePrimary) mobilePrimary.addEventListener("click",function(){ if(currentStage === "review"){ const generate=qs("#jcr_generate_btn"); if(generate) generate.click(); } else if(currentStage === "results") { showStage("upload"); } else { go(1); } });
+    if(mobilePrimary) mobilePrimary.addEventListener("click",function(){ if(currentStage === "review"){ const generate=qs("#jcr_generate_btn"); if(generate) generate.click(); } else if(currentStage !== "results") { go(1); } });
     const photo=qs("#jcr_photo");
     if(photo){photo.addEventListener("change",function(){refreshPhotoState(); setTimeout(function(){refreshPhotoState(); refreshReview();},200);});}
     qsa("select,input,textarea").forEach(function(el){el.addEventListener("change",refreshReview); el.addEventListener("input",refreshReview);});
@@ -2008,7 +2123,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     qsa("[data-lead-back],[data-mobile-back]").forEach(function(btn){btn.disabled=index===0;});
     qsa("[data-lead-next]").forEach(function(btn){btn.disabled=(currentStage==="upload"&&!hasPhoto)||(currentStage==="review")||(currentStage==="results"); btn.textContent=currentStage==="upload"&&!hasPhoto?"Upload Photo to Continue":"Next";});
     const primary=qs("[data-mobile-primary]");
-    if(primary){primary.disabled=currentStage==="upload"&&!hasPhoto; primary.textContent=currentStage==="review"?"Generate":(currentStage==="results"?"Create Another":"Next");}
+    if(primary){primary.disabled=currentStage==="upload"&&!hasPhoto; primary.style.display=currentStage==="results"?"none":""; primary.textContent=currentStage==="review"?"Generate":"Next";}
   }
 
   function refreshPhotoState(){
