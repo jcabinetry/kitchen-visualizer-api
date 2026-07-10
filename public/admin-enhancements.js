@@ -436,10 +436,13 @@
     if(workspaceState.saving)return;
     const section=workspaceSections(workspaceState.record).find(function(item){return item.id===sectionId});
     if(!section)return;
+    const payload={companyKey:workspaceState.key,...section.payload()};
+    const saveButton=$("[data-workspace-save='"+sectionId+"']");
+    const cancelButton=$("[data-workspace-section='"+sectionId+"'] [data-workspace-cancel]");
     workspaceState.saving=true;
-    renderWorkspace(workspaceState.record,workspaceState.card);
+    if(saveButton){saveButton.disabled=true;saveButton.textContent="Saving...";}
+    if(cancelButton)cancelButton.disabled=true;
     try{
-      const payload={companyKey:workspaceState.key,...section.payload()};
       const data=await api("/api/admin/customers",{method:"PATCH",body:JSON.stringify(payload)});
       if(data.customer){
         workspaceState.record=data.customer;
