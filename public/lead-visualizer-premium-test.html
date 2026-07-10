@@ -223,6 +223,7 @@ const KV_COMPANY = {
 .jcr-design-secondary-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;width:100%;}
 .jcr-design-secondary-row .jcr-btn-dark,.jcr-design-secondary-row .jcr-btn-light{min-width:210px;}
 .jcr-btn-outline{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:53px!important;padding:14px 20px!important;background:#fff!important;color:var(--kv-primary)!important;border:1px solid color-mix(in srgb,var(--kv-primary) 35%,#dbe5f1)!important;box-shadow:none!important;}
+.jcr-design-actions button[hidden]{display:none!important;}
 .jcr-design-compare-box{
   display:none;
   margin-top:34px;
@@ -601,10 +602,11 @@ const KV_COMPANY = {
   </div>
 
   <div id="jcr_design_actions" class="jcr-design-actions">
-    <button id="jcr_create_next_design" class="jcr-btn-primary jcr-design-next" type="button">Create Next Design</button>
+    <button id="jcr_create_next_design" class="jcr-btn-primary jcr-design-next" type="button">Save Design A</button>
     <div class="jcr-design-secondary-row">
-      <button id="jcr_save_a" class="jcr-btn-dark" type="button">Save Current Design</button>
-      <button id="jcr_save_b" class="jcr-btn-light jcr-btn-outline" type="button">Compare Designs</button>
+      <button id="jcr_save_a" class="jcr-btn-dark" type="button">Replace Design A</button>
+      <button id="jcr_save_b" class="jcr-btn-light jcr-btn-outline" type="button">Back to Design A</button>
+      <button id="jcr_replace_b" class="jcr-btn-light jcr-btn-outline" type="button">Replace Design B</button>
     </div>
   </div>
 </div>
@@ -754,6 +756,8 @@ const KV_COMPANY = {
   let currentDesign = null;
   let savedDesignA = null;
   let savedDesignB = null;
+  let designWorkflowState = "awaitingA";
+  let designBCandidate = null;
 
   const photoInput = document.getElementById("jcr_photo");
   const photoName = document.getElementById("jcr_photo_name");
@@ -789,6 +793,7 @@ const KV_COMPANY = {
   const createNextDesignBtn = document.getElementById("jcr_create_next_design");
   const saveABtn = document.getElementById("jcr_save_a");
   const saveBBtn = document.getElementById("jcr_save_b");
+  const replaceBBtn = document.getElementById("jcr_replace_b");
   const designCompareBox = document.getElementById("jcr_design_compare_box");
   const designAImg = document.getElementById("jcr_design_a_img");
   const designBImg = document.getElementById("jcr_design_b_img");
@@ -1196,53 +1201,163 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     designCompareBox.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  if (createNextDesignBtn) createNextDesignBtn.addEventListener("click", function() {
-    if (!currentDesign) {
-      status.innerText = "Generate a preview before creating another design.";
-      return;
-    }
+  function showDesignResult(design) {
+    if (!design || !design.image) return;
+    beforeImg.src = design.image;
+    afterImg.src = uploadedImageData;
+    beforeImg.style.display = "block";
+    afterImg.style.display = "block";
+    resultWrap.classList.add("active");
+    downloadRow.style.display = "block";
+    designActions.classList.add("active");
+    updateCompareSlider(50);
+  }
 
-    status.innerText = "Adjust your selections, then generate the next design.";
-    document.dispatchEvent(new CustomEvent("kvLeadCreateNextDesign"));
-  });
-
-  saveABtn.addEventListener("click", function() {
-    if (!currentDesign) {
-      status.innerText = "Generate a preview before saving a design.";
-      return;
-    }
+  function refreshDesignActionButtons() {
+    if (!designActions || !createNextDesignBtn || !saveABtn || !saveBBtn) return;
+    [createNextDesignBtn, saveABtn, saveBBtn, replaceBBtn].forEach(function(btn) {
+      if (btn) btn.hidden = true;
+    });
 
     if (!savedDesignA) {
-      savedDesignA = currentDesign;
-      status.innerText = "Current design saved as Design A.";
-    } else if (!savedDesignB) {
-      savedDesignB = currentDesign;
-      status.innerText = "Current design saved as Design B. You can compare designs now.";
-    } else {
-      const slot = window.prompt("Design A and Design B are already saved. Type A or B to overwrite one design.");
-      if (!slot) return;
-      if (slot.trim().toUpperCase() === "A") {
-        savedDesignA = currentDesign;
-        status.innerText = "Design A updated.";
-      } else if (slot.trim().toUpperCase() === "B") {
-        savedDesignB = currentDesign;
-        status.innerText = "Design B updated.";
-      } else {
-        status.innerText = "Please type A or B to choose which design to overwrite.";
-        return;
-      }
+      createNextDesignBtn.innerText = "Save Design A";
+      createNextDesignBtn.hidden = false;
+      return;
     }
 
-    renderSavedDesigns();
-  });
+    if (savedDesignA && designBCandidate) {
+      createNextDesignBtn.innerText = "Save Design B";
+      saveBBtn.innerText = "Back to Design A";
+      createNextDesignBtn.hidden = false;
+      saveBBtn.hidden = false;
+      return;
+    }
 
-  saveBBtn.addEventListener("click", function() {
-    if (!savedDesignA || !savedDesignB) {
-      status.innerText = "You'll be able to compare once you've saved two designs.";
+    if (savedDesignA && !savedDesignB) {
+      createNextDesignBtn.innerText = "Create Design B";
+      saveABtn.innerText = "Replace Design A";
+      createNextDesignBtn.hidden = false;
+      saveABtn.hidden = false;
+      return;
+    }
+
+    createNextDesignBtn.innerText = "Compare Designs";
+    saveABtn.innerText = "Create Another Design B";
+    saveBBtn.innerText = "Replace Design A";
+    createNextDesignBtn.hidden = false;
+    saveABtn.hidden = false;
+    saveBBtn.hidden = false;
+    if (replaceBBtn) {
+      replaceBBtn.innerText = "Replace Design B";
+      replaceBBtn.hidden = false;
+    }
+  }
+
+  function startDesignBFlow(message) {
+    designWorkflowState = "creatingB";
+    status.innerText = message || "Adjust your selections, then generate Design B.";
+    refreshDesignActionButtons();
+    document.dispatchEvent(new CustomEvent("kvLeadCreateNextDesign"));
+  }
+
+  function saveDesignAFromCurrent() {
+    if (!currentDesign) {
+      status.innerText = "Generate a preview before saving Design A.";
+      return;
+    }
+    savedDesignA = currentDesign;
+    designWorkflowState = "aSaved";
+    status.innerText = "Design A saved.";
+    renderSavedDesigns();
+    refreshDesignActionButtons();
+  }
+
+  function saveDesignBFromCandidate() {
+    const designToSave = designBCandidate || currentDesign;
+    if (!designToSave) {
+      status.innerText = "Generate Design B before saving it.";
+      return;
+    }
+    savedDesignB = designToSave;
+    designBCandidate = null;
+    designWorkflowState = "bothSaved";
+    status.innerText = "Design B saved. You can compare designs now.";
+    renderSavedDesigns();
+    refreshDesignActionButtons();
+  }
+
+  if (createNextDesignBtn) createNextDesignBtn.addEventListener("click", function() {
+    if (!savedDesignA) {
+      saveDesignAFromCurrent();
+      return;
+    }
+
+    if (savedDesignA && !designBCandidate && !savedDesignB) {
+      startDesignBFlow("Design A is saved. Adjust your selections to create Design B.");
+      return;
+    }
+
+    if (savedDesignA && designBCandidate) {
+      saveDesignBFromCandidate();
+      return;
+    }
+
+    if (!savedDesignB) {
+      status.innerText = "Create and save Design B before comparing.";
       return;
     }
 
     updateDesignCompare();
+  });
+
+  saveABtn.addEventListener("click", function() {
+    if (savedDesignA && savedDesignB) {
+      designBCandidate = null;
+      startDesignBFlow("Adjust your selections, then generate another Design B.");
+      return;
+    }
+
+    if (!currentDesign) {
+      status.innerText = "Generate a preview before replacing Design A.";
+      return;
+    }
+
+    savedDesignA = currentDesign;
+    status.innerText = "Design A updated.";
+    renderSavedDesigns();
+    refreshDesignActionButtons();
+  });
+
+  saveBBtn.addEventListener("click", function() {
+    if (savedDesignA && designBCandidate) {
+      showDesignResult(savedDesignA);
+      status.innerText = "Viewing Design A. Your Design B progress is still saved.";
+      return;
+    }
+
+    if (!currentDesign) {
+      status.innerText = "Generate a preview before replacing Design A.";
+      return;
+    }
+
+    savedDesignA = currentDesign;
+    status.innerText = "Design A updated.";
+    renderSavedDesigns();
+    refreshDesignActionButtons();
+  });
+
+  if (replaceBBtn) replaceBBtn.addEventListener("click", function() {
+    const designToSave = designBCandidate || currentDesign;
+    if (!designToSave) {
+      status.innerText = "Generate Design B before replacing it.";
+      return;
+    }
+    savedDesignB = designToSave;
+    designBCandidate = null;
+    designWorkflowState = "bothSaved";
+    status.innerText = "Design B updated.";
+    renderSavedDesigns();
+    refreshDesignActionButtons();
   });
 
 
@@ -1625,6 +1740,16 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       downloadRow.style.display = "block";
       designActions.classList.add("active");
       currentDesign = getDesignDetails(data.image);
+      if (savedDesignA && !savedDesignB && designWorkflowState === "creatingB") {
+        designBCandidate = currentDesign;
+        designWorkflowState = "bGenerated";
+      } else if (savedDesignA && savedDesignB && designWorkflowState === "creatingB") {
+        designBCandidate = currentDesign;
+        designWorkflowState = "bGenerated";
+      } else if (!savedDesignA) {
+        designWorkflowState = "awaitingA";
+      }
+      refreshDesignActionButtons();
       updateSelectedSummary();
       updateCompareSlider(50);
 
