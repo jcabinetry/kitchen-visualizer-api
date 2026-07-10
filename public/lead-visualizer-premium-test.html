@@ -92,7 +92,7 @@ body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,
 @media(max-width:1180px){.kv-lead-shell{grid-template-columns:240px minmax(0,1fr);}.kv-lead-summary{grid-column:1/-1;position:static;}.kv-lead-review-grid{grid-template-columns:1fr;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))!important;}}
 @media(max-width:860px){body{padding-bottom:86px;}.kv-premium-lead .kv-wrap{width:min(100% - 22px,760px)!important;margin:14px auto!important;}.kv-lead-topbar{display:block;border-radius:26px;padding:16px;}.kv-lead-brand{align-items:flex-start;}.kv-lead-logo{width:58px;height:58px;border-radius:18px;}.kv-lead-shell{display:block;}.kv-lead-progress{display:none;}.kv-lead-mobile-tabs{display:flex;}.kv-lead-main{padding:18px;border-radius:26px;}.kv-lead-summary{display:none;}.kv-lead-grid-two,.kv-lead-control-grid{grid-template-columns:1fr;}.kv-lead-stage-head{display:block;}.kv-lead-stage-nav{display:none;}.kv-lead-mobile-bar{display:block;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;}.kv-premium-lead #jcr_generate_btn{width:100%;}}
 @media(max-width:600px){.kv-premium-lead .jcr-door-grid{grid-template-columns:1fr!important;}}
-@media(max-width:560px){.kv-lead-title h2{font-size:27px!important;}.kv-lead-main{padding:14px;}.kv-lead-stage .jcr-card{padding:14px!important;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))!important;}.kv-lead-mobile-bar-inner{grid-template-columns:auto 1fr auto;}.kv-lead-mobile-bar .kv-btn-secondary,.kv-lead-mobile-bar .kv-btn-ghost{min-width:72px;}}
+@media(max-width:560px){.kv-lead-title h2{font-size:27px!important;}.kv-lead-main{padding:14px;}.kv-lead-stage .jcr-card{padding:14px!important;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))!important;}.jcr-design-actions,.jcr-design-secondary-row{display:grid!important;grid-template-columns:1fr;}.jcr-design-secondary-row .jcr-btn-dark,.jcr-design-secondary-row .jcr-btn-light{width:100%;min-width:0;}.kv-lead-mobile-bar-inner{grid-template-columns:auto 1fr auto;}.kv-lead-mobile-bar .kv-btn-secondary,.kv-lead-mobile-bar .kv-btn-ghost{min-width:72px;}}
 </style>
 </head>
 <body class="kv-premium-body kv-premium-scope kv-premium-lead"><div class="kv-wrap" style="max-width:1800px;margin:40px auto;padding:44px;position:relative;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:28px;font-family:Arial,sans-serif;box-shadow:0 30px 90px rgba(15,23,42,0.12);border:1px solid #e5e7eb;">
@@ -210,15 +210,19 @@ const KV_COMPANY = {
 /* Minimal Design A / B comparison */
 .jcr-design-actions{
   display:none;
-  text-align:center;
   margin-top:22px;
+  gap:12px;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
 }
 .jcr-design-actions.active{
-  display:block;
+  display:flex;
 }
-.jcr-design-actions button{
-  margin:6px;
-}
+.jcr-design-actions .jcr-design-next{width:min(680px,100%);font-size:18px;}
+.jcr-design-secondary-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;width:100%;}
+.jcr-design-secondary-row .jcr-btn-dark,.jcr-design-secondary-row .jcr-btn-light{min-width:210px;}
+.jcr-btn-outline{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:53px!important;padding:14px 20px!important;background:#fff!important;color:var(--kv-primary)!important;border:1px solid color-mix(in srgb,var(--kv-primary) 35%,#dbe5f1)!important;box-shadow:none!important;}
 .jcr-design-compare-box{
   display:none;
   margin-top:34px;
@@ -597,8 +601,11 @@ const KV_COMPANY = {
   </div>
 
   <div id="jcr_design_actions" class="jcr-design-actions">
-    <button id="jcr_save_a" class="jcr-btn-dark" type="button">Save as Design A</button>
-    <button id="jcr_save_b" class="jcr-btn-dark" type="button">Save as Design B</button>
+    <button id="jcr_create_next_design" class="jcr-btn-primary jcr-design-next" type="button">Create Next Design</button>
+    <div class="jcr-design-secondary-row">
+      <button id="jcr_save_a" class="jcr-btn-dark" type="button">Save Current Design</button>
+      <button id="jcr_save_b" class="jcr-btn-light jcr-btn-outline" type="button">Compare Designs</button>
+    </div>
   </div>
 </div>
 
@@ -779,6 +786,7 @@ const KV_COMPANY = {
   const sliderLine = document.getElementById("jcr_slider_line");
   const sliderHandle = document.getElementById("jcr_slider_handle");
   const designActions = document.getElementById("jcr_design_actions");
+  const createNextDesignBtn = document.getElementById("jcr_create_next_design");
   const saveABtn = document.getElementById("jcr_save_a");
   const saveBBtn = document.getElementById("jcr_save_b");
   const designCompareBox = document.getElementById("jcr_design_compare_box");
@@ -1167,7 +1175,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       "<br>Flooring: " + design.flooring;
   }
 
-  function updateDesignCompare() {
+  function renderSavedDesigns() {
     if (savedDesignA) {
       designAImg.src = savedDesignA.image;
       designAImg.style.display = "block";
@@ -1179,30 +1187,61 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       designBImg.style.display = "block";
       designBText.innerHTML = designText(savedDesignB);
     }
+  }
+
+  function updateDesignCompare() {
+    renderSavedDesigns();
 
     designCompareBox.classList.add("active");
     designCompareBox.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  saveABtn.addEventListener("click", function() {
+  if (createNextDesignBtn) createNextDesignBtn.addEventListener("click", function() {
     if (!currentDesign) {
-      status.innerText = "Generate a preview before saving Design A.";
+      status.innerText = "Generate a preview before creating another design.";
       return;
     }
 
-    savedDesignA = currentDesign;
-    status.innerText = "Design A saved. Change selections, generate again, then save Design B.";
-    updateDesignCompare();
+    status.innerText = "Adjust your selections, then generate the next design.";
+    document.dispatchEvent(new CustomEvent("kvLeadCreateNextDesign"));
+  });
+
+  saveABtn.addEventListener("click", function() {
+    if (!currentDesign) {
+      status.innerText = "Generate a preview before saving a design.";
+      return;
+    }
+
+    if (!savedDesignA) {
+      savedDesignA = currentDesign;
+      status.innerText = "Current design saved as Design A.";
+    } else if (!savedDesignB) {
+      savedDesignB = currentDesign;
+      status.innerText = "Current design saved as Design B. You can compare designs now.";
+    } else {
+      const slot = window.prompt("Design A and Design B are already saved. Type A or B to overwrite one design.");
+      if (!slot) return;
+      if (slot.trim().toUpperCase() === "A") {
+        savedDesignA = currentDesign;
+        status.innerText = "Design A updated.";
+      } else if (slot.trim().toUpperCase() === "B") {
+        savedDesignB = currentDesign;
+        status.innerText = "Design B updated.";
+      } else {
+        status.innerText = "Please type A or B to choose which design to overwrite.";
+        return;
+      }
+    }
+
+    renderSavedDesigns();
   });
 
   saveBBtn.addEventListener("click", function() {
-    if (!currentDesign) {
-      status.innerText = "Generate a preview before saving Design B.";
+    if (!savedDesignA || !savedDesignB) {
+      status.innerText = "You'll be able to compare once you've saved two designs.";
       return;
     }
 
-    savedDesignB = currentDesign;
-    status.innerText = "Design B saved.";
     updateDesignCompare();
   });
 
@@ -1802,6 +1841,11 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     const start=qs("[data-start-over]"); if(start) start.addEventListener("click",function(){showStage("upload"); window.scrollTo({top:0,behavior:"smooth"});});
     const save=qs("[data-save-design]"); if(save) save.addEventListener("click",function(){ const packet=qs("#jcr_packet_btn"); const download=qs("#jcr_download_btn"); if(packet && hasResult) packet.click(); else if(download && hasResult) download.click(); });
     qsa("[data-edit-stage]").forEach(function(btn){btn.addEventListener("click",function(){showStage(btn.dataset.editStage);});});
+    document.addEventListener("kvLeadCreateNextDesign", function(){
+      showStage("cabinets");
+      const main=qs(".kv-lead-main");
+      if(main) main.scrollIntoView({behavior:"smooth",block:"start"});
+    });
   }
 
   function getInitials(text){
