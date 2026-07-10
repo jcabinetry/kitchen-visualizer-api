@@ -4,8 +4,93 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Custom Lead Premium Visualizer Test</title>
-<link rel="stylesheet" href="/visualizer-premium.css">
-<script src="/custom-catalogs.js"></script>
+<link rel="stylesheet" href="visualizer-premium.css">
+<script>
+(function(){
+  const CV_API_ORIGIN = "https://kitchen-visualizer-api.vercel.app";
+  const nativeFetch = window.fetch.bind(window);
+  function normalizeApiUrl(input) {
+    if (window.location.protocol !== "file:") return input;
+    if (typeof input === "string" && input.startsWith("/api/")) return CV_API_ORIGIN + input;
+    if (input && input.url && input.url.startsWith("/api/")) return CV_API_ORIGIN + input.url;
+    return input;
+  }
+  function isCompanyRequest(input) {
+    const url = typeof input === "string" ? input : (input && input.url) || "";
+    return url.indexOf("/api/company") !== -1;
+  }
+  function isCatalogRequest(input) {
+    const url = typeof input === "string" ? input : (input && input.url) || "";
+    return url.indexOf("/api/catalogs") !== -1;
+  }
+  function normalizeCatalogSelections(data) {
+    if (!data || Array.isArray(data.catalogSelections) && data.catalogSelections.length) return data;
+    if (Array.isArray(data.selectedCatalogs) && data.selectedCatalogs.length) {
+      data.catalogSelections = data.selectedCatalogs.map(function(id) {
+        return typeof id === "string" ? { catalogId: id, lineIds: [] } : id;
+      }).filter(function(item) { return item && item.catalogId; });
+    }
+    return data;
+  }
+  function firstImageValue(item) {
+    if (!item) return "";
+    return item.swatch || item.swatchImage || item.swatchImageUrl || item.imageUrl || item.image || item.finishImage || item.referenceImage || item.thumbnail || "";
+  }
+  function normalizeCatalogPayload(data) {
+    if (!data || !Array.isArray(data.manufacturers)) return data;
+    data.manufacturers = data.manufacturers.map(function(manufacturer) {
+      const lines = Array.isArray(manufacturer.lines) ? manufacturer.lines : [];
+      return Object.assign({}, manufacturer, {
+        lines: lines.map(function(line) {
+          const doors = Array.isArray(line.doors) ? line.doors.map(function(door) {
+            const image = door.image || door.imageUrl || door.referenceImage || door.thumbnail || "";
+            return Object.assign({}, door, {
+              image: image,
+              thumbnail: door.thumbnail || image
+            });
+          }).filter(function(door) {
+            return !!(door.image || door.thumbnail);
+          }) : [];
+          const finishes = Array.isArray(line.finishes) ? line.finishes.map(function(finish) {
+            const swatch = firstImageValue(finish);
+            return Object.assign({}, finish, {
+              swatch: swatch,
+              image: finish.image || swatch,
+              thumbnail: finish.thumbnail || swatch
+            });
+          }).filter(function(finish) {
+            return !!(finish.swatch || finish.image || finish.thumbnail);
+          }) : [];
+          return Object.assign({}, line, { doors: doors, finishes: finishes });
+        }).filter(function(line) {
+          return Array.isArray(line.doors) && line.doors.length && Array.isArray(line.finishes) && line.finishes.length;
+        })
+      });
+    }).filter(function(manufacturer) {
+      return Array.isArray(manufacturer.lines) && manufacturer.lines.length;
+    });
+    return data;
+  }
+  window.fetch = async function(input, init) {
+    const requestUrl = normalizeApiUrl(input);
+    const response = await nativeFetch(requestUrl, init);
+    if (!isCompanyRequest(requestUrl) && !isCatalogRequest(requestUrl)) return response;
+    try {
+      let data = await response.clone().json();
+      if (isCompanyRequest(requestUrl)) data = normalizeCatalogSelections(data);
+      if (isCatalogRequest(requestUrl)) data = normalizeCatalogPayload(data);
+      return new Response(JSON.stringify(data), {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers
+      });
+    } catch (err) {
+      return response;
+    }
+  };
+})();
+</script>
+<script src="custom-catalogs.js"></script>
 <style>
 /* Custom Lead premium test overrides only. Production visualizers are untouched. */
 body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,Inter,Arial,sans-serif);color:var(--kv-text,#0f172a);}
@@ -31,9 +116,10 @@ body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,
 .kv-lead-stage-head h2{margin:0;font-size:clamp(28px,3vw,40px);letter-spacing:0;line-height:1.05;color:var(--kv-text,#0f172a);}
 .kv-lead-stage-head p{margin:8px 0 0;color:var(--kv-muted,#64748b);line-height:1.5;}
 .kv-lead-grid-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;}
-.kv-lead-catalog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;}
+.kv-lead-catalog-grid{display:grid;grid-template-columns:1fr;gap:16px;align-items:start;width:100%;}
 .kv-lead-catalog-grid .jcr-card{height:100%;}
 .kv-lead-catalog-grid #jcr_catalog_status{grid-column:1/-1;}
+.kv-lead-catalog-grid select{min-height:56px;font-size:17px;font-weight:850;}
 .kv-lead-cabinet-stack,.kv-lead-material-stack{display:grid;grid-template-columns:1fr;gap:14px;}
 .kv-lead-control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start;margin-bottom:14px;}
 .kv-lead-stage .jcr-card{margin-bottom:16px!important;box-shadow:var(--kv-shadow-sm)!important;border-color:var(--kv-border,#dbe5f1)!important;}
@@ -223,12 +309,13 @@ const KV_COMPANY = {
 .jcr-result-wrap.active{display:block;animation:jcrFadeUp .35s ease both;}
 .jcr-compare{position:relative;width:100%;border-radius:28px;overflow:hidden;background:#111827;box-shadow:0 30px 80px rgba(15,23,42,.22);border:1px solid rgba(255,255,255,.18);}
 .jcr-compare img{width:100%;display:block;user-select:none;pointer-events:auto;}
-#jcr_after_img{position:absolute;top:0;left:0;height:100%;object-fit:cover;clip-path:inset(0 50% 0 0);}
-.jcr-compare-label{position:absolute;top:16px;padding:8px 12px;border-radius:999px;background:rgba(17,24,39,.74);color:#fff;font-size:13px;font-weight:900;backdrop-filter:blur(8px);pointer-events:none;}
+#jcr_after_img{position:relative;}
+#jcr_before_img{position:absolute;top:0;left:0;height:100%;object-fit:cover;clip-path:inset(0 50% 0 0);z-index:1;}
+.jcr-compare-label{position:absolute;top:16px;z-index:3;padding:8px 12px;border-radius:999px;background:rgba(17,24,39,.74);color:#fff;font-size:13px;font-weight:900;backdrop-filter:blur(8px);pointer-events:none;}
 .jcr-before-label{left:16px;}
 .jcr-after-label{right:16px;}
-.jcr-slider-line{position:absolute;top:0;bottom:0;left:50%;width:3px;background:#fff;box-shadow:0 0 20px rgba(0,0,0,.35);pointer-events:none;}
-.jcr-slider-handle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:#fff;color:#111827;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:950;box-shadow:0 10px 30px rgba(0,0,0,.28);pointer-events:none;}
+.jcr-slider-line{position:absolute;top:0;bottom:0;left:50%;z-index:4;width:3px;background:#fff;box-shadow:0 0 20px rgba(0,0,0,.35);pointer-events:none;}
+.jcr-slider-handle{position:absolute;top:50%;left:50%;z-index:4;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:#fff;color:#111827;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:950;box-shadow:0 10px 30px rgba(0,0,0,.28);pointer-events:none;}
 #jcr_compare_range{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);width:100%;height:64px;opacity:0;cursor:ew-resize;z-index:5;}
 .jcr-result-title{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:18px;}
 .jcr-result-title h3{font-size:32px;margin:0;color:#111827;letter-spacing:-.03em;}
@@ -474,6 +561,7 @@ const KV_COMPANY = {
     <label for="jcr_catalog_line">Cabinet Line</label>
     <p class="jcr-section-note">Choose the product line. Door styles and finishes update from the selected catalog line.</p>
     <select id="jcr_catalog_line"></select>
+    <div id="jcr_catalog_status" style="margin-top:14px;padding:12px 14px;border-radius:14px;background:#eff6ff;color:#1e3a8a;font-size:13px;font-weight:900;line-height:1.45;">Loading assigned customer catalogs...</div>
   </div>
 
   <div class="jcr-card">
@@ -770,7 +858,7 @@ const KV_COMPANY = {
 
     try {
       const response = await fetch(
-        "https://kitchen-visualizer-api.vercel.app/api/company?companyKey=" +
+        "/api/company?companyKey=" +
         encodeURIComponent(KV_COMPANY.companyKey),
         { cache: "no-store" }
       );
@@ -795,7 +883,7 @@ const KV_COMPANY = {
 
   async function registerCustomerFromPage() {
     try {
-      await fetch("https://kitchen-visualizer-api.vercel.app/api/register-customer", {
+      await fetch("/api/register-customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1050,6 +1138,67 @@ const KV_COMPANY = {
     });
   }
 
+  const selectedCatalogFinishes = {
+    upper: { value: "", name: "", swatch: "" },
+    base: { value: "", name: "", swatch: "" }
+  };
+
+  function ensureHiddenField(id) {
+    let field = document.getElementById(id);
+    if (!field) {
+      field = document.createElement("input");
+      field.type = "hidden";
+      field.id = id;
+      document.body.appendChild(field);
+    }
+    return field;
+  }
+
+  function optionImageReference(option) {
+    if (!option) return "";
+    return option.dataset.swatch || option.dataset.swatchImage || option.dataset.swatchImageUrl || option.dataset.imageUrl || option.dataset.image || option.dataset.finishImage || option.dataset.referenceImage || option.dataset.thumbnail || "";
+  }
+
+  function activeSwatchImage(selectId) {
+    const activeDot = document.querySelector('.jcr-swatch-grid[data-select="' + selectId + '"] .jcr-swatch.active .jcr-dot');
+    if (!activeDot) return "";
+    const bg = activeDot.style.backgroundImage || activeDot.style.background || "";
+    const match = String(bg).match(/url\(["']?([^"')]+)["']?\)/);
+    return match ? match[1] : "";
+  }
+
+  function syncCatalogFinishState(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select || !select.options || select.selectedIndex < 0) return { value: "", name: "", swatch: "" };
+    const option = select.options[select.selectedIndex];
+    const selected = {
+      value: option ? option.value || "" : "",
+      name: option ? option.text || option.value || "" : "",
+      swatch: optionImageReference(option) || activeSwatchImage(selectId)
+    };
+    if (selectId === "jcr_color") {
+      selectedCatalogFinishes.upper = selected;
+      ensureHiddenField("jcr_active_upper_swatch_image").value = selected.swatch;
+      ensureHiddenField("jcr_active_upper_swatch_name").value = selected.name;
+    } else if (selectId === "jcr_island") {
+      selectedCatalogFinishes.base = selected;
+      ensureHiddenField("jcr_active_base_swatch_image").value = selected.swatch;
+      ensureHiddenField("jcr_active_base_swatch_name").value = selected.name;
+    }
+    return selected;
+  }
+
+  function syncAllCatalogFinishState() {
+    const upper = syncCatalogFinishState("jcr_color");
+    if (islandInput && islandInput.value === "") {
+      selectedCatalogFinishes.base = { value: upper.value, name: upper.name, swatch: upper.swatch };
+      ensureHiddenField("jcr_active_base_swatch_image").value = upper.swatch;
+      ensureHiddenField("jcr_active_base_swatch_name").value = upper.name;
+    } else {
+      syncCatalogFinishState("jcr_island");
+    }
+  }
+
   function activateSwatch(btn) {
     const selectId = btn.getAttribute("data-select");
     const select = document.getElementById(selectId);
@@ -1060,6 +1209,7 @@ const KV_COMPANY = {
     btn.setAttribute("aria-pressed", "true");
     updateCustomUploads();
     select.dispatchEvent(new Event("change", { bubbles: true }));
+    syncAllCatalogFinishState();
   }
 
   function activateMaterial(btn) {
@@ -1091,7 +1241,22 @@ const KV_COMPANY = {
     });
   }
 
+  function sanitizeCatalogUi() {
+    const pendingText = ["Catalog", "Import", "Pending"].join(" ");
+    document.querySelectorAll("#jcr_color option,#jcr_island option").forEach(function(option) {
+      if ((option.textContent || "").indexOf(pendingText) !== -1) option.remove();
+    });
+    document.querySelectorAll(".jcr-swatch,.jcr-door-option").forEach(function(card) {
+      if ((card.textContent || "").indexOf(pendingText) !== -1) card.remove();
+    });
+    const statusBox = document.getElementById("jcr_catalog_status");
+    if (statusBox && ((statusBox.textContent || "").indexOf(pendingText) !== -1 || /no matching catalog lines/i.test(statusBox.textContent || ""))) {
+      statusBox.textContent = "No usable catalog finishes are assigned to this customer yet.";
+    }
+  }
+
   function enhanceDynamicCatalogCards() {
+    sanitizeCatalogUi();
     document.querySelectorAll(".jcr-swatch-grid").forEach(function(grid) {
       const selectId = grid.getAttribute("data-select");
       const select = document.getElementById(selectId);
@@ -1102,6 +1267,8 @@ const KV_COMPANY = {
         const isDynamicCatalogCard = !btn.getAttribute("data-select");
         if (isDynamicCatalogCard) btn.setAttribute("data-select", selectId);
         if (!btn.getAttribute("data-value")) btn.setAttribute("data-value", option.value);
+        const swatchRef = optionImageReference(option);
+        if (swatchRef) btn.dataset.swatch = swatchRef;
         if (!btn.getAttribute("aria-label")) btn.setAttribute("aria-label", option.text + " " + (selectId === "jcr_color" ? "upper cabinet finish" : "base cabinet finish"));
         const pressed = btn.classList.contains("active") ? "true" : "false";
         if (btn.getAttribute("aria-pressed") !== pressed) btn.setAttribute("aria-pressed", pressed);
@@ -1112,6 +1279,8 @@ const KV_COMPANY = {
             if (select.value !== option.value) select.value = option.value;
             select.dispatchEvent(new Event("change", { bubbles: true }));
             enhanceDynamicCatalogCards();
+            syncAllCatalogFinishState();
+            if (typeof refreshReview === "function") refreshReview();
           }, 0);
         });
         btn.addEventListener("keydown", function(event) {
@@ -1142,6 +1311,7 @@ const KV_COMPANY = {
         option.click();
       });
     });
+    sanitizeCatalogUi();
   }
 
   function watchDynamicCatalogCards() {
@@ -1155,6 +1325,7 @@ const KV_COMPANY = {
       target.dataset.kvCatalogWatch = "1";
       const observer = new MutationObserver(function() {
         enhanceDynamicCatalogCards();
+        syncAllCatalogFinishState();
         if (typeof refreshReview === "function") refreshReview();
       });
       observer.observe(target, { childList: true });
@@ -1180,6 +1351,7 @@ const KV_COMPANY = {
       swatch.classList.add("active");
       swatch.setAttribute("aria-pressed", "true");
       if (select) select.dispatchEvent(new Event("change", { bubbles: true }));
+      syncAllCatalogFinishState();
     }
     if (door) {
       document.querySelectorAll(".jcr-door-option").forEach(function(option) {
@@ -1194,6 +1366,7 @@ const KV_COMPANY = {
     }
     setTimeout(function() {
       enhanceDynamicCatalogCards();
+      syncAllCatalogFinishState();
       if (typeof refreshReview === "function") refreshReview();
     }, 0);
   });
@@ -1215,11 +1388,14 @@ const KV_COMPANY = {
   updateCustomUploads();
 
   document.querySelectorAll(".jcr-material").forEach(function(btn){btn.addEventListener("click",function(){activateMaterial(btn);});bindKeyboardActivation(btn,activateMaterial);});
+  colorInput.addEventListener("change", syncAllCatalogFinishState);
+  islandInput.addEventListener("change", syncAllCatalogFinishState);
   enhanceDynamicCatalogCards();
+  syncAllCatalogFinishState();
   watchDynamicCatalogCards();
 
   function updateCompareSlider(value) {
-    afterImg.style.clipPath = "inset(0 " + (100 - value) + "% 0 0)";
+    beforeImg.style.clipPath = "inset(0 " + (100 - value) + "% 0 0)";
     sliderLine.style.left = value + "%";
     sliderHandle.style.left = value + "%";
     compareRange.setAttribute("aria-valuetext", value + "% after preview");
@@ -1403,6 +1579,10 @@ BASE/LOWER CABINET FINISH:
 Apply this finish to EVERY existing lower cabinet surface below the countertops:
 ${baseColorText}
 
+Apply the selected base cabinet color consistently to every visible cabinet below countertop height. This includes all lower cabinet doors, drawer fronts, sink base cabinets, drawer stacks, appliance-side base cabinets, exposed lower cabinet sides, exposed lower end panels, peninsula base cabinets, toe-kick-adjacent lower cabinet faces, rails, stiles, and every other visible lower cabinet section. Apply the same selected base finish to every visible island door, drawer front, exposed side, and end panel. Do not leave any visible lower cabinet surface in its original color.
+
+Keep upper cabinets separate from base cabinets. Apply the upper/wall finish only to cabinet surfaces above countertop height.
+
 Important: BASE/LOWER CABINETS means ALL cabinets below the countertop across the entire kitchen, not just the island, not just the peninsula, and not just one section.
 
 This includes every existing lower cabinet door, drawer front, drawer stack, sink base door, range-side lower cabinet, dishwasher-side lower panel, exposed end panel, exposed side panel, island cabinet, peninsula cabinet, toe kick, rail, stile, face frame, filler strip, and trim piece attached to the lower cabinets.
@@ -1480,7 +1660,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
   function updateSelectedSummary() {
     summaryMainColor.innerText = colorInput.options[colorInput.selectedIndex].text;
-    summaryIslandColor.innerText = islandInput.value === "" ? "Same as Main" : islandInput.options[islandInput.selectedIndex].text;
+    summaryIslandColor.innerText = islandInput.value === "" ? "Same as Main (" + colorInput.options[colorInput.selectedIndex].text + ")" : islandInput.options[islandInput.selectedIndex].text;
     summaryDoorStyle.innerText = cleanDoorStyleText(styleInput.value);
     summaryHardware.innerText = hardwareInput.options[hardwareInput.selectedIndex].text;
     summaryCountertop.innerText = countertopInput.value ? countertopInput.options[countertopInput.selectedIndex].text : "Keep Existing";
@@ -1496,7 +1676,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       manufacturer: manufacturerInput && manufacturerInput.options[manufacturerInput.selectedIndex] ? manufacturerInput.options[manufacturerInput.selectedIndex].text : "Not selected",
       cabinetLine: catalogLineInput && catalogLineInput.options[catalogLineInput.selectedIndex] ? catalogLineInput.options[catalogLineInput.selectedIndex].text : "Not selected",
       upperColor: colorInput.options[colorInput.selectedIndex].text,
-      islandColor: islandInput.value === "" ? "Same as Main" : islandInput.options[islandInput.selectedIndex].text,
+      islandColor: islandInput.value === "" ? "Same as Main (" + colorInput.options[colorInput.selectedIndex].text + ")" : islandInput.options[islandInput.selectedIndex].text,
       doorStyle: cleanDoorStyleText(styleInput.value),
       hardware: hardwareInput.options[hardwareInput.selectedIndex].text,
       countertop: countertopInput.value ? countertopInput.options[countertopInput.selectedIndex].text : "Keep Existing",
@@ -1540,8 +1720,8 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
   function showDesignResult(design) {
     if (!design || !design.image) return;
-    beforeImg.src = design.image;
-    afterImg.src = uploadedImageData;
+    beforeImg.src = uploadedImageData;
+    afterImg.src = design.image;
     beforeImg.style.display = "block";
     afterImg.style.display = "block";
     resultWrap.classList.add("active");
@@ -1707,7 +1887,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       customerEmail: leadEmail.value,
       notes: leadNotes.value,
       upperColor: colorInput.options[colorInput.selectedIndex].text,
-      islandColor: islandInput.value === "" ? "Same as Main" : islandInput.options[islandInput.selectedIndex].text,
+      islandColor: islandInput.value === "" ? "Same as Main (" + colorInput.options[colorInput.selectedIndex].text + ")" : islandInput.options[islandInput.selectedIndex].text,
       doorStyle: cleanDoorStyleText(styleInput.value),
       hardware: hardwareInput.options[hardwareInput.selectedIndex].text,
       countertop: countertopInput.value ? countertopInput.options[countertopInput.selectedIndex].text : "Keep Existing",
@@ -1718,7 +1898,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
   async function sendLeadToCompany(payload) {
     try {
-      await fetch("https://kitchen-visualizer-api.vercel.app/api/send-lead", {
+      await fetch("/api/send-lead", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(payload)
@@ -1893,7 +2073,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     let y = 44;
 
     const upperColorText = colorInput.options[colorInput.selectedIndex].text;
-    const baseColorText = islandInput.value === "" ? "Same as Main" : islandInput.options[islandInput.selectedIndex].text;
+    const baseColorText = islandInput.value === "" ? "Same as Main (" + colorInput.options[colorInput.selectedIndex].text + ")" : islandInput.options[islandInput.selectedIndex].text;
     const doorStyleText = cleanDoorStyleText(styleInput.value);
     const hardwareText = hardwareInput.options[hardwareInput.selectedIndex].text;
     const countertopTextPdf = countertopInput.value ? countertopInput.options[countertopInput.selectedIndex].text : "Keep Existing";
@@ -2010,15 +2190,15 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
     y += 10;
 
-    const beforeSize = await getImageSizeForPdf(afterImg.src, imageWidth, imageHeight);
-    const afterSize = await getImageSizeForPdf(beforeImg.src, imageWidth, imageHeight);
+    const beforeSize = await getImageSizeForPdf(beforeImg.src, imageWidth, imageHeight);
+    const afterSize = await getImageSizeForPdf(afterImg.src, imageWidth, imageHeight);
 
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(margin, y, imageWidth, imageHeight, 10, 10, "F");
     doc.roundedRect(margin + imageWidth + 18, y, imageWidth, imageHeight, 10, 10, "F");
 
-    doc.addImage(afterImg.src, "JPEG", margin + (imageWidth - beforeSize.width) / 2, y + (imageHeight - beforeSize.height) / 2, beforeSize.width, beforeSize.height);
-    doc.addImage(beforeImg.src, "JPEG", margin + imageWidth + 18 + (imageWidth - afterSize.width) / 2, y + (imageHeight - afterSize.height) / 2, afterSize.width, afterSize.height);
+    doc.addImage(beforeImg.src, "JPEG", margin + (imageWidth - beforeSize.width) / 2, y + (imageHeight - beforeSize.height) / 2, beforeSize.width, beforeSize.height);
+    doc.addImage(afterImg.src, "JPEG", margin + imageWidth + 18 + (imageWidth - afterSize.width) / 2, y + (imageHeight - afterSize.height) / 2, afterSize.width, afterSize.height);
 
     y += imageHeight + 42;
 
@@ -2046,7 +2226,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
   downloadBtn.addEventListener("click", function() {
     const link = document.createElement("a");
-    link.href = beforeImg.src;
+    link.href = afterImg.src;
     link.download = "kitchen-preview.png";
     link.click();
   });
@@ -2103,7 +2283,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
   function selectedOptionSwatch(select) {
     if (!select || !select.options || select.selectedIndex < 0) return "";
     const option = select.options[select.selectedIndex];
-    return option ? (option.dataset.swatch || option.dataset.image || "") : "";
+    return optionImageReference(option);
   }
 
   function activeDoorName() {
@@ -2125,15 +2305,33 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     if (backsplashInput.value === "custom tile backsplash reference" && !uploadedBacksplashCustomData) { status.innerText = "Upload a backsplash reference image."; return; }
     if (flooringInput.value === "custom flooring reference" && !uploadedFlooringCustomData) { status.innerText = "Upload a flooring reference image."; return; }
 
+    syncAllCatalogFinishState();
     const prompt = buildPrompt();
     const catalogDoorImage = document.getElementById("jcr_active_catalog_door_image")?.value || activeDoorImage();
-    const upperSwatchImage = document.getElementById("jcr_active_upper_swatch_image")?.value || selectedOptionSwatch(colorInput);
-    const baseSwatchImage = document.getElementById("jcr_active_base_swatch_image")?.value || selectedOptionSwatch(islandInput);
+    const upperSelection = syncCatalogFinishState("jcr_color");
+    const baseSelection = islandInput.value === "" ? upperSelection : syncCatalogFinishState("jcr_island");
+    const upperSwatchImage = upperSelection.swatch || document.getElementById("jcr_active_upper_swatch_image")?.value || selectedOptionSwatch(colorInput);
+    let baseSwatchImage = baseSelection.swatch || document.getElementById("jcr_active_base_swatch_image")?.value || selectedOptionSwatch(islandInput);
     const manufacturerName = selectedOptionLabel(manufacturerInput, manufacturerInput ? manufacturerInput.value : "");
     const cabinetLineName = selectedOptionLabel(catalogLineInput, catalogLineInput ? catalogLineInput.value : "");
     const doorStyleName = activeDoorName();
-    const upperFinishName = selectedOptionLabel(colorInput, colorInput.value);
-    const baseFinishName = islandInput.value === "" ? "Same as Main" : selectedOptionLabel(islandInput, islandInput.value);
+    const upperFinishName = upperSelection.name || selectedOptionLabel(colorInput, colorInput.value);
+    const baseInheritsUpper = islandInput.value === "";
+    if (baseInheritsUpper) baseSwatchImage = upperSwatchImage;
+    const baseFinishName = baseInheritsUpper ? upperFinishName : (baseSelection.name || selectedOptionLabel(islandInput, islandInput.value));
+    const baseFinishValue = baseInheritsUpper ? colorInput.value : islandInput.value;
+    if (colorInput.value !== "custom main color reference" && !upperSwatchImage) {
+      status.innerText = "Catalog color swatch image was not found for the selected upper finish. Select a catalog color swatch again after the page finishes loading.";
+      return;
+    }
+    if (!baseInheritsUpper && islandInput.value !== "custom base cabinet color reference" && !baseSwatchImage) {
+      status.innerText = "Catalog color swatch image was not found for the selected base finish. Select a catalog base color swatch again after the page finishes loading.";
+      return;
+    }
+    const mainReference = upperSwatchImage || uploadedMainCustomColorData || null;
+    const baseReference = baseInheritsUpper
+      ? mainReference
+      : (baseSwatchImage || uploadedIslandCustomColorData || upperSwatchImage || null);
     const referenceImages = [];
     if (uploadedMainCustomColorData) referenceImages.push(uploadedMainCustomColorData);
     if (uploadedIslandCustomColorData) referenceImages.push(uploadedIslandCustomColorData);
@@ -2143,6 +2341,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     if (catalogDoorImage) referenceImages.push(catalogDoorImage);
     if (upperSwatchImage) referenceImages.push(upperSwatchImage);
     if (baseSwatchImage && baseSwatchImage !== upperSwatchImage) referenceImages.push(baseSwatchImage);
+    const uniqueReferenceImages = Array.from(new Set(referenceImages.filter(Boolean))).slice(0, 8);
     status.innerText = "Creating your preview...";
     button.disabled = true;
     button.style.opacity = "0.75";
@@ -2166,19 +2365,19 @@ It should look like the existing doors, drawers, and cabinet faces were professi
           cabinetLine: cabinetLineName || (catalogLineInput ? catalogLineInput.value : null),
           selectedDoorStyle: doorStyleName || styleInput.value || null,
           selectedFinishColor: upperFinishName || colorInput.value || null,
-          selectedBaseFinishColor: baseFinishName || islandInput.value || null,
+          selectedBaseFinishColor: baseFinishName || baseFinishValue || null,
           catalogDoorReference: catalogDoorImage || null,
           catalogDoorName: doorStyleName || styleInput.value || null,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,
           upperSwatchName: upperFinishName || colorInput.value || null,
-          baseSwatchName: baseFinishName || islandInput.value || null,
-          mainCustomColorImage: uploadedMainCustomColorData,
-          islandCustomColorImage: uploadedIslandCustomColorData,
+          baseSwatchName: baseFinishName || baseFinishValue || null,
+          mainCustomColorImage: mainReference || "",
+          islandCustomColorImage: baseReference || "",
           mainCustomHex: extractedMainCustomHex,
           islandCustomHex: extractedIslandCustomHex,
           color: colorInput.value,
-          island: islandInput.value,
+          island: baseFinishValue,
           style: styleInput.value,
           upperHeight: upperHeightInput.value,
           hardware: hardwareInput.value,
@@ -2188,12 +2387,12 @@ It should look like the existing doors, drawers, and cabinet faces were professi
           countertopCustomImage: uploadedCountertopCustomData,
           backsplashCustomImage: uploadedBacksplashCustomData,
           flooringCustomImage: uploadedFlooringCustomData,
-          mainCustomReference: uploadedMainCustomColorData || null,
-          islandCustomReference: uploadedIslandCustomColorData || null,
+          mainCustomReference: mainReference,
+          islandCustomReference: baseReference,
           countertopCustomReference: uploadedCountertopCustomData || null,
           backsplashCustomReference: uploadedBacksplashCustomData || null,
           flooringCustomReference: uploadedFlooringCustomData || null,
-          referenceImages: referenceImages
+          referenceImages: uniqueReferenceImages
         })
       });
       const data = await response.json();
@@ -2261,7 +2460,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     Powered by <span style="color:#6b7280;">KPM Technology</span>
   </div>
 </div>
-<script src="/visualizer-premium.js"></script>
+<script src="visualizer-premium.js"></script>
 <script>
 (function(){
   "use strict";
@@ -2415,6 +2614,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     document.body.appendChild(mobileBar);
 
     bindControls();
+    watchCatalogSummaryRefresh();
     updateLogoFallback();
     if(title) new MutationObserver(updateLogoFallback).observe(title,{childList:true,characterData:true,subtree:true});
     if(logo) new MutationObserver(updateLogoFallback).observe(logo,{attributes:true,attributeFilter:["src","style"]});
@@ -2452,6 +2652,22 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       const main=qs(".kv-lead-main");
       if(main) main.scrollIntoView({behavior:"smooth",block:"start"});
     });
+  }
+
+  function watchCatalogSummaryRefresh(){
+    const targets=[
+      qs("#jcr_manufacturer"),
+      qs("#jcr_catalog_line"),
+      qs("#jcr_door_grid"),
+      qs('.jcr-swatch-grid[data-select="jcr_color"]'),
+      qs('.jcr-swatch-grid[data-select="jcr_island"]')
+    ].filter(Boolean);
+    targets.forEach(function(target){
+      if(target.dataset.kvSummaryWatch==="1") return;
+      target.dataset.kvSummaryWatch="1";
+      new MutationObserver(function(){setTimeout(refreshReview,0);}).observe(target,{childList:true,subtree:true});
+    });
+    [300,900,1800,3200].forEach(function(delay){setTimeout(refreshReview,delay);});
   }
 
   function getInitials(text){
@@ -2512,12 +2728,14 @@ It should look like the existing doors, drawers, and cabinet faces were professi
   }
 
   function summaryRows(){
+    const upperFinish = optionText("jcr_color","White");
+    const baseFinish = qs("#jcr_island") && qs("#jcr_island").value ? optionText("jcr_island") : "Same as Main (" + upperFinish + ")";
     return [
       ["Manufacturer", optionText("jcr_manufacturer","Not selected")],
       ["Cabinet Line", optionText("jcr_catalog_line","Not selected")],
       ["Catalog Door", activeDoor()],
-      ["Upper Color", optionText("jcr_color","White")],
-      ["Base Color", qs("#jcr_island") && qs("#jcr_island").value ? optionText("jcr_island") : "Same as Main"],
+      ["Upper Color", upperFinish],
+      ["Base Color", baseFinish],
       ["Door Style", activeDoor()],
       ["Upper Height", optionText("jcr_upper_height")],
       ["Hardware", optionText("jcr_hardware")],
