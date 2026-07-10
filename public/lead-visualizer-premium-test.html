@@ -133,11 +133,19 @@ const KV_COMPANY = {
 
 /* Premium upload */
 .jcr-file-hidden{position:absolute;left:-9999px;opacity:0;}
-.jcr-upload-box{border:2px dashed #cbd5e1;border-radius:24px;background:linear-gradient(180deg,#ffffff,#f8fafc);padding:34px 24px;text-align:center;cursor:pointer;transition:all .25s ease;display:block;}
+.jcr-upload-box{position:relative;border:2px dashed #cbd5e1;border-radius:28px;background:linear-gradient(180deg,#ffffff,#f8fafc);padding:34px 24px 28px;text-align:center;cursor:pointer;transition:all .25s ease;display:block;overflow:hidden;}
+.jcr-upload-box::before{content:"";position:absolute;inset:14px;border-radius:22px;background:radial-gradient(circle at 50% 0,rgba(37,99,235,.08),transparent 42%);pointer-events:none;}
 .jcr-upload-box:hover{border-color:var(--kv-primary);transform:translateY(-3px);box-shadow:0 24px 50px rgba(30,58,138,.12);}
-.jcr-upload-icon{width:62px;height:62px;border-radius:20px;background:linear-gradient(135deg,var(--kv-primary),#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px;box-shadow:0 18px 35px rgba(30,58,138,.25);}
-.jcr-upload-title{font-size:22px;font-weight:900;color:#111827;margin-bottom:6px;}
-.jcr-upload-copy{font-size:15px;color:#6b7280;line-height:1.45;}
+.jcr-upload-art{position:relative;width:94px;height:88px;margin:0 auto 16px;color:var(--kv-primary);}
+.jcr-upload-art svg{width:100%;height:100%;display:block;overflow:visible;}
+.jcr-upload-art .jcr-art-muted{stroke:#94a3b8;}
+.jcr-upload-art .jcr-art-soft{stroke:#cbd5e1;}
+.jcr-upload-title{position:relative;font-size:24px;font-weight:950;color:#111827;margin-bottom:8px;letter-spacing:0;}
+.jcr-upload-subtitle{position:relative;max-width:620px;margin:0 auto 18px;font-size:15px;color:#64748b;line-height:1.55;}
+.jcr-upload-helper{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:3px;padding:14px 20px;border-radius:18px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 14px 30px rgba(15,23,42,.07);}
+.jcr-upload-helper strong{font-size:16px;color:#111827;}
+.jcr-upload-helper span{font-size:14px;color:var(--kv-primary);font-weight:850;}
+.jcr-upload-copy{position:relative;margin-top:16px;font-size:13px;color:#64748b;line-height:1.45;font-weight:800;}
 .jcr-file-name{margin-top:14px;font-size:14px;font-weight:800;color:var(--kv-primary);}
 
 /* Color swatches */
@@ -413,9 +421,28 @@ const KV_COMPANY = {
     <label>Kitchen Photo</label>
     <p class="jcr-section-note">Upload a clear photo of the kitchen. Straight-on photos work best.</p>
     <label class="jcr-upload-box" for="jcr_photo">
-      <div class="jcr-upload-icon">UP</div>
-      <div class="jcr-upload-title">Drag & Drop Your Kitchen Photo</div>
-      <div class="jcr-upload-copy">or click here to browse from your device</div>
+      <div class="jcr-upload-art" aria-hidden="true">
+        <svg viewBox="0 0 112 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path class="jcr-art-soft" d="M16 64V20C16 16.7 18.7 14 22 14H56C59.3 14 62 16.7 62 20V34" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="jcr-art-soft" d="M26 64V28H52" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="jcr-art-muted" d="M22 42H56" stroke-width="4" stroke-linecap="round"/>
+          <path d="M31 52H47" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          <rect x="38" y="36" width="58" height="42" rx="13" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M54 36L58 29H76L80 36" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="67" cy="57" r="12" stroke="currentColor" stroke-width="4"/>
+          <path class="jcr-art-muted" d="M87 47H88" stroke-width="5" stroke-linecap="round"/>
+          <rect x="54" y="62" width="42" height="25" rx="8" fill="#fff" stroke="#94a3b8" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M60 80L68 72L73 77L79 70L90 80" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="65" cy="69" r="2.5" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="jcr-upload-title">Upload Your Kitchen Photo</div>
+      <div class="jcr-upload-subtitle">See your cabinets in new colors, door styles, countertops, backsplash, and flooring before you buy.</div>
+      <div class="jcr-upload-helper">
+        <strong>Drag &amp; Drop your kitchen photo here</strong>
+        <span>or Click to Browse</span>
+      </div>
+      <div class="jcr-upload-copy">Supports JPG &bull; PNG &bull; WEBP</div>
       <div id="jcr_photo_name" class="jcr-file-name"></div>
     </label>
     <input class="jcr-file-hidden" type="file" id="jcr_photo" accept="image/*">
