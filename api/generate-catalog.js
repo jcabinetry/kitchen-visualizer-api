@@ -138,8 +138,25 @@ Base/lower cabinet finish: ${baseColorText}.
 The attached selected-catalog-door-reference image is the door style source of truth.
 The attached selected-upper-swatch-reference image is the upper/wall color source of truth.
 The attached selected-base-swatch-reference image is the base/lower color source of truth.
-Apply the selected upper/wall swatch color to every upper cabinet surface.
-Apply the selected base/lower swatch color to every lower cabinet surface below the countertops, including any island cabinets.
+Keep upper cabinets separate from base cabinets. Apply the selected upper/wall swatch color only to visible upper cabinet surfaces above countertop height.
+
+BASE CABINET COLOR REQUIREMENT:
+Apply the selected base/lower swatch color consistently to every visible cabinet below countertop height.
+Base Cabinet Color means every visible lower cabinet surface, including:
+- every lower cabinet door
+- every drawer front
+- every sink base cabinet
+- every drawer stack
+- every appliance-side base cabinet
+- every exposed lower cabinet side
+- every exposed lower end panel
+- every peninsula base cabinet
+- every toe-kick-adjacent lower cabinet face
+- every visible lower rail and stile
+- every visible island cabinet door, drawer front, side, and end panel
+
+Do not leave any visible lower cabinet surface in its original color.
+Treat island cabinetry as part of the selected Base Cabinet Color for catalog generation, and apply the base/lower swatch color to every visible island door, drawer front, exposed side, and end panel.
 If the selected swatch is a flat paint color, render flat painted cabinets. Do not add wood grain, stain, or texture.
 
 DOOR PROFILE REQUIREMENT:
