@@ -59,6 +59,8 @@ body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,
 .kv-lead-mobile-bar-inner{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;}
 .kv-lead-mobile-bar .kv-btn{min-height:52px;padding:12px 14px;}
 .kv-lead-mobile-primary{width:100%;}
+.kv-lead-mobile-tabs{scroll-snap-type:x proximity;scroll-padding-inline:12px;}
+.kv-lead-mobile-tabs .kv-mobile-progress-pill{scroll-snap-align:start;}
 .kv-lead-hidden-source{display:none!important;}
 .kv-premium-lead,.kv-premium-lead *{max-width:100%;}
 .kv-premium-lead{overflow-x:hidden;}
@@ -96,6 +98,7 @@ body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,
 .kv-lead-cta p{margin:8px 0 0;color:var(--kv-muted,#64748b);line-height:1.5;}
 .kv-lead-cta-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;}
 .kv-lead-cta-actions a{min-height:50px;text-decoration:none;}
+.kv-premium-lead button:focus-visible,.kv-premium-lead a:focus-visible,.kv-premium-lead input:focus-visible,.kv-premium-lead select:focus-visible,.kv-premium-lead textarea:focus-visible,.kv-premium-lead .jcr-door-option:focus-visible,.kv-premium-lead #jcr_before_img:focus-visible,.kv-premium-lead #jcr_after_img:focus-visible,.kv-premium-lead #jcr_design_a_img:focus-visible,.kv-premium-lead #jcr_design_b_img:focus-visible{outline:3px solid color-mix(in srgb,var(--kv-primary) 72%,#ffffff);outline-offset:3px;box-shadow:0 0 0 6px color-mix(in srgb,var(--kv-primary) 18%,transparent)!important;}
 .kv-lead-lightbox{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(2,6,23,.86);backdrop-filter:blur(10px);}
 .kv-lead-lightbox.active{display:flex;}
 .kv-lead-lightbox img{max-width:min(1100px,94vw);max-height:86vh;border-radius:24px;box-shadow:0 30px 90px rgba(0,0,0,.45);background:#111827;}
@@ -103,7 +106,8 @@ body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,
 @media(max-width:1180px){.kv-lead-shell{grid-template-columns:240px minmax(0,1fr);}.kv-lead-summary{grid-column:1/-1;position:static;}.kv-lead-review-grid{grid-template-columns:1fr;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(185px,1fr))!important;}}
 @media(max-width:860px){body{padding-bottom:86px;}.kv-premium-lead .kv-wrap{width:min(100% - 22px,760px)!important;margin:14px auto!important;}.kv-lead-topbar{display:block;border-radius:26px;padding:16px;}.kv-lead-brand{align-items:flex-start;}.kv-lead-logo{width:58px;height:58px;border-radius:18px;}.kv-lead-shell{display:block;}.kv-lead-progress{display:none;}.kv-lead-mobile-tabs{display:flex;}.kv-lead-main{padding:18px;border-radius:26px;}.kv-lead-summary{display:none;}.kv-lead-grid-two,.kv-lead-control-grid{grid-template-columns:1fr;}.kv-lead-stage-head{display:block;}.kv-lead-stage-nav{display:none;}.kv-lead-mobile-bar{display:block;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;}.kv-premium-lead #jcr_generate_btn{width:100%;}}
 @media(max-width:600px){.kv-premium-lead .jcr-door-grid{grid-template-columns:1fr!important;}}
-@media(max-width:560px){.kv-lead-title h2{font-size:27px!important;}.kv-lead-main{padding:14px;}.kv-lead-stage .jcr-card{padding:14px!important;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))!important;}.jcr-design-actions,.jcr-design-secondary-row{display:grid!important;grid-template-columns:1fr;}.jcr-design-secondary-row .jcr-btn-dark,.jcr-design-secondary-row .jcr-btn-light{width:100%;min-width:0;}.kv-lead-cta-actions{display:grid;grid-template-columns:1fr;}.kv-lead-lightbox{padding:14px;}.kv-lead-lightbox img{border-radius:18px;}.kv-lead-mobile-bar-inner{grid-template-columns:auto 1fr auto;}.kv-lead-mobile-bar .kv-btn-secondary,.kv-lead-mobile-bar .kv-btn-ghost{min-width:72px;}}
+@media(max-width:560px){.kv-lead-title h2{font-size:27px!important;}.kv-lead-main{padding:14px;}.kv-lead-stage .jcr-card{padding:14px!important;}.kv-premium-lead .jcr-swatch-grid,.kv-premium-lead .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))!important;gap:8px!important;}.jcr-design-actions,.jcr-design-secondary-row{display:grid!important;grid-template-columns:1fr;}.jcr-design-secondary-row .jcr-btn-dark,.jcr-design-secondary-row .jcr-btn-light{width:100%;min-width:0;}.kv-lead-cta{padding:18px;}.kv-lead-cta-actions{display:grid;grid-template-columns:1fr;}.kv-lead-lightbox{padding:14px;}.kv-lead-lightbox img{border-radius:18px;}.kv-lead-mobile-bar-inner{grid-template-columns:auto 1fr auto;}.kv-lead-mobile-bar .kv-btn-secondary,.kv-lead-mobile-bar .kv-btn-ghost{min-width:72px;}}
+@media(prefers-reduced-motion:reduce){.kv-premium-lead *,.kv-lead-mobile-bar,.kv-lead-lightbox{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important;}.kv-premium-lead .jcr-upload-box:hover,.kv-premium-lead .jcr-swatch:hover,.kv-premium-lead .jcr-material:hover,.kv-premium-lead .jcr-door-option:hover,.kv-premium-lead .jcr-btn-primary:hover,.kv-premium-lead .jcr-btn-dark:hover,.kv-premium-lead .jcr-cta-link:hover{transform:none!important;}}
 </style>
 </head>
 <body class="kv-premium-body kv-premium-scope kv-premium-lead"><div class="kv-wrap" style="max-width:1800px;margin:40px auto;padding:44px;position:relative;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:28px;font-family:Arial,sans-serif;box-shadow:0 30px 90px rgba(15,23,42,0.12);border:1px solid #e5e7eb;">
@@ -136,6 +140,7 @@ const KV_COMPANY = {
 .jcr-upload-box{position:relative;border:2px dashed #cbd5e1;border-radius:28px;background:linear-gradient(180deg,#ffffff,#f8fafc);padding:34px 24px 28px;text-align:center;cursor:pointer;transition:all .25s ease;display:block;overflow:hidden;}
 .jcr-upload-box::before{content:"";position:absolute;inset:14px;border-radius:22px;background:radial-gradient(circle at 50% 0,rgba(37,99,235,.08),transparent 42%);pointer-events:none;}
 .jcr-upload-box:hover{border-color:var(--kv-primary);transform:translateY(-3px);box-shadow:0 24px 50px rgba(30,58,138,.12);}
+.jcr-upload-box.drag-over{border-color:var(--kv-primary);background:linear-gradient(180deg,#ffffff,color-mix(in srgb,var(--kv-primary) 8%,#f8fafc));box-shadow:0 24px 56px rgba(30,58,138,.18);}
 .jcr-upload-art{position:relative;width:94px;height:88px;margin:0 auto 16px;color:var(--kv-primary);}
 .jcr-upload-art svg{width:100%;height:100%;display:block;overflow:visible;}
 .jcr-upload-art .jcr-art-muted{stroke:#94a3b8;}
@@ -378,12 +383,19 @@ const KV_COMPANY = {
   .jcr-selected-grid{
     grid-template-columns:1fr;
   }
+  .jcr-upload-box{padding:24px 14px 22px;border-radius:24px;}
+  .jcr-upload-box::before{inset:10px;border-radius:18px;}
+  .jcr-upload-art{width:78px;height:74px;margin-bottom:12px;}
+  .jcr-upload-title{font-size:22px;}
+  .jcr-upload-subtitle{font-size:14px;margin-bottom:14px;}
+  .jcr-upload-helper{padding:12px 14px;}
+  .jcr-upload-copy{margin-top:12px;}
 }
 
 @keyframes jcrFadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
 @keyframes jcrPop{from{opacity:0;transform:scale(.97) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
 @media(max-width:900px){.jcr-door-grid,.jcr-swatch-grid,.jcr-material-grid{grid-template-columns:1fr 1fr;}.jcr-result-title{display:block;}.jcr-result-title h3{font-size:28px;}}
-@media(max-width:600px){.kv-wrap{padding:24px!important;margin:20px auto!important;}.jcr-card{padding:20px;}.jcr-btn-primary{width:100%;font-size:18px;}.jcr-door-grid,.jcr-swatch-grid,.jcr-material-grid{grid-template-columns:1fr;}}
+@media(max-width:600px){.kv-wrap{padding:24px!important;margin:20px auto!important;}.jcr-card{padding:20px;}.jcr-btn-primary{width:100%;font-size:18px;}.jcr-door-grid{grid-template-columns:1fr;}.jcr-swatch-grid,.jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));}}
 
 
 </style>
@@ -505,18 +517,18 @@ const KV_COMPANY = {
     <label>Door Style</label>
     <p class="jcr-section-note">Select the style your customer will see in their preview.</p>
     <div id="jcr_door_grid" class="jcr-door-grid">
-      <div class="jcr-door-option active" data_value="shaker cabinet doors">
+      <div class="jcr-door-option active" data_value="shaker cabinet doors" role="button" tabindex="0" aria-pressed="true">
         <div class="jcr-ribbon">Most Popular</div>
         <div class="jcr-door-preview"><img src="https://primary.jwwb.nl/public/m/q/r/temp-wfofpuxetbifsbcnmmvn/visualizer-shaker-image-high-tttcry.png" alt="Shaker Cabinet Door"></div>
         <div class="jcr-door-name">Shaker</div>
         <div class="jcr-door-desc">Clean recessed panel</div>
       </div>
-      <div class="jcr-door-option" data_value="raised panel cabinet doors">
+      <div class="jcr-door-option" data_value="raised panel cabinet doors" role="button" tabindex="0" aria-pressed="false">
         <div class="jcr-door-preview"><img src="https://primary.jwwb.nl/public/m/q/r/temp-wfofpuxetbifsbcnmmvn/visualizer-raised-image-high-3k9a86.png" alt="Raised Panel Cabinet Door"></div>
         <div class="jcr-door-name">Raised Panel</div>
         <div class="jcr-door-desc">Traditional detailed profile</div>
       </div>
-      <div class="jcr-door-option" data_value="flat panel cabinet doors">
+      <div class="jcr-door-option" data_value="flat panel cabinet doors" role="button" tabindex="0" aria-pressed="false">
         <div class="jcr-door-preview"><img src="https://primary.jwwb.nl/public/m/q/r/temp-wfofpuxetbifsbcnmmvn/visualizer-slab-image-high.png" alt="Flat Panel Cabinet Door"></div>
         <div class="jcr-door-name">Flat Panel</div>
         <div class="jcr-door-desc">Modern smooth slab</div>
@@ -600,7 +612,7 @@ const KV_COMPANY = {
     <button id="jcr_generate_btn" class="jcr-btn-primary">Generate My Cabinet Preview</button>
   </div>
 
-  <p id="jcr_status" style="text-align:center;color:#6b7280;margin:18px 0 0 0;font-size:18px;"></p>
+  <p id="jcr_status" role="status" aria-live="polite" aria-atomic="true" style="text-align:center;color:#6b7280;margin:18px 0 0 0;font-size:18px;"></p>
 
   <div id="jcr_ai_panel" class="jcr-ai-panel">
     <div class="jcr-ai-title">Creating Your Cabinet Preview</div>
@@ -616,7 +628,7 @@ const KV_COMPANY = {
 
 <div id="jcr_success" class="jcr-success">
   <div class="jcr-success-icon">Done</div>
-  <h3 class="jcr-success-title">Your Design Is Ready</h3>
+  <h3 class="jcr-success-title">Your Preview Is Ready</h3>
   <p class="jcr-success-copy">Review the before and after below. Your request has also been submitted for follow-up.</p>
 </div>
 
@@ -630,21 +642,21 @@ const KV_COMPANY = {
   </div>
 
   <div class="jcr-compare" id="jcr_compare">
-    <img id="jcr_before_img" style="display:none;" alt="Original Kitchen">
-    <img id="jcr_after_img" style="display:none;" alt="Preview Design">
+    <img id="jcr_before_img" style="display:none;" alt="Original Kitchen" tabindex="0">
+    <img id="jcr_after_img" style="display:none;" alt="Preview Design" tabindex="0">
     <div class="jcr-compare-label jcr-before-label">Before</div>
     <div class="jcr-compare-label jcr-after-label">After</div>
     <div id="jcr_slider_line" class="jcr-slider-line"></div>
     <div id="jcr_slider_handle" class="jcr-slider-handle" aria-hidden="true"></div>
-    <input id="jcr_compare_range" type="range" min="0" max="100" value="50">
+    <input id="jcr_compare_range" type="range" min="0" max="100" value="50" aria-label="Compare before and after preview" aria-valuetext="50% after preview">
   </div>
 
   <div id="jcr_design_actions" class="jcr-design-actions">
     <button id="jcr_create_next_design" class="jcr-btn-primary jcr-design-next" type="button">Save Design A</button>
     <div class="jcr-design-secondary-row">
-      <button id="jcr_save_a" class="jcr-btn-dark" type="button">Replace Design A</button>
-      <button id="jcr_save_b" class="jcr-btn-light jcr-btn-outline" type="button">Back to Design A</button>
-      <button id="jcr_replace_b" class="jcr-btn-light jcr-btn-outline" type="button">Replace Design B</button>
+      <button id="jcr_save_a" class="jcr-btn-dark" type="button" hidden>Replace Design A</button>
+      <button id="jcr_save_b" class="jcr-btn-light jcr-btn-outline" type="button" hidden>Back to Design A</button>
+      <button id="jcr_replace_b" class="jcr-btn-light jcr-btn-outline" type="button" hidden>Replace Design B</button>
     </div>
   </div>
 </div>
@@ -680,7 +692,7 @@ const KV_COMPANY = {
 
   <div class="jcr-design-compare-grid">
     <div class="jcr-design-compare-card">
-      <img id="jcr_design_a_img" alt="Design A">
+      <img id="jcr_design_a_img" alt="Design A" tabindex="0">
       <div>
         <strong>Design A</strong>
         <p id="jcr_design_a_text">No design saved yet.</p>
@@ -688,7 +700,7 @@ const KV_COMPANY = {
     </div>
 
     <div class="jcr-design-compare-card">
-      <img id="jcr_design_b_img" alt="Design B">
+      <img id="jcr_design_b_img" alt="Design B" tabindex="0">
       <div>
         <strong>Design B</strong>
         <p id="jcr_design_b_text">No design saved yet.</p>
@@ -813,6 +825,7 @@ const KV_COMPANY = {
 
   const photoInput = document.getElementById("jcr_photo");
   const photoName = document.getElementById("jcr_photo_name");
+  const uploadBox = document.querySelector(".jcr-upload-box");
   const mainCustomColorInput = document.getElementById("jcr_main_custom_color");
   const islandCustomColorInput = document.getElementById("jcr_island_custom_color");
   const colorInput = document.getElementById("jcr_color");
@@ -859,6 +872,7 @@ const KV_COMPANY = {
   const lightbox = document.getElementById("kv_lead_lightbox");
   const lightboxImg = document.getElementById("kv_lead_lightbox_img");
   const lightboxClose = document.getElementById("kv_lead_lightbox_close");
+  let lastLightboxTrigger = null;
   const summaryMainColor = document.getElementById("jcr_summary_main_color");
   const summaryIslandColor = document.getElementById("jcr_summary_island_color");
   const summaryDoorStyle = document.getElementById("jcr_summary_door_style");
@@ -921,13 +935,22 @@ const KV_COMPANY = {
   }
   updateCustomerCta();
 
-  function openLeadLightbox(src, alt) {
+  function getLightboxFocusables() {
+    if (!lightbox) return [];
+    return Array.from(lightbox.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')).filter(function(el) {
+      return !el.disabled && el.offsetParent !== null;
+    });
+  }
+
+  function openLeadLightbox(src, alt, trigger) {
     if (!lightbox || !lightboxImg || !src) return;
+    lastLightboxTrigger = trigger || document.activeElement;
     lightboxImg.src = src;
     lightboxImg.alt = alt || "Expanded design preview";
     lightbox.classList.add("active");
     lightbox.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    if (lightboxClose) lightboxClose.focus({ preventScroll: true });
   }
 
   function closeLeadLightbox() {
@@ -936,6 +959,10 @@ const KV_COMPANY = {
     lightbox.setAttribute("aria-hidden", "true");
     lightboxImg.src = "";
     document.body.style.overflow = "";
+    if (lastLightboxTrigger && typeof lastLightboxTrigger.focus === "function") {
+      lastLightboxTrigger.focus({ preventScroll: true });
+    }
+    lastLightboxTrigger = null;
   }
 
   function updateMonthlyCounterFromServer(data) {
@@ -975,6 +1002,8 @@ const KV_COMPANY = {
       btn.className = "jcr-swatch" + (index === select.selectedIndex ? " active" : "");
       btn.setAttribute("data-value", option.value);
       btn.setAttribute("data-select", selectId);
+      btn.setAttribute("aria-pressed", index === select.selectedIndex ? "true" : "false");
+      btn.setAttribute("aria-label", option.text + " " + (selectId === "jcr_color" ? "upper cabinet color" : "base cabinet color"));
       const label = option.text;
       const dot = document.createElement("div");
       dot.className = "jcr-dot";
@@ -994,8 +1023,55 @@ const KV_COMPANY = {
     "Keep Existing Backsplash":"linear-gradient(135deg,#f8fafc,#e5e7eb)","White Subway Tile":"repeating-linear-gradient(0deg,#ffffff 0 10px,#e5e7eb 10px 12px)","Beveled Subway":"linear-gradient(135deg,#ffffff,#dbeafe)","Vertical Stack Tile":"repeating-linear-gradient(90deg,#ffffff 0 12px,#e5e7eb 12px 14px)","Herringbone Tile":"linear-gradient(135deg,#ffffff 25%,#e5e7eb 25%,#e5e7eb 30%,#ffffff 30%)","Marble Mosaic":"linear-gradient(135deg,#ffffff,#cbd5e1,#f8fafc)","Hex Tile":"radial-gradient(circle,#ffffff 45%,#dbeafe 47%,#ffffff 55%)","No Backsplash":"linear-gradient(135deg,#f8fafc,#ffffff)","Upload Custom Tile":"linear-gradient(135deg,#60a5fa,#f472b6)",
     "Keep Existing Flooring":"linear-gradient(135deg,#f8fafc,#e5e7eb)","White Oak LVP":"linear-gradient(90deg,#cdbb9b,#e7d5b8,#cdbb9b)","Hickory Plank":"linear-gradient(90deg,#8b5a2b,#d0a46b,#a66a3f)","Light Gray LVP":"linear-gradient(90deg,#9ca3af,#e5e7eb,#9ca3af)","Large Format Tile":"linear-gradient(135deg,#e5e7eb,#f8fafc)","Marble Look Tile":"linear-gradient(135deg,#ffffff,#cbd5e1,#f8fafc)","Polished Concrete":"linear-gradient(135deg,#9ca3af,#d1d5db)","Upload Custom Flooring":"linear-gradient(135deg,#60a5fa,#f472b6)"
   };
-  function buildMaterialOptions(selectId){const select=document.getElementById(selectId);const grid=document.querySelector('.jcr-material-grid[data-select="'+selectId+'"]');if(!select||!grid)return;Array.from(select.options).forEach(function(option,index){const btn=document.createElement("button");btn.type="button";btn.className="jcr-material"+(index===select.selectedIndex?" active":"");btn.setAttribute("data-value",option.value);btn.setAttribute("data-select",selectId);const dot=document.createElement("div");dot.className="jcr-material-dot";dot.style.background=materialColors[option.text]||"#e5e7eb";const span=document.createElement("span");span.innerText=option.text;btn.appendChild(dot);btn.appendChild(span);grid.appendChild(btn);});}
+  function buildMaterialOptions(selectId){const select=document.getElementById(selectId);const grid=document.querySelector('.jcr-material-grid[data-select="'+selectId+'"]');const label=document.querySelector('label[for="'+selectId+'"]');if(!select||!grid)return;Array.from(select.options).forEach(function(option,index){const btn=document.createElement("button");btn.type="button";btn.className="jcr-material"+(index===select.selectedIndex?" active":"");btn.setAttribute("data-value",option.value);btn.setAttribute("data-select",selectId);btn.setAttribute("aria-pressed",index===select.selectedIndex?"true":"false");btn.setAttribute("aria-label",option.text+" "+(label?label.textContent.trim():"material option"));const dot=document.createElement("div");dot.className="jcr-material-dot";dot.style.background=materialColors[option.text]||"#e5e7eb";const span=document.createElement("span");span.innerText=option.text;btn.appendChild(dot);btn.appendChild(span);grid.appendChild(btn);});}
   buildMaterialOptions("jcr_countertop");buildMaterialOptions("jcr_backsplash");buildMaterialOptions("jcr_flooring");
+
+  function setPressedState(selector, activeEl) {
+    document.querySelectorAll(selector).forEach(function(el) {
+      el.setAttribute("aria-pressed", el === activeEl ? "true" : "false");
+    });
+  }
+
+  function activateSwatch(btn) {
+    const selectId = btn.getAttribute("data-select");
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    select.value = btn.getAttribute("data-value");
+    document.querySelectorAll('.jcr-swatch[data-select="' + selectId + '"]').forEach(function(b) { b.classList.remove("active"); b.setAttribute("aria-pressed", "false"); });
+    btn.classList.add("active");
+    btn.setAttribute("aria-pressed", "true");
+    updateCustomUploads();
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function activateMaterial(btn) {
+    const selectId = btn.getAttribute("data-select");
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    select.value = btn.getAttribute("data-value");
+    document.querySelectorAll('.jcr-material[data-select="' + selectId + '"]').forEach(function(b) { b.classList.remove("active"); b.setAttribute("aria-pressed", "false"); });
+    btn.classList.add("active");
+    btn.setAttribute("aria-pressed", "true");
+    updateCustomUploads();
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function activateDoor(option) {
+    document.querySelectorAll(".jcr-door-option").forEach(function(o) { o.classList.remove("active"); o.setAttribute("aria-pressed", "false"); });
+    option.classList.add("active");
+    option.setAttribute("aria-pressed", "true");
+    styleInput.value = option.getAttribute("data_value");
+    styleInput.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function bindKeyboardActivation(el, activate) {
+    el.addEventListener("keydown", function(event) {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      activate(el);
+      setTimeout(function(){ if (typeof refreshReview === "function") refreshReview(); }, 0);
+    });
+  }
 
   function updateCustomUploads() {
     document.getElementById("main_custom_wrap").classList.toggle("active", colorInput.value === "custom main color reference");
@@ -1007,22 +1083,19 @@ const KV_COMPANY = {
 
   document.querySelectorAll(".jcr-swatch").forEach(function(btn) {
     btn.addEventListener("click", function() {
-      const selectId = btn.getAttribute("data-select");
-      const select = document.getElementById(selectId);
-      select.value = btn.getAttribute("data-value");
-      document.querySelectorAll('.jcr-swatch[data-select="' + selectId + '"]').forEach(function(b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      updateCustomUploads();
+      activateSwatch(btn);
     });
+    bindKeyboardActivation(btn, activateSwatch);
   });
   updateCustomUploads();
 
-  document.querySelectorAll(".jcr-material").forEach(function(btn){btn.addEventListener("click",function(){const selectId=btn.getAttribute("data-select");const select=document.getElementById(selectId);select.value=btn.getAttribute("data-value");document.querySelectorAll('.jcr-material[data-select="'+selectId+'"]').forEach(function(b){b.classList.remove("active");});btn.classList.add("active");updateCustomUploads();});});
+  document.querySelectorAll(".jcr-material").forEach(function(btn){btn.addEventListener("click",function(){activateMaterial(btn);});bindKeyboardActivation(btn,activateMaterial);});
 
   function updateCompareSlider(value) {
     afterImg.style.clipPath = "inset(0 " + (100 - value) + "% 0 0)";
     sliderLine.style.left = value + "%";
     sliderHandle.style.left = value + "%";
+    compareRange.setAttribute("aria-valuetext", value + "% after preview");
   }
   compareRange.addEventListener("input", function() { updateCompareSlider(compareRange.value); });
   updateCompareSlider(50);
@@ -1515,22 +1588,64 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
   document.querySelectorAll(".jcr-door-option").forEach(function(option) {
     option.addEventListener("click", function() {
-      document.querySelectorAll(".jcr-door-option").forEach(function(o) { o.classList.remove("active"); });
-      option.classList.add("active");
-      styleInput.value = option.getAttribute("data_value");
+      activateDoor(option);
     });
+    bindKeyboardActivation(option, activateDoor);
   });
 
-  photoInput.addEventListener("change", async function(e) {
-    const file = e.target.files[0];
+  const SUPPORTED_KITCHEN_UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+  function isSupportedKitchenPhoto(file) {
+    return !!(file && SUPPORTED_KITCHEN_UPLOAD_TYPES.indexOf(file.type) > -1);
+  }
+
+  async function processKitchenPhotoFile(file) {
     if (!file) return;
+    if (!isSupportedKitchenPhoto(file)) {
+      status.innerText = "Please upload a JPG, PNG, or WEBP kitchen photo.";
+      photoName.innerText = "";
+      uploadedImageData = "";
+      return;
+    }
     status.innerText = "Preparing kitchen photo...";
     photoName.innerText = "Selected: " + file.name;
     try {
       uploadedImageData = await resizeImage(file, 1400, 0.82);
       status.innerText = "Kitchen photo ready.";
     } catch (err) { status.innerText = "Could not read kitchen photo."; }
+  }
+
+  photoInput.addEventListener("change", async function(e) {
+    await processKitchenPhotoFile(e.target.files[0]);
   });
+
+  if (uploadBox) {
+    ["dragenter", "dragover"].forEach(function(type) {
+      uploadBox.addEventListener(type, function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        uploadBox.classList.add("drag-over");
+      });
+    });
+    ["dragleave", "drop"].forEach(function(type) {
+      uploadBox.addEventListener(type, function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        uploadBox.classList.remove("drag-over");
+      });
+    });
+    uploadBox.addEventListener("drop", function(event) {
+      const file = event.dataTransfer && event.dataTransfer.files ? event.dataTransfer.files[0] : null;
+      if (!isSupportedKitchenPhoto(file)) {
+        status.innerText = "Please upload a JPG, PNG, or WEBP kitchen photo.";
+        return;
+      }
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      photoInput.files = transfer.files;
+      photoInput.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  }
 
   mainCustomColorInput.addEventListener("change", async function(e) {
     const file = e.target.files[0];
@@ -1804,7 +1919,13 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     img.addEventListener("click", function(event) {
       if (!img.src) return;
       event.stopPropagation();
-      openLeadLightbox(img.src, img.alt);
+      openLeadLightbox(img.src, img.alt, img);
+    });
+    img.addEventListener("keydown", function(event) {
+      if ((event.key === "Enter" || event.key === " ") && img.src) {
+        event.preventDefault();
+        openLeadLightbox(img.src, img.alt, img);
+      }
     });
   });
 
@@ -1813,7 +1934,23 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     if (event.target === lightbox) closeLeadLightbox();
   });
   document.addEventListener("keydown", function(event) {
-    if (event.key === "Escape") closeLeadLightbox();
+    if (!lightbox || !lightbox.classList.contains("active")) return;
+    if (event.key === "Escape") {
+      closeLeadLightbox();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusables = getLightboxFocusables();
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   });
 
   button.addEventListener("click", async function() {
@@ -1934,9 +2071,9 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     {key:"upload", label:"Upload", title:"Upload your kitchen photo", copy:"Start with a clear, straight-on kitchen photo. The next step stays locked until a photo is selected."},
     {key:"cabinets", label:"Cabinets", title:"Choose cabinet finishes", copy:"Select upper and base cabinet colors, including custom reference uploads when needed."},
     {key:"doors", label:"Door Style", title:"Choose a door style", copy:"Pick the door profile that should be reflected in the preview."},
-    {key:"details", label:"Details", title:"Add hardware and materials", copy:"Choose upper cabinet height, hardware, countertops, backsplash, and flooring."},
-    {key:"review", label:"Review", title:"Review and generate", copy:"Confirm selections and enter contact details before generating the preview."},
-    {key:"results", label:"Results", title:"Preview results", copy:"View the before/after slider, downloads, design comparison, and selected options."}
+    {key:"details", label:"Design Details", title:"Design Details", copy:"Choose upper cabinet height, hardware, countertops, backsplash, and flooring."},
+    {key:"review", label:"Review", title:"Review Your Design", copy:"Confirm selections and enter contact details before generating the preview."},
+    {key:"results", label:"Results", title:"Before / After Preview", copy:"View the before/after slider, downloads, design comparison, and selected options."}
   ];
   let currentStage = "upload";
   let hasPhoto = false;
@@ -2141,6 +2278,8 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       qsa('[data-kv-lead-panel="'+step.key+'"]').forEach(function(panel){panel.classList.toggle("active",active);});
       qsa('[data-kv-lead-step="'+step.key+'"], [data-kv-lead-mobile-step="'+step.key+'"]').forEach(function(btn){btn.classList.toggle("active",active);btn.classList.toggle("is-current",active);btn.classList.toggle("is-completed",stages.findIndex(function(s){return s.key===key;})>index);btn.classList.toggle("is-disabled",step.key==="results"&&!hasResult);});
     });
+    const activeMobileTab=qs('[data-kv-lead-mobile-step="'+key+'"]');
+    if(activeMobileTab) activeMobileTab.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
     updateNav(); refreshReview();
     const main=qs(".kv-lead-main"); if(main && window.VisualizerPremium) window.VisualizerPremium.scrollToTop(main);
   }
