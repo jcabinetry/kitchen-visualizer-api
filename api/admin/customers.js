@@ -10,6 +10,23 @@ import {
   saveCustomer
 } from "../_lib/customerStore.js";
 
+
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function deepMerge(base = {}, patch = {}) {
+  const merged = { ...base };
+  Object.entries(patch || {}).forEach(function([key, value]) {
+    if (key === "action") return;
+    if (isPlainObject(value) && isPlainObject(merged[key])) {
+      merged[key] = deepMerge(merged[key], value);
+    } else {
+      merged[key] = value;
+    }
+  });
+  return merged;
+}
 function setNoStore(res) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
 }
@@ -77,7 +94,7 @@ if (action === "delete") {
       const existing = await getCustomer(companyKey);
       if (!existing) return res.status(404).json({ error: "Customer not found." });
 
-      const customer = await saveCustomer({ ...existing, ...req.body });
+      const customer = await saveCustomer(deepMerge(existing, req.body || {}));
       return res.status(200).json({ customer });
     }
 

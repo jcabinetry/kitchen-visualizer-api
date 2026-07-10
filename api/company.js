@@ -7,35 +7,59 @@ function setNoStore(res) {
 
 function publicCompany(customer) {
   const branding = customer.branding || {};
+  const publicData = customer.public || {};
+
+  const phone = customer.phone || customer.contact?.phone || branding.phone || "";
+  const email = customer.email || customer.contact?.email || branding.email || branding.contactEmail || "";
+  const city = customer.city || customer.address?.city || branding.city || "";
+  const websiteUrl = publicData.websiteUrl || customer.websiteUrl || customer.customerPageUrl || branding.websiteUrl || branding.customerPageUrl || "";
+  const estimateUrl = publicData.estimateUrl || customer.estimateUrl || branding.estimateUrl || websiteUrl || "";
+  const logoUrl = customer.logoUrl || branding.logoUrl || "";
+  const primaryColor = customer.primaryColor || branding.primaryColor || "#1f2937";
+  const secondaryColor = customer.secondaryColor || branding.secondaryColor || "#64748b";
+  const accentColor = customer.accentColor || branding.accentColor || "#2563eb";
+  const backgroundColor = customer.backgroundColor || branding.backgroundColor || "#f8fafc";
+  const cardColor = customer.cardColor || branding.cardColor || "#ffffff";
+  const ctaText = customer.ctaText || branding.ctaText || branding.buttonText || "Request an Estimate";
 
   return {
     companyName: customer.companyName || customer.companyKey,
     companyKey: customer.companyKey,
     monthlyLimit: customer.monthlyLimit,
-    phone: customer.phone || branding.phone || "",
-    email: customer.email || branding.email || branding.contactEmail || "",
-    city: customer.city || branding.city || "",
-    estimateUrl: customer.estimateUrl || branding.estimateUrl || branding.websiteUrl || "",
-    logoUrl: customer.logoUrl || branding.logoUrl || "",
-    primaryColor: customer.primaryColor || branding.primaryColor || "#1f2937",
-    secondaryColor: customer.secondaryColor || branding.secondaryColor || "#64748b",
-    accentColor: customer.accentColor || branding.accentColor || "#2563eb",
-    backgroundColor: customer.backgroundColor || branding.backgroundColor || "#f8fafc",
-    cardColor: customer.cardColor || branding.cardColor || "#ffffff",
+    phone,
+    email,
+    city,
+    websiteUrl,
+    customerPageUrl: websiteUrl,
+    estimateUrl,
+    logoUrl,
+    primaryColor,
+    secondaryColor,
+    accentColor,
+    backgroundColor,
+    cardColor,
     catalogSelections: Array.isArray(customer.catalogSelections) ? customer.catalogSelections : [],
     selectedCatalogs: Array.isArray(customer.selectedCatalogs) ? customer.selectedCatalogs : [],
     branding: {
-      ...branding,
-      primaryColor: customer.primaryColor || branding.primaryColor || "#1f2937",
-      secondaryColor: customer.secondaryColor || branding.secondaryColor || "#64748b",
-      accentColor: customer.accentColor || branding.accentColor || "#2563eb",
-      backgroundColor: customer.backgroundColor || branding.backgroundColor || "#f8fafc",
-      cardColor: customer.cardColor || branding.cardColor || "#ffffff"
+      logoUrl,
+      primaryColor,
+      secondaryColor,
+      accentColor,
+      backgroundColor,
+      cardColor,
+      websiteUrl,
+      customerPageUrl: websiteUrl,
+      estimateUrl,
+      contactEmail: email,
+      email,
+      phone,
+      city,
+      ctaText,
+      buttonText: ctaText
     },
-    ctaText: customer.ctaText || branding.ctaText || "Request an Estimate"
+    ctaText
   };
 }
-
 export default async function handler(req, res) {
   if (setCorsHeaders(req, res)) return;
   setNoStore(res);

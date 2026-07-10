@@ -143,6 +143,33 @@ function normalizeCatalogSelections(value, fallback = []) {
     .filter(Boolean);
 }
 
+
+function objectValue(value, fallback = {}) {
+  const parsed = parseMaybeJson(value);
+  return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : fallback;
+}
+
+function fieldText(source, fallback, key) {
+  return textValue(source?.[key], fallback?.[key]);
+}
+
+function normalizeInternalNotes(source = {}, fallback = {}, legacyNotes = "") {
+  return {
+    general: textValue(source.general, fallback.general, legacyNotes),
+    sales: textValue(source.sales, fallback.sales),
+    billing: textValue(source.billing, fallback.billing),
+    support: textValue(source.support, fallback.support),
+    technical: textValue(source.technical, fallback.technical),
+    onboarding: textValue(source.onboarding, fallback.onboarding)
+  };
+}
+
+function normalizePrivateSection(source = {}, fallback = {}, keys = []) {
+  return keys.reduce(function(section, key) {
+    section[key] = textValue(source[key], fallback[key]);
+    return section;
+  }, {});
+}
 function normalizeCustomer(input = {}, existing = null) {
   let source = parseMaybeJson(input) || {};
   let existingSource = parseMaybeJson(existing) || null;
@@ -155,8 +182,24 @@ function normalizeCustomer(input = {}, existing = null) {
     existingSource = { companyKey: String(existingSource || "") };
   }
 
-  const branding = source.branding || {};
-  const existingBranding = existingSource?.branding || {};
+  const branding = objectValue(source.branding);
+  const existingBranding = objectValue(existingSource?.branding);
+  const contactSource = objectValue(source.contact);
+  const existingContact = objectValue(existingSource?.contact);
+  const addressSource = objectValue(source.address);
+  const existingAddress = objectValue(existingSource?.address);
+  const publicSource = objectValue(source.public);
+  const existingPublic = objectValue(existingSource?.public);
+  const billingSource = objectValue(source.billing);
+  const existingBilling = objectValue(existingSource?.billing);
+  const crmSource = objectValue(source.crm);
+  const existingCrm = objectValue(existingSource?.crm);
+  const proposalSource = objectValue(source.proposalDefaults);
+  const existingProposal = objectValue(existingSource?.proposalDefaults);
+  const supportSource = objectValue(source.support);
+  const existingSupport = objectValue(existingSource?.support);
+  const notesSource = objectValue(source.internalNotes);
+  const existingNotes = objectValue(existingSource?.internalNotes);
 
   const companyKey = cleanCompanyKey(source.companyKey || existingSource?.companyKey);
 
@@ -165,21 +208,23 @@ function normalizeCustomer(input = {}, existing = null) {
   }
 
   const now = new Date().toISOString();
-  const status = source.status === "archived" ? "archived" : "active";
-  const email = textValue(source.email, source.contactEmail, branding.email, branding.contactEmail, existingSource?.email, existingSource?.contactEmail, existingBranding.email, existingBranding.contactEmail);
-  const phone = textValue(source.phone, branding.phone, existingSource?.phone, existingBranding.phone);
-  const city = textValue(source.city, branding.city, existingSource?.city, existingBranding.city);
-  const logoUrl = textValue(source.logoUrl, branding.logoUrl, existingSource?.logoUrl, existingBranding.logoUrl);
-  const primaryColor = textValue(source.primaryColor, branding.primaryColor, existingSource?.primaryColor, existingBranding.primaryColor, "#1f2937");
-  const secondaryColor = textValue(source.secondaryColor, branding.secondaryColor, existingSource?.secondaryColor, existingBranding.secondaryColor, "#64748b");
-  const backgroundColor = textValue(source.backgroundColor, branding.backgroundColor, existingSource?.backgroundColor, existingBranding.backgroundColor, "#f8fafc");
-  const cardColor = textValue(source.cardColor, branding.cardColor, existingSource?.cardColor, existingBranding.cardColor, "#ffffff");
-  const accentColor = textValue(source.accentColor, branding.accentColor, existingSource?.accentColor, existingBranding.accentColor, "#f59e0b");
-  const websiteUrl = textValue(source.websiteUrl, source.website, source.customerPageUrl, branding.websiteUrl, branding.website, branding.customerPageUrl, existingSource?.websiteUrl, existingSource?.website, existingSource?.customerPageUrl, existingBranding.websiteUrl, existingBranding.website, existingBranding.customerPageUrl);
-  const estimateUrl = textValue(source.estimateUrl, branding.estimateUrl, existingSource?.estimateUrl, existingBranding.estimateUrl);
-  const ctaText = textValue(source.ctaText, source.buttonText, branding.ctaText, branding.buttonText, existingSource?.ctaText, existingSource?.buttonText, existingBranding.ctaText, existingBranding.buttonText, "Request an Estimate");
+  const statusValue = textValue(source.status, existingSource?.status, "active");
+  const status = statusValue === "archived" ? "archived" : "active";
+  const email = textValue(contactSource.email, source.email, source.contactEmail, branding.email, branding.contactEmail, existingContact.email, existingSource?.email, existingSource?.contactEmail, existingBranding.email, existingBranding.contactEmail);
+  const phone = textValue(contactSource.phone, source.phone, branding.phone, existingContact.phone, existingSource?.phone, existingBranding.phone);
+  const city = textValue(addressSource.city, source.city, branding.city, existingAddress.city, existingSource?.city, existingBranding.city);
+  const logoUrl = textValue(branding.logoUrl, source.logoUrl, existingBranding.logoUrl, existingSource?.logoUrl);
+  const primaryColor = textValue(branding.primaryColor, source.primaryColor, existingBranding.primaryColor, existingSource?.primaryColor, "#1f2937");
+  const secondaryColor = textValue(branding.secondaryColor, source.secondaryColor, existingBranding.secondaryColor, existingSource?.secondaryColor, "#64748b");
+  const backgroundColor = textValue(branding.backgroundColor, source.backgroundColor, existingBranding.backgroundColor, existingSource?.backgroundColor, "#f8fafc");
+  const cardColor = textValue(branding.cardColor, source.cardColor, existingBranding.cardColor, existingSource?.cardColor, "#ffffff");
+  const accentColor = textValue(branding.accentColor, source.accentColor, existingBranding.accentColor, existingSource?.accentColor, "#f59e0b");
+  const websiteUrl = textValue(publicSource.websiteUrl, source.websiteUrl, source.website, source.customerPageUrl, branding.websiteUrl, branding.website, branding.customerPageUrl, existingPublic.websiteUrl, existingSource?.websiteUrl, existingSource?.website, existingSource?.customerPageUrl, existingBranding.websiteUrl, existingBranding.website, existingBranding.customerPageUrl);
+  const estimateUrl = textValue(publicSource.estimateUrl, source.estimateUrl, branding.estimateUrl, existingPublic.estimateUrl, existingSource?.estimateUrl, existingBranding.estimateUrl);
+  const ctaText = textValue(branding.ctaText, source.ctaText, source.buttonText, existingBranding.ctaText, existingBranding.buttonText, existingSource?.ctaText, existingSource?.buttonText, "Request an Estimate");
   const catalogSelections = normalizeCatalogSelections(source.catalogSelections, existingSource?.catalogSelections);
   const selectedCatalogs = catalogSelections.map(function(item) { return item.catalogId; }).filter(Boolean);
+  const internalNotes = normalizeInternalNotes(notesSource, existingNotes, source.notes ?? existingSource?.notes ?? "");
 
   return {
     companyKey,
@@ -188,10 +233,28 @@ function normalizeCustomer(input = {}, existing = null) {
     monthlyLimit: toPositiveInteger(source.monthlyLimit ?? existingSource?.monthlyLimit),
     monthlyPrice: toMoneyNumber(source.monthlyPrice ?? source.price ?? source.subscriptionPrice ?? existingSource?.monthlyPrice ?? existingSource?.price ?? existingSource?.subscriptionPrice, 0),
     plan: textValue(source.plan, existingSource?.plan),
+    contact: {
+      name: fieldText(contactSource, existingContact, "name"),
+      title: fieldText(contactSource, existingContact, "title"),
+      email,
+      phone
+    },
+    address: {
+      street: fieldText(addressSource, existingAddress, "street"),
+      city,
+      state: fieldText(addressSource, existingAddress, "state"),
+      postalCode: fieldText(addressSource, existingAddress, "postalCode"),
+      serviceArea: fieldText(addressSource, existingAddress, "serviceArea")
+    },
+    public: {
+      websiteUrl,
+      estimateUrl
+    },
     phone,
     email,
     city,
     websiteUrl,
+    customerPageUrl: websiteUrl,
     estimateUrl,
     logoUrl,
     primaryColor,
@@ -219,13 +282,17 @@ function normalizeCustomer(input = {}, existing = null) {
       ctaText,
       buttonText: ctaText
     },
-    notes: String(source.notes ?? existingSource?.notes ?? "").trim(),
+    billing: normalizePrivateSection(billingSource, existingBilling, ["status", "renewalDate", "paymentMethodSummary", "notes"]),
+    crm: normalizePrivateSection(crmSource, existingCrm, ["leadSource", "stage", "dealValue", "owner", "followUpDate", "notes"]),
+    proposalDefaults: normalizePrivateSection(proposalSource, existingProposal, ["template", "packageTier", "disclaimer", "taxRate", "notes"]),
+    support: normalizePrivateSection(supportSource, existingSupport, ["status", "priority", "owner", "lastContactAt", "notes"]),
+    internalNotes,
+    notes: internalNotes.general,
     createdAt: existingSource?.createdAt || now,
     updatedAt: now,
     archivedAt: status === "archived" ? existingSource?.archivedAt || now : null
   };
 }
-
 async function readIndex() {
   const [existingKeys, v2Keys] = await Promise.all([
     upstashCommand(["SMEMBERS", CUSTOMER_INDEX_KEY]).catch(function() { return []; }),
