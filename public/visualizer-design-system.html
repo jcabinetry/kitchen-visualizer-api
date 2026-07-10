@@ -1,0 +1,264 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Premium Visualizer Design System</title>
+  <link rel="stylesheet" href="/visualizer-premium.css">
+  <style>
+    .ds-hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(340px,.95fr);gap:24px;align-items:center;margin-bottom:24px;}
+    .ds-hero-art{min-height:420px;border-radius:34px;overflow:hidden;position:relative;background:linear-gradient(135deg,#0f172a,#334155);box-shadow:var(--kv-shadow-lg);}
+    .ds-hero-art:before{content:"";position:absolute;inset:24px;border-radius:26px;background:linear-gradient(135deg,#f8fafc,#dbeafe);box-shadow:0 24px 60px rgba(0,0,0,.25);}
+    .ds-kitchen{position:absolute;inset:64px 48px 44px;border-radius:22px;background:linear-gradient(180deg,#f8fafc 0 32%,#e2e8f0 32% 40%,#ffffff 40% 62%,#cbd5e1 62% 66%,#a47551 66%);overflow:hidden;}
+    .ds-cabs{position:absolute;left:10%;right:10%;top:9%;height:22%;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+    .ds-cabs span,.ds-base span{border-radius:8px;background:#f8fafc;border:2px solid #cbd5e1;box-shadow:inset 0 0 0 8px #fff;}
+    .ds-base{position:absolute;left:8%;right:8%;bottom:21%;height:22%;display:grid;grid-template-columns:1.2fr 1fr 1fr 1.2fr;gap:8px;}
+    .ds-base span{background:#1e3a8a;border-color:#1d4ed8;box-shadow:inset 0 0 0 8px rgba(255,255,255,.14);}
+    .ds-island{position:absolute;left:28%;right:28%;bottom:5%;height:18%;border-radius:12px;background:#1d4ed8;box-shadow:0 16px 30px rgba(15,23,42,.22);}
+    .ds-section-label{margin:0 0 12px;font-size:13px;font-weight:950;color:var(--kv-primary);text-transform:uppercase;letter-spacing:.12em;}
+    .ds-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;}
+    .ds-color-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+    .ds-token{border:1px solid var(--kv-border);border-radius:18px;background:white;padding:14px;box-shadow:var(--kv-shadow-sm);}
+    .ds-token-swatch{height:64px;border-radius:14px;margin-bottom:10px;border:1px solid rgba(15,23,42,.08);}
+    .ds-narrow-demo{max-width:390px;border:1px solid var(--kv-border);border-radius:32px;background:#f8fafc;padding:14px;box-shadow:var(--kv-shadow-md);}
+    .ds-narrow-screen{border-radius:24px;background:white;overflow:hidden;border:1px solid var(--kv-border);}
+    .ds-demo-pad{padding:16px;}
+    .ds-spacer{height:14px;}
+    @media(max-width:980px){.ds-hero{grid-template-columns:1fr;}.ds-grid{grid-template-columns:1fr;}.ds-color-row{grid-template-columns:repeat(2,1fr);}}
+  </style>
+</head>
+<body class="kv-premium-body kv-premium-scope">
+  <main class="kv-premium-app">
+    <header class="kv-premium-topbar">
+      <div class="kv-premium-brand">
+        <div class="kv-premium-logo">KPM</div>
+        <div class="kv-premium-title">
+          <h1>Premium Visualizer Design System</h1>
+          <p>Reusable visual components for Lead, Showroom, Custom/Catalog, and future Demo visualizers.</p>
+        </div>
+      </div>
+      <div class="kv-premium-actions">
+        <button class="kv-btn kv-btn-ghost" type="button">Start Over</button>
+        <button class="kv-btn kv-btn-primary" type="button">Save Design</button>
+      </div>
+    </header>
+
+    <section class="ds-hero">
+      <div class="kv-premium-panel kv-fade-up">
+        <p class="kv-premium-eyebrow">Guided flow mockup style</p>
+        <h2>Clean panels, large photos, premium selection cards, and a polished result experience.</h2>
+        <p>This page is static and safe. It does not call production APIs, submit leads, load catalogs, generate images, count usage, or create proposals.</p>
+        <div class="kv-result-actions">
+          <a class="kv-btn kv-btn-primary" href="#components">View Components</a>
+          <button class="kv-btn kv-btn-secondary" type="button" data-kv-open-modal="#demo-modal">Open Modal</button>
+        </div>
+      </div>
+      <div class="ds-hero-art" aria-label="Premium kitchen visualizer mockup">
+        <div class="ds-kitchen">
+          <div class="ds-cabs"><span></span><span></span><span></span><span></span></div>
+          <div class="ds-base"><span></span><span></span><span></span><span></span></div>
+          <div class="ds-island"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="kv-premium-layout" id="components">
+      <aside class="kv-premium-sidebar">
+        <p class="ds-section-label">Progress</p>
+        <nav class="kv-progress" aria-label="Visualizer steps">
+          <button class="kv-step is-completed" type="button" data-kv-step="upload" data-kv-step-target="upload"><span class="kv-step-index">1</span><span class="kv-step-body"><span class="kv-step-title">Upload</span><span class="kv-step-note">Kitchen photo</span></span></button>
+          <button class="kv-step is-current" type="button" data-kv-step="cabinets" data-kv-step-target="cabinets"><span class="kv-step-index">2</span><span class="kv-step-body"><span class="kv-step-title">Cabinets</span><span class="kv-step-note">Upper and base</span></span></button>
+          <button class="kv-step" type="button" data-kv-step="doors" data-kv-step-target="doors"><span class="kv-step-index">3</span><span class="kv-step-body"><span class="kv-step-title">Door Style</span><span class="kv-step-note">Profiles</span></span></button>
+          <button class="kv-step" type="button" data-kv-step="details" data-kv-step-target="details"><span class="kv-step-index">4</span><span class="kv-step-body"><span class="kv-step-title">Details</span><span class="kv-step-note">Hardware and materials</span></span></button>
+          <button class="kv-step" type="button" data-kv-step="review" data-kv-step-target="review"><span class="kv-step-index">5</span><span class="kv-step-body"><span class="kv-step-title">Review</span><span class="kv-step-note">Confirm selections</span></span></button>
+          <button class="kv-step" type="button" data-kv-step="results" data-kv-step-target="results"><span class="kv-step-index">6</span><span class="kv-step-body"><span class="kv-step-title">Results</span><span class="kv-step-note">Preview and save</span></span></button>
+        </nav>
+      </aside>
+
+      <div class="kv-premium-main">
+        <div class="kv-mobile-progress" aria-label="Mobile visualizer steps">
+          <span class="kv-mobile-progress-pill is-current">Upload</span>
+          <span class="kv-mobile-progress-pill">Cabinets</span>
+          <span class="kv-mobile-progress-pill">Doors</span>
+          <span class="kv-mobile-progress-pill">Review</span>
+          <span class="kv-mobile-progress-pill">Results</span>
+        </div>
+
+        <section class="kv-premium-section">
+          <div class="kv-premium-section-head">
+            <div>
+              <p class="kv-premium-eyebrow">Typography</p>
+              <h2>Modern design-studio hierarchy</h2>
+              <p>Large section titles, useful helper copy, compact labels, and clear action text.</p>
+            </div>
+          </div>
+          <div class="ds-grid">
+            <div class="kv-premium-card" style="padding:22px;"><h3 style="margin-top:0;">Create a cabinet preview</h3><p>Upload a clear kitchen photo, pick the finishes, then review before generating.</p></div>
+            <div class="kv-premium-card" style="padding:22px;"><p class="kv-premium-eyebrow">Helper text</p><p>Use straight-on photos with good lighting for best AI realism.</p></div>
+          </div>
+        </section>
+
+        <section class="kv-premium-section">
+          <p class="kv-premium-eyebrow">Brand colors</p>
+          <div class="ds-color-row">
+            <div class="ds-token"><div class="ds-token-swatch" style="background:var(--kv-primary)"></div><strong>Primary</strong><p class="kv-helper">--kv-primary</p></div>
+            <div class="ds-token"><div class="ds-token-swatch" style="background:var(--kv-secondary)"></div><strong>Secondary</strong><p class="kv-helper">--kv-secondary</p></div>
+            <div class="ds-token"><div class="ds-token-swatch" style="background:var(--kv-accent)"></div><strong>Accent</strong><p class="kv-helper">--kv-accent</p></div>
+            <div class="ds-token"><div class="ds-token-swatch" style="background:var(--kv-background)"></div><strong>Background</strong><p class="kv-helper">--kv-background</p></div>
+            <div class="ds-token"><div class="ds-token-swatch" style="background:var(--kv-success)"></div><strong>Success</strong><p class="kv-helper">--kv-success</p></div>
+            <div class="ds-token"><div class="ds-token-swatch" style="background:var(--kv-danger)"></div><strong>Danger</strong><p class="kv-helper">--kv-danger</p></div>
+          </div>
+        </section>
+
+        <section class="kv-premium-section">
+          <p class="kv-premium-eyebrow">Buttons</p>
+          <div class="kv-result-actions">
+            <button class="kv-btn kv-btn-primary" type="button">Generate Preview</button>
+            <button class="kv-btn kv-btn-secondary" type="button">Back</button>
+            <button class="kv-btn kv-btn-ghost" type="button">Download</button>
+            <button class="kv-btn kv-btn-danger" type="button">Remove</button>
+          </div>
+        </section>
+
+        <section class="kv-premium-section" id="upload">
+          <p class="kv-premium-eyebrow">Upload experience</p>
+          <label class="kv-upload" for="sample-file">
+            <div class="kv-upload-icon">UP</div>
+            <div class="kv-upload-title">Drag and drop your kitchen photo</div>
+            <p class="kv-upload-copy">Or click to browse. Straight-on photos with good lighting work best.</p>
+            <div class="kv-upload-file">sample-kitchen-photo.jpg</div>
+          </label>
+          <input id="sample-file" type="file" style="display:none">
+          <div class="kv-photo-tips">
+            <div class="kv-photo-tip"><strong>Use daylight</strong>Avoid dark rooms and heavy shadows.</div>
+            <div class="kv-photo-tip"><strong>Stand straight</strong>Keep cabinets in frame and level.</div>
+            <div class="kv-photo-tip"><strong>Clear counters</strong>Less clutter helps the result feel realistic.</div>
+          </div>
+        </section>
+
+        <section class="kv-premium-section" id="cabinets">
+          <p class="kv-premium-eyebrow">Cabinet swatches</p>
+          <div class="kv-option-grid">
+            <button class="kv-option-card is-selected" type="button"><span class="kv-swatch-dot is-painted" style="background:#f8fafc"></span><span class="kv-option-title">Soft White</span><span class="kv-option-desc">Bright classic finish</span></button>
+            <button class="kv-option-card" type="button"><span class="kv-swatch-dot" style="background:#1e3a8a"></span><span class="kv-option-title">Navy</span><span class="kv-option-desc">Bold lower cabinet color</span></button>
+            <button class="kv-option-card" type="button"><span class="kv-swatch-dot is-wood"></span><span class="kv-option-title">Natural Oak</span><span class="kv-option-desc">Warm wood tone</span></button>
+            <button class="kv-option-card" type="button"><span class="kv-swatch-dot is-custom">+</span><span class="kv-option-title">Upload Custom</span><span class="kv-option-desc">Use a reference image</span></button>
+          </div>
+        </section>
+
+        <section class="kv-premium-section" id="doors">
+          <p class="kv-premium-eyebrow">Door style cards</p>
+          <div class="kv-door-grid">
+            <button class="kv-door-card is-selected" type="button"><span class="kv-ribbon">Most Popular</span><div class="kv-door-preview"><div style="width:72%;height:72%;border:10px solid #e2e8f0;border-radius:14px;background:white;box-shadow:inset 0 0 0 3px #cbd5e1;"></div></div><div class="kv-door-name">Shaker</div><div class="kv-door-desc">Clean recessed panel</div></button>
+            <button class="kv-door-card" type="button"><div class="kv-door-preview"><div style="width:72%;height:72%;border:12px double #d6b98c;border-radius:18px;background:#f7ead8;"></div></div><div class="kv-door-name">Raised Panel</div><div class="kv-door-desc">Traditional profile</div></button>
+            <button class="kv-door-card" type="button"><div class="kv-door-preview"><div style="width:72%;height:72%;border-radius:12px;background:#e5e7eb;"></div></div><div class="kv-door-name">Flat Panel</div><div class="kv-door-desc">Modern slab style</div></button>
+          </div>
+        </section>
+
+        <section class="kv-premium-section" id="details">
+          <p class="kv-premium-eyebrow">Material cards</p>
+          <div class="kv-option-grid">
+            <button class="kv-option-card is-selected" type="button"><span class="kv-material-thumb kv-material-stone"></span><span class="kv-option-title">Quartz</span></button>
+            <button class="kv-option-card" type="button"><span class="kv-material-thumb kv-material-tile"></span><span class="kv-option-title">White Tile</span></button>
+            <button class="kv-option-card" type="button"><span class="kv-material-thumb kv-material-floor"></span><span class="kv-option-title">Warm Oak Floor</span></button>
+            <button class="kv-option-card" type="button"><span class="kv-material-thumb"></span><span class="kv-option-title">Custom Reference</span></button>
+          </div>
+        </section>
+
+        <section class="kv-premium-section">
+          <p class="kv-premium-eyebrow">Forms</p>
+          <div class="ds-grid">
+            <div class="kv-field"><label class="kv-label" for="sample-select">Cabinet height</label><select class="kv-select" id="sample-select"><option>Keep existing height</option><option>Extend to ceiling</option></select><span class="kv-helper">This styling supports existing selects and inputs.</span></div>
+            <div class="kv-field"><label class="kv-label" for="sample-input">Client email</label><input class="kv-input" id="sample-input" type="email" placeholder="name@example.com"><span class="kv-error">Example validation message</span></div>
+          </div>
+        </section>
+
+        <section class="kv-premium-section" id="review">
+          <p class="kv-premium-eyebrow">Review screen</p>
+          <div class="kv-review-grid">
+            <div class="kv-review-photo"><div class="ds-kitchen" style="position:relative;inset:auto;height:290px;"><div class="ds-cabs"><span></span><span></span><span></span><span></span></div><div class="ds-base"><span></span><span></span><span></span><span></span></div><div class="ds-island"></div></div></div>
+            <div class="kv-summary-list">
+              <div class="kv-summary-item"><span>Upper cabinets</span><strong>Soft White</strong></div>
+              <div class="kv-summary-item"><span>Base cabinets</span><strong>Navy</strong></div>
+              <div class="kv-summary-item"><span>Door style</span><strong>Shaker</strong></div>
+              <div class="kv-summary-item"><span>Countertop</span><strong>Quartz</strong></div>
+              <button class="kv-btn kv-btn-primary kv-btn-full" type="button">Generate Preview</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="kv-premium-section">
+          <p class="kv-premium-eyebrow">Loading state</p>
+          <div class="kv-loading">
+            <div class="kv-loader" aria-hidden="true"></div>
+            <h3>Creating your cabinet preview</h3>
+            <p>Analyzing the photo, matching perspective, applying finishes, and rendering final details.</p>
+            <div class="kv-progress-bar"><span data-kv-progress-fill></span></div>
+            <div class="kv-loading-steps">
+              <div class="kv-loading-step is-complete">Analyzing cabinet layout</div>
+              <div class="kv-loading-step is-active">Matching lighting and perspective</div>
+              <div class="kv-loading-step">Applying cabinet finish and door style</div>
+              <div class="kv-loading-step">Rendering final details</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="kv-premium-section" id="results">
+          <p class="kv-premium-eyebrow">Result screen</p>
+          <div class="kv-result is-active">
+            <div class="kv-result-head"><div><h3>Your preview is ready</h3><p class="kv-success-message">Success state</p></div><button class="kv-btn kv-btn-secondary" type="button">Create Another Version</button></div>
+            <div class="kv-compare">
+              <div style="height:430px;background:linear-gradient(90deg,#f8fafc 0 50%,#dbeafe 50%);position:relative;"><div class="ds-kitchen" style="position:absolute;inset:38px 42px;"></div></div>
+              <span class="kv-compare-label before">Before</span><span class="kv-compare-label after">After</span><span class="kv-compare-handle"></span>
+            </div>
+            <div class="kv-result-actions"><button class="kv-btn kv-btn-primary" type="button">Download Preview</button><button class="kv-btn kv-btn-ghost" type="button">Design Packet</button><button class="kv-btn kv-btn-secondary" type="button">Change Selections</button></div>
+            <div class="kv-design-ab"><h3>Design A/B</h3><div class="kv-design-ab-grid"><div class="kv-design-ab-card"><div class="kv-material-thumb kv-material-stone"></div><strong>Design A</strong><p class="kv-helper">White uppers with navy lowers.</p></div><div class="kv-design-ab-card"><div class="kv-material-thumb kv-material-floor"></div><strong>Design B</strong><p class="kv-helper">Warm wood with lighter counters.</p></div></div></div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="kv-premium-summary">
+        <p class="ds-section-label">Summary</p>
+        <div class="kv-upload-preview"><div style="height:210px;position:relative;background:#dbeafe;"><div class="ds-kitchen" style="position:absolute;inset:20px;"></div></div></div>
+        <div class="ds-spacer"></div>
+        <div class="kv-summary-list">
+          <div class="kv-summary-item"><span>Flow</span><strong>Guided premium</strong></div>
+          <div class="kv-summary-item"><span>API calls</span><strong>None</strong></div>
+          <div class="kv-summary-item"><span>Compatibility</span><strong>Lead, Showroom, Custom</strong></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="kv-premium-section" style="margin-top:28px;">
+      <p class="kv-premium-eyebrow">Mobile behavior</p>
+      <div class="ds-narrow-demo">
+        <div class="ds-narrow-screen">
+          <div class="ds-demo-pad">
+            <div class="kv-mobile-progress" style="display:flex;"><span class="kv-mobile-progress-pill is-current">Upload</span><span class="kv-mobile-progress-pill">Cabinets</span><span class="kv-mobile-progress-pill">Results</span></div>
+            <label class="kv-upload" style="padding:22px;" for="mobile-file"><div class="kv-upload-icon">UP</div><div class="kv-upload-title">Upload photo</div><p class="kv-upload-copy">Large touch target and compact progress.</p></label>
+            <input id="mobile-file" type="file" style="display:none">
+          </div>
+          <div class="kv-mobile-action-bar" style="display:block;margin:0;position:relative;"><div class="kv-mobile-action-inner"><button class="kv-btn kv-btn-secondary" type="button">Back</button><button class="kv-btn kv-btn-primary" type="button">Next</button><button class="kv-btn kv-btn-ghost" type="button">Save</button></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="kv-modal" id="demo-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title">
+    <div class="kv-modal-box">
+      <div class="kv-modal-head">
+        <div><h3 id="demo-modal-title">Customer information modal</h3><p class="kv-helper">Reusable modal styling for leads, packets, confirmations, and customer details.</p></div>
+        <button class="kv-modal-close" type="button" data-kv-close-modal aria-label="Close modal">X</button>
+      </div>
+      <div class="kv-modal-grid">
+        <div class="kv-field"><label class="kv-label">Name</label><input class="kv-input" type="text" value="Sample Customer"></div>
+        <div class="kv-field"><label class="kv-label">Email</label><input class="kv-input" type="email" value="customer@example.com"></div>
+        <div class="kv-field full"><label class="kv-label">Project notes</label><textarea class="kv-textarea">Interested in shaker doors, quartz counters, and a brighter finish.</textarea></div>
+      </div>
+      <div class="kv-modal-actions"><button class="kv-btn kv-btn-secondary" type="button" data-kv-close-modal>Cancel</button><button class="kv-btn kv-btn-primary" type="button">Save Info</button></div>
+    </div>
+  </div>
+
+  <script src="/visualizer-premium.js"></script>
+</body>
+</html>
