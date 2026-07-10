@@ -8,6 +8,7 @@
   function byLabel(label,root){const match=$all(".info",root).find(function(info){return text("span",info).toLowerCase()===label.toLowerCase()});return match?text("strong",match):"-"}
   function safe(value){return String(value||"").replace(/[&<>"]/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[ch]})}
   function visible(el,show){if(el)el.classList.toggle("visible",!!show)}
+  function safeRun(fn){try{fn();}catch(error){if(window.console&&console.warn)console.warn("Admin enhancement skipped:",error);}}
 
   function ready(fn){
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",fn,{once:true});
@@ -24,15 +25,15 @@
     const shell=$("#adminShell");
     const topbar=$(".topbar");
     if(!shell||!topbar){setTimeout(enhanceWhenAvailable,80);return;}
-    setupHeader(topbar);
-    setupDashboardCards();
+    safeRun(function(){setupHeader(topbar);});
+    safeRun(function(){setupDashboardCards();});
     setupQuickDrawer();
-    setupBackToTop();
-    setupModalScrollLock();
-    setupSectionLabels();
-    setupRefreshHooks();
-    updatePremiumMetrics();
-    setInterval(updatePremiumMetrics,5000);
+    safeRun(function(){setupBackToTop();});
+    safeRun(function(){setupModalScrollLock();});
+    safeRun(function(){setupSectionLabels();});
+    safeRun(function(){setupRefreshHooks();});
+    safeRun(function(){updatePremiumMetrics();});
+    setInterval(function(){safeRun(updatePremiumMetrics);},5000);
   }
 
   function setupHeader(topbar){
@@ -108,6 +109,36 @@
     });
   }
 
+
+  function ensureMetric(grid,id,label,value,type){
+    let strong=$("#"+id,grid);
+    if(strong)return strong.closest(".metric");
+    const card=document.createElement("div");
+    card.className="metric";
+    card.setAttribute("data-premium-metric",type||"secondary");
+    card.innerHTML='<span>'+safe(label)+'</span><strong id="'+safe(id)+'">'+safe(value||"--")+'</strong>';
+    grid.appendChild(card);
+    return card;
+  }
+
+  function filterVisibleCatalogs(query){
+    const value=String(query||"").trim().toLowerCase();
+    $all(".catalog-card,.demo-pin-row,.customer-key-row").forEach(function(card){
+      card.hidden=!!value&&!card.textContent.toLowerCase().includes(value);
+    });
+  }
+
+  function updatePremiumMetrics(){
+    const customers=(()=>{try{return Array.isArray(state&&state.customers)?state.customers:[];}catch(_){return [];}})();
+    const catalogs=(()=>{try{return Array.isArray(state&&state.catalogs)?state.catalogs:[];}catch(_){return [];}})();
+    const activePins=$all("#activeDemoPins .demo-pin-row").filter(function(row){return !row.hidden;}).length;
+    const activeDemoPins=$("#activeDemoPinsMetric");
+    if(activeDemoPins)activeDemoPins.textContent=String(activePins||"--");
+    const manufacturerCatalogs=$("#manufacturerCatalogsMetric");
+    if(manufacturerCatalogs)manufacturerCatalogs.textContent=String(catalogs.length||$all("#catalogLibraryList .catalog-card").length||"--");
+    const activeCustomers=$("#activeCustomers");
+    if(activeCustomers&&!activeCustomers.textContent.trim())activeCustomers.textContent=String(customers.filter(function(customer){return (customer.status||"active")!=="archived";}).length);
+  }
   function setupDashboardCards(){
     const grid=$(".summary-grid");
     if(!grid)return;
