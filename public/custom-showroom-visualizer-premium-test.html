@@ -2423,9 +2423,9 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     if (uploadedCountertopCustomData) referenceImages.push(uploadedCountertopCustomData);
     if (uploadedBacksplashCustomData) referenceImages.push(uploadedBacksplashCustomData);
     if (uploadedFlooringCustomData) referenceImages.push(uploadedFlooringCustomData);
-    if (catalogDoorImage) referenceImages.push(catalogDoorImage);
-    if (upperSwatchImage) referenceImages.push(upperSwatchImage);
-    if (baseSwatchImage && baseSwatchImage !== upperSwatchImage) referenceImages.push(baseSwatchImage);
+    if (catalogDoorImage) referenceImages.unshift(catalogDoorImage);
+    if (upperSwatchImage) referenceImages.unshift(upperSwatchImage);
+    if (baseSwatchImage && baseSwatchImage !== upperSwatchImage) referenceImages.unshift(baseSwatchImage);
     const uniqueReferenceImages = Array.from(new Set(referenceImages.filter(Boolean))).slice(0, 8);
     status.innerText = "Creating your preview...";
     button.disabled = true;

@@ -174,19 +174,22 @@ Do not leave any visible lower cabinet surface in its original color.
 Treat island cabinetry as part of the selected Base Cabinet Color for catalog generation, and apply the base/lower swatch color to every visible island door, drawer front, exposed side, and end panel.
 
 DOOR PROFILE REQUIREMENT:
-Use the selected catalog door reference image as the strict visual target for each visible cabinet door and drawer front.
+Use the selected catalog door reference image as the highest-priority manufacturing reference and strict visual target for each visible cabinet door and drawer front.
 ${doorSpecificInstruction(details.doorName)}
 Preserve the original kitchen's exact number, size, and location of doors and drawers, but change the visible face/profile to match the selected catalog door reference.
-The selected catalog door reference image is mandatory and must be treated as the exact shape/profile target, not a style suggestion.
-Copy only the visible door construction shown in the selected catalog picture: slab, shaker, recessed, raised, arch, bevel, rail, stile, inner panel, outer frame, edge profile, panel depth, and proportions exactly as pictured.
-Do not invent, add, remove, exaggerate, or simplify any door shape. Do not add an arch, cathedral curve, raised center panel, recessed field, bead detail, bevel, shaker frame, slab face, or decorative profile unless that exact feature is visibly present in the selected catalog door image.
+The selected catalog door reference image is mandatory and must be treated as the exact shape/profile target, not inspiration and not a style suggestion.
+Copy only the visible door construction shown in the selected catalog picture: panel shape, panel type, square-vs-arched geometry, slab-vs-framed construction, raised-vs-recessed panel, rail width, stile width, frame proportions, inside profile, outside profile, reveal depth, bead details, groove details, edge profile, panel depth, and proportions exactly as pictured.
+Do not invent, add, remove, exaggerate, or simplify any door shape. Do not add an arch, cathedral curve, raised center panel, recessed field, bead detail, decorative groove, ogee edge, extra trim, extra molding, bevel, shaker frame, slab face, or decorative profile unless that exact feature is clearly visible in the selected catalog door image.
 If the selected door picture has a square top rail, keep every generated door square. If it has an arched/cathedral top rail, use that same arch shape only. If it has a flat/slab face, keep it flat/slab. Match the selected picture exactly.
 The generated cabinet door fronts must look like the exact door shown in the selected catalog picture, only scaled and perspective-matched onto the original kitchen cabinets.
+Only the door face style should change. Never redesign the cabinetry to fit the door style.
 Apply the selected door style consistently to upper doors, base doors, drawer fronts, sink base doors, island doors, peninsula doors, and exposed cabinet end panels where a cabinet face is visible.
 Do not leave any cabinet face in the original door style if the selected catalog door style is different.
 Do not mix multiple door styles. Do not use generic shaker, generic slab, generic raised panel, or default cabinet doors unless the selected catalog door reference image actually shows that exact style.
 Do not render an inset/recessed door unless the selected catalog reference is visibly inset/recessed.
 Do not substitute white shaker, generic shaker, generic slab, generic raised panel, or random wood cabinets unless that exact catalog door and swatch were selected.
+If there is any conflict between a generic door-style name and the supplied catalog door image, follow the supplied catalog door image.
+If the model is uncertain about a detail, simplify toward the exact supplied catalog door construction instead of hallucinating decorative features.
 
 OTHER SELECTED SURFACE CHANGES:
 ${details.countertop ? `Change the countertops to: ${details.countertop}. Preserve the same countertop shape, edge, overhang, sink cutout, and appliance openings.` : "Keep countertops unchanged."}
