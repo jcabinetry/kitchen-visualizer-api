@@ -170,13 +170,14 @@ Do not create a new kitchen. Do not invent a default cabinet style. Do not inven
 PRIMARY OBJECTIVE:
 The cabinet doors are the highest-priority requirement in this entire generation.
 The attached selected-catalog-door-reference image is the exact manufacturing reference.
-Every visible cabinet door and drawer front must match that image.
+Every visible cabinet door and drawer front must look just like the catalog door picture.
 Do not approximate.
 Do not substitute.
 Do not improve.
 Do not stylize.
 Do not invent.
-Copy the visible door profile exactly.
+Do not convert the catalog door into a generic shaker, slab, raised panel, recessed panel, arched, or cathedral style.
+Copy the visible door profile from the catalog picture exactly every time.
 
 Selected catalog door: ${doorText}.
 Selected upper/wall cabinet finish: ${upperColorText}.
@@ -187,7 +188,10 @@ Identify every cabinet door and drawer front in the kitchen.
 Preserve the original kitchen's exact cabinet count, door count, drawer count, cabinet sizes, door sizes, drawer sizes, and cabinet layout.
 
 STEP 2:
-Replace every cabinet face with the attached catalog door profile.
+Replace every cabinet face with the attached catalog door profile as a template.
+Before changing colors or materials, inspect the selected catalog door picture and identify its exact visible geometry.
+If the catalog door has a square rectangular center panel, every generated cabinet door must keep that same square rectangular center panel.
+If the catalog door has profiled inner edges, raised/recessed panel depth, beveled details, or specific rail/stile proportions, every generated cabinet door and drawer front must preserve those same visible details.
 Copy exactly:
 - panel shape
 - rail width
@@ -201,7 +205,9 @@ Copy exactly:
 - slab vs framed construction
 - raised vs recessed construction
 
+Do not simplify a detailed catalog door into a flat shaker door.
 Do not invent arches, cathedral tops, beads, ogee edges, decorative grooves, raised panels, extra trim, or extra moldings unless they are clearly visible in the supplied catalog door image.
+Do not remove visible catalog door details unless they are impossible to see in the source photo.
 If the generated door differs from the supplied catalog door, the generation is wrong.
 If uncertain, simplify toward the supplied catalog door image instead of adding decorative details.
 
@@ -240,6 +246,8 @@ FINAL VALIDATION:
 A generation is INCORRECT if:
 - any cabinet door differs from the attached catalog door
 - any arch appears that is not visible in the catalog door
+- any square catalog door becomes arched, cathedral, slab, or generic shaker
+- any visible catalog door profile detail is removed or replaced with another style
 - any cabinet remains its original color
 - different cabinet door styles are mixed
 - the catalog door is treated as inspiration instead of an exact reference
