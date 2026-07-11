@@ -38,6 +38,14 @@
   }
   function normalizeCatalogPayload(data) {
     if (!data || !Array.isArray(data.manufacturers)) return data;
+    function hasUsableLine(manufacturer) {
+      return Array.isArray(manufacturer.lines) && manufacturer.lines.some(function(line) {
+        return Array.isArray(line.doors) && line.doors.length && Array.isArray(line.finishes) && line.finishes.length;
+      });
+    }
+    function sortUsableFirst(a, b) {
+      return Number(hasUsableLine(b)) - Number(hasUsableLine(a));
+    }
     data.manufacturers = data.manufacturers.map(function(manufacturer) {
       const lines = Array.isArray(manufacturer.lines) ? manufacturer.lines : [];
       return Object.assign({}, manufacturer, {
@@ -48,8 +56,6 @@
               image: image,
               thumbnail: door.thumbnail || image
             });
-          }).filter(function(door) {
-            return !!(door.image || door.thumbnail);
           }) : [];
           const finishes = Array.isArray(line.finishes) ? line.finishes.map(function(finish) {
             const swatch = firstImageValue(finish);
@@ -58,17 +64,17 @@
               image: finish.image || swatch,
               thumbnail: finish.thumbnail || swatch
             });
-          }).filter(function(finish) {
-            return !!(finish.swatch || finish.image || finish.thumbnail);
           }) : [];
           return Object.assign({}, line, { doors: doors, finishes: finishes });
-        }).filter(function(line) {
-          return Array.isArray(line.doors) && line.doors.length && Array.isArray(line.finishes) && line.finishes.length;
+        }).sort(function(a, b) {
+          const aUsable = Array.isArray(a.doors) && a.doors.length && Array.isArray(a.finishes) && a.finishes.length;
+          const bUsable = Array.isArray(b.doors) && b.doors.length && Array.isArray(b.finishes) && b.finishes.length;
+          return Number(bUsable) - Number(aUsable);
         })
       });
     }).filter(function(manufacturer) {
       return Array.isArray(manufacturer.lines) && manufacturer.lines.length;
-    });
+    }).sort(sortUsableFirst);
     return data;
   }
   window.fetch = async function(input, init) {
@@ -1255,8 +1261,47 @@ const KV_COMPANY = {
     }
   }
 
+  let preferredUsableCatalogApplied = false;
+  function catalogLineIsUsable(line) {
+    return !!line && Array.isArray(line.doors) && line.doors.length && Array.isArray(line.finishes) && line.finishes.length;
+  }
+
+  function preferFirstUsableCatalogLine() {
+    if (preferredUsableCatalogApplied || !manufacturerInput || !catalogLineInput) return;
+    const catalog = window.CV_CUSTOM_CATALOGS && window.CV_CUSTOM_CATALOGS.defaultCatalog;
+    const manufacturers = catalog && Array.isArray(catalog.manufacturers) ? catalog.manufacturers : [];
+    if (!manufacturers.length || !manufacturerInput.options.length || !catalogLineInput.options.length) return;
+    const currentManufacturer = manufacturers.find(function(manufacturer) { return manufacturer.id === manufacturerInput.value; });
+    const currentLine = currentManufacturer && Array.isArray(currentManufacturer.lines)
+      ? currentManufacturer.lines.find(function(line) { return line.id === catalogLineInput.value; })
+      : null;
+    if (catalogLineIsUsable(currentLine)) {
+      preferredUsableCatalogApplied = true;
+      return;
+    }
+    let match = null;
+    manufacturers.some(function(manufacturer) {
+      const usableLine = Array.isArray(manufacturer.lines) ? manufacturer.lines.find(catalogLineIsUsable) : null;
+      if (!usableLine) return false;
+      match = { manufacturer: manufacturer, line: usableLine };
+      return true;
+    });
+    if (!match) return;
+    preferredUsableCatalogApplied = true;
+    manufacturerInput.value = match.manufacturer.id;
+    manufacturerInput.dispatchEvent(new Event("change", { bubbles: true }));
+    setTimeout(function() {
+      catalogLineInput.value = match.line.id;
+      catalogLineInput.dispatchEvent(new Event("change", { bubbles: true }));
+      enhanceDynamicCatalogCards();
+      syncAllCatalogFinishState();
+      if (typeof refreshReview === "function") refreshReview();
+    }, 0);
+  }
+
   function enhanceDynamicCatalogCards() {
     sanitizeCatalogUi();
+    preferFirstUsableCatalogLine();
     document.querySelectorAll(".jcr-swatch-grid").forEach(function(grid) {
       const selectId = grid.getAttribute("data-select");
       const select = document.getElementById(selectId);
