@@ -169,10 +169,11 @@ DOOR PROFILE REQUIREMENT:
 Use the selected catalog door reference image as the strict visual target for each visible cabinet door and drawer front.
 ${doorSpecificInstruction(details.doorName)}
 Preserve the original kitchen's exact number, size, and location of doors and drawers, but change the visible face/profile to match the selected catalog door reference.
-The selected catalog door reference image is not optional and not a loose suggestion. Match its door construction as closely as possible on every visible cabinet face.
-Copy the selected door's visible slab, shaker, recessed, raised, arch, bevel, rail, stile, inner panel, outer frame, edge profile, panel depth, and proportions wherever those details are visible in the reference image.
-If the selected door image shows a raised center panel, arched top rail, cathedral curve, recessed field, mitered frame, bead detail, slab face, or any other distinctive shape, reproduce that same visible shape on the generated cabinet doors and drawer fronts.
-The generated cabinet door fronts should look like the exact door shown in the selected catalog picture, only scaled and perspective-matched onto the original kitchen cabinets.
+The selected catalog door reference image is mandatory and must be treated as the exact shape/profile target, not a style suggestion.
+Copy only the visible door construction shown in the selected catalog picture: slab, shaker, recessed, raised, arch, bevel, rail, stile, inner panel, outer frame, edge profile, panel depth, and proportions exactly as pictured.
+Do not invent, add, remove, exaggerate, or simplify any door shape. Do not add an arch, cathedral curve, raised center panel, recessed field, bead detail, bevel, shaker frame, slab face, or decorative profile unless that exact feature is visibly present in the selected catalog door image.
+If the selected door picture has a square top rail, keep every generated door square. If it has an arched/cathedral top rail, use that same arch shape only. If it has a flat/slab face, keep it flat/slab. Match the selected picture exactly.
+The generated cabinet door fronts must look like the exact door shown in the selected catalog picture, only scaled and perspective-matched onto the original kitchen cabinets.
 Apply the selected door style consistently to upper doors, base doors, drawer fronts, sink base doors, island doors, peninsula doors, and exposed cabinet end panels where a cabinet face is visible.
 Do not leave any cabinet face in the original door style if the selected catalog door style is different.
 Do not mix multiple door styles. Do not use generic shaker, generic slab, generic raised panel, or default cabinet doors unless the selected catalog door reference image actually shows that exact style.
