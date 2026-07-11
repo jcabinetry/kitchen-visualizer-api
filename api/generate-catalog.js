@@ -216,8 +216,8 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: "This account has reached its monthly preview limit. Please contact support to continue using the visualizer.", used: usedNow, limit: safeMonthlyLimit });
     }
 
-    const mainReference = body.mainCustomReference || body.mainCustomColorImage || body.mainCustomColorData || null;
-    const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || mainReference;
+    const mainReference = body.mainCustomReference || body.mainCustomColorImage || body.mainCustomColorData || body.catalogSwatchReference || null;
+    const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || body.catalogBaseSwatchReference || mainReference;
     const doorReference = body.catalogDoorReference || null;
     const countertopReference = body.countertopCustomReference || null;
     const backsplashReference = body.backsplashCustomReference || null;
