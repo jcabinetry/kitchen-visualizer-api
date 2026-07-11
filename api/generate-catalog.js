@@ -208,6 +208,9 @@ Every visible cabinet door and drawer front must match it.
 Use the catalog door image for door geometry, construction, panel shape, and profile only.
 Ignore the catalog door image's unfinished wood color, raw wood tone, stain tone, brightness, and material color.
 The catalog door image must never control cabinet color.
+The catalog door image must still control all visible raised/recessed profile depth, inner contouring, bevels, and panel relief.
+Do not flatten a raised or recessed catalog door into a plain shaker door.
+The final doors must show the same inner profile depth and same panel relief visible in the catalog image.
 
 Copy exactly:
 - panel shape
