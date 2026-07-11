@@ -2077,6 +2077,8 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
   function buildProposalData() {
     const clientInfo = getClientInfoFromModal();
+    const beforeImage = beforeImg ? beforeImg.src : "";
+    const afterImage = afterImg ? afterImg.src : "";
     return {
       companyKey: KV_COMPANY.companyKey,
       company: {
@@ -2091,11 +2093,16 @@ It should look like the existing doors, drawers, and cabinet faces were professi
         projectTotal: clientInfo.projectTotal,
         salesperson: clientInfo.salesperson,
         notes: clientInfo.notes,
-        address: clientInfo.address,
-        beforeImage: beforeImg ? beforeImg.src : "",
-        afterImage: afterImg ? afterImg.src : ""
+        address: clientInfo.address
       },
-      design: getDesignDetails(afterImg ? afterImg.src : "")
+      pricing: {
+        projectTotal: clientInfo.projectTotal
+      },
+      images: {
+        beforeImage: beforeImage,
+        afterImage: afterImage
+      },
+      design: getDesignDetails("")
     };
   }
 
@@ -2106,8 +2113,12 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     }
     const proposalData = buildProposalData();
     window.__kvLastProposalData = proposalData;
-    sessionStorage.setItem("cv_proposal_data", JSON.stringify(proposalData));
     const proposalUrl = "/proposal/proposal-engine.html?companyKey=" + encodeURIComponent(KV_COMPANY.companyKey || "");
+    try {
+      sessionStorage.setItem("cv_proposal_data", JSON.stringify(proposalData));
+    } catch (err) {
+      console.error("Could not store proposal data before opening proposal.", err);
+    }
     const proposalWindow = window.open("about:blank", "_blank");
     if (proposalWindow) {
       try { proposalWindow.sessionStorage.setItem("cv_proposal_data", JSON.stringify(proposalData)); } catch (err) {}
