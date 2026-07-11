@@ -205,6 +205,9 @@ It is NOT inspiration.
 It is NOT an example.
 It is the required finished result.
 Every visible cabinet door and drawer front must match it.
+Use the catalog door image for door geometry, construction, panel shape, and profile only.
+Ignore the catalog door image's unfinished wood color, raw wood tone, stain tone, brightness, and material color.
+The catalog door image must never control cabinet color.
 
 Copy exactly:
 - panel shape
@@ -243,6 +246,8 @@ Copy the finish exactly.
 Do not estimate.
 Do not approximate.
 Do not create your own interpretation.
+The cabinet finish swatches are the ONLY approved source for cabinet color, tone, stain, paint, and material finish.
+Do not use the catalog door image's color or raw wood tone for the final cabinet finish.
 
 If the swatch is paint:
 Use a painted finish. Do not add wood grain.
@@ -381,8 +386,6 @@ export default async function handler(req, res) {
     observeImage("Kitchen photo", body.image, "kitchen");
     appendImage(form, doorReference, "selected-catalog-door-reference");
     observeImage("Catalog door", doorReference, "selected-catalog-door-reference");
-    appendImage(form, doorReference, "selected-catalog-door-reference-closeup");
-    observeImage("Catalog door closeup", doorReference, "selected-catalog-door-reference-closeup");
     appendImage(form, mainReference, "selected-upper-swatch-reference");
     observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "selected-base-swatch-reference");
