@@ -131,6 +131,12 @@ Edit this exact kitchen photo into a realistic refacing preview, not a redesign.
 Keep the same kitchen photo, same camera angle, same room, same lighting, same appliances, same cabinet box layout, same openings, same door/drawer count, same walls, and same decor.
 Do not create a new kitchen. Do not invent a default cabinet style. Do not invent wood grain unless the selected swatch visibly contains wood grain.
 
+PROTECTED NON-CABINET SURFACES:
+Do not recolor, repaint, tint, or alter any walls, ceilings, crown molding, baseboards, room trim, windows, window frames, interior doors, appliances, sinks, faucets, decor, lighting, open wall areas, or non-cabinet surfaces.
+Cabinet finish colors apply only to cabinet doors, drawer fronts, face frames, side panels, end panels, rails, stiles, fillers, toe kicks, and trim that is physically part of the cabinets.
+The selected upper cabinet finish must never be applied to walls, open wall areas, backsplash areas, ceilings, trim, appliances, or room surfaces.
+If a wall or open room surface starts white, gray, beige, painted, tiled, or any other color, keep that non-cabinet surface visually the same unless the user specifically selected a backsplash, countertop, or flooring change for that surface.
+
 CATALOG CABINET REQUIREMENTS:
 Door style: ${doorText}.
 Upper/wall cabinet finish: ${upperColorText}.
