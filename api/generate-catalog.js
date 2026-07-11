@@ -163,61 +163,115 @@ function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorRef
   const baseColorText = hasBaseReference ? `uploaded base/lower swatch reference for ${details.baseName}${details.baseHex ? ` (${details.baseHex})` : ""}` : details.baseName;
   const doorText = hasDoorReference ? `uploaded catalog door reference for ${details.doorName}` : details.doorName;
   return `
-Edit this exact kitchen photo into a realistic refacing preview, not a redesign.
-Keep the same kitchen photo, same camera angle, same room, same lighting, same appliances, same cabinet box layout, same openings, same door/drawer count, same walls, and same decor.
-Do not create a new kitchen. Do not invent a default cabinet style. Do not invent wood grain unless the selected swatch visibly contains wood grain.
+MISSION:
+Create a realistic cabinet refacing preview using the ORIGINAL uploaded kitchen photo.
+This is NOT a kitchen redesign.
+The finished image must look like the same photograph taken seconds later after professionally refacing the cabinets.
 
-PRIMARY OBJECTIVE:
-The cabinet doors are the highest-priority requirement in this entire generation.
-The attached selected-catalog-door-reference image is the exact manufacturing reference.
-Every visible cabinet door and drawer front must look just like the catalog door picture.
-Do not approximate.
-Do not substitute.
-Do not improve.
-Do not stylize.
-Do not invent.
-Do not convert the catalog door into a generic shaker, slab, raised panel, recessed panel, arched, or cathedral style.
-Copy the visible door profile from the catalog picture exactly every time.
+Preserve:
+- camera angle
+- lighting
+- perspective
+- cabinet layout
+- cabinet count
+- drawer count
+- appliance locations
+- windows
+- walls
+- ceiling
+- trim
+- room proportions
+
+Never redesign the room.
+
+PRIORITY ORDER:
+Follow these priorities exactly.
+Priority 1: Cabinet Door Style
+Priority 2: Cabinet Finish Colors
+Priority 3: Cabinet Layout Preservation
+Priority 4: Countertops
+Priority 5: Backsplash
+Priority 6: Flooring
+Never sacrifice a higher priority to improve a lower priority.
 
 Selected catalog door: ${doorText}.
 Selected upper/wall cabinet finish: ${upperColorText}.
 Selected base/lower cabinet finish: ${baseColorText}.
 
-STEP 1:
-Identify every cabinet door and drawer front in the kitchen.
-Preserve the original kitchen's exact cabinet count, door count, drawer count, cabinet sizes, door sizes, drawer sizes, and cabinet layout.
+CABINET DOOR STYLE (HIGHEST PRIORITY):
+The attached catalog door image is the ONLY approved cabinet door style.
+Treat it as an exact manufacturing reference.
+It is NOT inspiration.
+It is NOT an example.
+It is the required finished result.
+Every visible cabinet door and drawer front must match it.
 
-STEP 2:
-Replace every cabinet face with the attached catalog door profile as a template.
-Before changing colors or materials, inspect the selected catalog door picture and identify its exact visible geometry.
-If the catalog door has a square rectangular center panel, every generated cabinet door must keep that same square rectangular center panel.
-If the catalog door has profiled inner edges, raised/recessed panel depth, beveled details, or specific rail/stile proportions, every generated cabinet door and drawer front must preserve those same visible details.
 Copy exactly:
 - panel shape
+- square vs arched geometry
 - rail width
 - stile width
+- frame proportions
 - inside profile
 - outside profile
 - edge profile
 - reveal depth
 - panel depth
-- square vs arched geometry
+- groove details
+- bead details
 - slab vs framed construction
 - raised vs recessed construction
 
-Do not simplify a detailed catalog door into a flat shaker door.
-Do not invent arches, cathedral tops, beads, ogee edges, decorative grooves, raised panels, extra trim, or extra moldings unless they are clearly visible in the supplied catalog door image.
-Do not remove visible catalog door details unless they are impossible to see in the source photo.
-If the generated door differs from the supplied catalog door, the generation is wrong.
-If uncertain, simplify toward the supplied catalog door image instead of adding decorative details.
+Do NOT:
+- invent arches
+- invent cathedral tops
+- invent grooves
+- invent bevels
+- invent decorative trim
+- invent molding
+- invent another cabinet style
+- simplify the door
+- improve the design
 
-STEP 3:
-Apply the selected cabinet finish to every cabinet.
-Use the attached selected-upper-swatch-reference image as the upper/wall cabinet finish target.
-Use the attached selected-base-swatch-reference image as the base/lower cabinet finish target.
-Keep upper cabinets separate from base cabinets when different finishes are selected.
-If Upper and Base are the same finish, every cabinet in the kitchen must receive that finish.
-Never leave original cabinet colors behind.
+If the attached door is square, every generated door must remain square.
+If the attached door is slab, every generated door must remain slab.
+The finished kitchen should appear as though these exact cabinet doors were installed by a cabinet manufacturer.
+
+CABINET FINISH (SECOND HIGHEST PRIORITY):
+The attached cabinet finish swatches are exact finish references.
+Copy the finish exactly.
+Do not estimate.
+Do not approximate.
+Do not create your own interpretation.
+
+If the swatch is paint:
+Use a painted finish. Do not add wood grain.
+
+If the swatch is stained wood:
+Keep the wood appearance.
+Match:
+- color
+- undertone
+- saturation
+- darkness
+- warmth
+- grain visibility
+
+Do not invent a different stain.
+If Upper and Base use the same finish, every cabinet must receive that finish.
+No cabinet may remain in its original color.
+
+Apply the finish to:
+- doors
+- drawer fronts
+- face frames
+- cabinet sides
+- end panels
+- fillers
+- cabinet trim
+- toe kicks
+- islands
+- peninsulas
 
 PROTECTED NON-CABINET SURFACES:
 Do not recolor, repaint, tint, or alter any walls, ceilings, crown molding, baseboards, room trim, windows, window frames, interior doors, appliances, sinks, faucets, decor, lighting, open wall areas, or non-cabinet surfaces.
@@ -225,32 +279,29 @@ Cabinet finish colors apply only to cabinet doors, drawer fronts, face frames, s
 The selected upper cabinet finish must never be applied to walls, open wall areas, backsplash areas, ceilings, trim, appliances, or room surfaces.
 If a wall or open room surface starts white, gray, beige, painted, tiled, or any other color, keep that non-cabinet surface visually the same unless the user specifically selected a backsplash, countertop, or flooring change for that surface.
 
-CATALOG FINISH / STAIN REQUIREMENT:
-Treat each selected swatch reference as the exact cabinet finish target, not just an approximate color chip.
-If a selected swatch is a solid painted color, render a smooth solid painted cabinet finish and do not add wood grain, stain, or texture.
-If a selected swatch visibly contains wood grain, stain variation, pores, streaks, warm/cool undertones, darker grain lines, or natural texture, render the cabinets as stained wood with the same dominant stain color, same undertone, same darkness/lightness, same saturation, same warmth/coolness, and same grain contrast shown in the swatch.
-The stain color must visually match the selected swatch image. Do not shift pecan, walnut, oak, maple, cherry, hickory, natural, or other stained finishes lighter, darker, redder, yellower, grayer, more orange, more brown, or more saturated than the selected swatch.
-A stained wood swatch must remain wood-like and stained, not painted. Match both requirements at the same time: the exact stain color/tone from the swatch and the visible natural wood-grain texture from the swatch.
-Do not flatten a stained wood swatch into a plain solid paint color, but also do not invent a different wood stain tone. Preserve the wood material character while matching the swatch color exactly.
-For stained finishes, keep the visible wood-grain texture subtle and realistic on every refinished cabinet face while preserving the selected door profile and matching the selected swatch tone exactly.
-
-STEP 4:
-Only after every cabinet is correct, perform countertop, backsplash, and flooring changes.
+ROOM PRESERVATION:
+Do NOT change cabinet layout, cabinet sizes, cabinet locations, drawer locations, appliance locations, sink, windows, walls, ceiling, trim, lighting, or perspective.
+Only the selected surfaces may change.
 
 OTHER SELECTED SURFACE CHANGES:
+After the cabinets are completely correct, apply countertop, backsplash, and flooring changes.
+These changes must never modify the completed cabinet work.
 ${details.countertop ? `Change the countertops to: ${details.countertop}. Preserve the same countertop shape, edge, overhang, sink cutout, and appliance openings.` : "Keep countertops unchanged."}
 ${details.backsplash ? `Change the backsplash to: ${details.backsplash}. Preserve outlets, windows, trim, cabinets, and wall layout.` : "Keep backsplash unchanged."}
 ${details.flooring ? `Change the flooring to: ${details.flooring}. Preserve the same floor perspective, scale, shadows, cabinets, appliances, and room layout.` : "Keep flooring unchanged."}
 
 FINAL VALIDATION:
-A generation is INCORRECT if:
-- any cabinet door differs from the attached catalog door
-- any arch appears that is not visible in the catalog door
-- any square catalog door becomes arched, cathedral, slab, or generic shaker
-- any visible catalog door profile detail is removed or replaced with another style
-- any cabinet remains its original color
-- different cabinet door styles are mixed
-- the catalog door is treated as inspiration instead of an exact reference
+Before considering the image complete, verify all of the following are true:
+- Every cabinet door matches the supplied catalog door.
+- No arches exist unless they exist in the supplied door.
+- No decorative details have been invented.
+- Every cabinet has the selected finish.
+- No cabinet remains its original color.
+- Only one cabinet door style exists.
+- The room is still the original kitchen.
+
+If ANY statement above is false, the generation is incorrect.
+The catalog door image and cabinet finish swatches are mandatory requirements. They are never suggestions.
 
 The final image must look like the original kitchen photo with only the selected surfaces refinished.
 `.trim();
