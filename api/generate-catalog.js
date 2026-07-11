@@ -146,6 +146,15 @@ The attached selected-upper-swatch-reference image is the upper/wall color sourc
 The attached selected-base-swatch-reference image is the base/lower color source of truth.
 Keep upper cabinets separate from base cabinets. Apply the selected upper/wall swatch color only to visible upper cabinet surfaces above countertop height.
 
+CATALOG FINISH / STAIN REQUIREMENT:
+Treat each selected swatch reference as the exact cabinet finish target, not just an approximate color chip.
+If a selected swatch is a solid painted color, render a smooth solid painted cabinet finish and do not add wood grain, stain, or texture.
+If a selected swatch visibly contains wood grain, stain variation, pores, streaks, warm/cool undertones, darker grain lines, or natural texture, render the cabinets as stained wood with the same dominant stain color, same undertone, same darkness/lightness, same saturation, same warmth/coolness, and same grain contrast shown in the swatch.
+The stain color must visually match the selected swatch image. Do not shift pecan, walnut, oak, maple, cherry, hickory, natural, or other stained finishes lighter, darker, redder, yellower, grayer, more orange, more brown, or more saturated than the selected swatch.
+A stained wood swatch must remain wood-like and stained, not painted. Match both requirements at the same time: the exact stain color/tone from the swatch and the visible natural wood-grain texture from the swatch.
+Do not flatten a stained wood swatch into a plain solid paint color, but also do not invent a different wood stain tone. Preserve the wood material character while matching the swatch color exactly.
+For stained finishes, keep the visible wood-grain texture subtle and realistic on every refinished cabinet face while preserving the selected door profile and matching the selected swatch tone exactly.
+
 BASE CABINET COLOR REQUIREMENT:
 Apply the selected base/lower swatch color consistently to every visible cabinet below countertop height.
 Base Cabinet Color means every visible lower cabinet surface, including:
@@ -163,7 +172,6 @@ Base Cabinet Color means every visible lower cabinet surface, including:
 
 Do not leave any visible lower cabinet surface in its original color.
 Treat island cabinetry as part of the selected Base Cabinet Color for catalog generation, and apply the base/lower swatch color to every visible island door, drawer front, exposed side, and end panel.
-If the selected swatch is a flat paint color, render flat painted cabinets. Do not add wood grain, stain, or texture.
 
 DOOR PROFILE REQUIREMENT:
 Use the selected catalog door reference image as the strict visual target for each visible cabinet door and drawer front.
