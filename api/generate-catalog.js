@@ -6,6 +6,11 @@ export const config = {
   }
 };
 
+import {
+  saveGenerationRecord,
+  updateGenerationRecord
+} from "./_lib/generationInspectorStore.js";
+
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 
@@ -43,6 +48,37 @@ function getExt(mime) {
   if (mime === "image/png") return "png";
   if (mime === "image/webp") return "webp";
   return "jpg";
+}
+
+function createGenerationId() {
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  return `gen-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function dataUrlBytes(dataUrl) {
+  const base64 = stripDataUrl(dataUrl);
+  return base64 ? Buffer.byteLength(base64, "base64") : 0;
+}
+
+function describeImage(role, dataUrl, fileName, order) {
+  return {
+    order,
+    role,
+    fileName,
+    mime: getMimeType(dataUrl, "image/jpeg"),
+    bytes: dataUrlBytes(dataUrl),
+    dataUrl
+  };
+}
+
+function imageSizeLabel(image) {
+  if (!image) return "";
+  if (String(image).startsWith("data:")) {
+    return `${getMimeType(image, "image/png")} / ${dataUrlBytes(image)} bytes`;
+  }
+  return "remote image URL";
 }
 
 function getMonthKey() {
@@ -259,31 +295,128 @@ export default async function handler(req, res) {
     const selectedPrompt = buildCatalogPrompt(body, !!mainReference, !!baseReference, !!doorReference);
 
     const form = new FormData();
+    const generationId = createGenerationId();
+    const generationStartedAt = Date.now();
+    const attachedImages = [];
+    function observeImage(role, dataUrl, fallbackName) {
+      if (stripDataUrl(dataUrl)) {
+        attachedImages.push(describeImage(role, dataUrl, `${fallbackName}.${getExt(getMimeType(dataUrl, "image/jpeg"))}`, attachedImages.length + 1));
+      }
+    }
     form.append("model", "gpt-image-1");
     form.append("prompt", selectedPrompt);
     form.append("size", "1536x1024");
     appendImage(form, body.image, "kitchen");
+    observeImage("Kitchen photo", body.image, "kitchen");
     appendImage(form, doorReference, "selected-catalog-door-reference");
+    observeImage("Catalog door", doorReference, "selected-catalog-door-reference");
     appendImage(form, mainReference, "selected-upper-swatch-reference");
+    observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "selected-base-swatch-reference");
+    if (baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
     if (countertopReference) appendImage(form, countertopReference, "selected-countertop-reference");
+    if (countertopReference) observeImage("Countertop", countertopReference, "selected-countertop-reference");
     if (backsplashReference) appendImage(form, backsplashReference, "selected-backsplash-reference");
+    if (backsplashReference) observeImage("Backsplash", backsplashReference, "selected-backsplash-reference");
     if (flooringReference) appendImage(form, flooringReference, "selected-flooring-reference");
+    if (flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
     extraReferences.slice(0, 6).forEach(function(ref, index) {
       if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) appendImage(form, ref, `catalog-reference-${index + 1}`);
+      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) observeImage(`Additional reference ${index + 1}`, ref, `catalog-reference-${index + 1}`);
+    });
+
+    const inspectorPayload = {
+      model: "gpt-image-1",
+      size: "1536x1024",
+      prompt: selectedPrompt,
+      attachments: attachedImages.map(function(image) {
+        return {
+          order: image.order,
+          role: image.role,
+          fileName: image.fileName,
+          mime: image.mime,
+          bytes: image.bytes,
+          dataUrl: image.dataUrl
+        };
+      })
+    };
+    await saveGenerationRecord({
+      generationId,
+      timestamp: new Date(generationStartedAt).toISOString(),
+      status: "sent",
+      summary: {
+        companyKey: safeCompanyKey,
+        manufacturer: body.manufacturer || body.selectedCatalog || "",
+        cabinetLine: body.cabinetLine || "",
+        doorStyle: body.catalogDoorName || body.selectedDoorStyle || body.style || "",
+        upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
+        baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
+        countertop: body.countertop || "",
+        backsplash: body.backsplash || "",
+        flooring: body.flooring || ""
+      },
+      prompt: selectedPrompt,
+      payload: inspectorPayload,
+      referenceImages: attachedImages,
+      warnings: attachedImages.length ? [] : ["No image attachments were recorded before OpenAI request."]
+    }).catch(function(error) {
+      console.warn("Generation inspector logging skipped.", error?.message || error);
     });
 
     const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: form });
     const result = await openaiResponse.json();
-    if (!openaiResponse.ok) return res.status(openaiResponse.status).json({ error: result?.error?.message || result?.message || "OpenAI image edit failed." });
+    if (!openaiResponse.ok) {
+      await updateGenerationRecord(generationId, {
+        status: "error",
+        result: {
+          generationTimeMs: Date.now() - generationStartedAt,
+          image: "",
+          imageSize: ""
+        },
+        error: {
+          status: openaiResponse.status,
+          message: result?.error?.message || result?.message || "OpenAI image edit failed."
+        }
+      }).catch(function(error) {
+        console.warn("Generation inspector error logging skipped.", error?.message || error);
+      });
+      return res.status(openaiResponse.status).json({ error: result?.error?.message || result?.message || "OpenAI image edit failed." });
+    }
 
     const updatedUsed = await redisIncr(usageKey);
     if (updatedUsed >= safeMonthlyLimit) await sendLimitEmail({ companyKey: safeCompanyKey, companyName: safeCompanyName, used: updatedUsed, limit: safeMonthlyLimit, customerName: body.customerName, customerEmail: body.customerEmail, customerPhone: body.customerPhone });
 
     const imageBase64 = result?.data?.[0]?.b64_json;
     const imageUrl = result?.data?.[0]?.url;
+    const generatedImage = imageBase64 ? `data:image/png;base64,${imageBase64}` : imageUrl || "";
+    if (generatedImage) {
+      await updateGenerationRecord(generationId, {
+        status: "complete",
+        result: {
+          generationTimeMs: Date.now() - generationStartedAt,
+          image: generatedImage,
+          imageSize: imageSizeLabel(generatedImage)
+        }
+      }).catch(function(error) {
+        console.warn("Generation inspector result logging skipped.", error?.message || error);
+      });
+    }
     if (imageBase64) return res.status(200).json({ image: `data:image/png;base64,${imageBase64}`, used: updatedUsed, limit: safeMonthlyLimit });
     if (imageUrl) return res.status(200).json({ image: imageUrl, used: updatedUsed, limit: safeMonthlyLimit });
+    await updateGenerationRecord(generationId, {
+      status: "error",
+      result: {
+        generationTimeMs: Date.now() - generationStartedAt,
+        image: "",
+        imageSize: ""
+      },
+      error: {
+        status: 500,
+        message: "No image returned from OpenAI."
+      }
+    }).catch(function(error) {
+      console.warn("Generation inspector empty result logging skipped.", error?.message || error);
+    });
     return res.status(500).json({ error: "No image returned from OpenAI." });
   } catch (error) {
     return res.status(500).json({ error: error?.message || "Server error." });
