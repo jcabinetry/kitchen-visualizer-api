@@ -156,6 +156,26 @@ const KV_COMPANY = {
 .kv-showroom-cta-actions a{min-height:50px;text-decoration:none;}
 @media(max-width:860px){.kv-premium-showroom .jcr-door-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}.kv-premium-showroom .jcr-swatch-grid,.kv-premium-showroom .jcr-material-grid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))!important;}.kv-premium-showroom .kv-lead-catalog-grid{grid-template-columns:1fr;}.kv-premium-showroom #jcr_download_row{justify-content:stretch;}.kv-premium-showroom #jcr_download_row button,.kv-showroom-cta-actions a{width:100%;}.jcr-design-secondary-row{display:grid!important;grid-template-columns:1fr!important;}.kv-lead-lightbox{padding:14px;}.kv-lead-lightbox img{border-radius:18px;}}
 @media(max-width:430px){.kv-premium-showroom .jcr-door-grid{grid-template-columns:1fr!important;}.kv-premium-showroom .jcr-door-option{min-height:0!important;}}
+@media(max-width:800px){
+  html,.kv-premium-showroom{width:100%!important;max-width:100%!important;overflow-x:hidden!important;}
+  .kv-premium-showroom *{box-sizing:border-box!important;}
+  .kv-premium-showroom .kv-wrap,
+  .kv-premium-showroom .cv-v2-shell,
+  .kv-premium-showroom .cv-v2-main,
+  .kv-premium-showroom .cv-v2-panel,
+  .kv-premium-showroom .jcr-result-wrap,
+  .kv-premium-showroom .jcr-client-modal{width:100%!important;max-width:100%!important;}
+  .kv-premium-showroom .cv-v2-main{padding-left:14px!important;padding-right:14px!important;}
+  .kv-premium-showroom .cv-v2-mobile-tabs{padding-left:14px!important;padding-right:14px!important;}
+  .kv-premium-showroom .cv-v2-mobile-bar{left:0!important;right:0!important;width:100%!important;padding-left:14px!important;padding-right:14px!important;}
+  .kv-premium-showroom .cv-v2-mobile-inner{width:100%!important;max-width:532px!important;margin:0 auto!important;}
+  .kv-premium-showroom .jcr-card,
+  .kv-premium-showroom .jcr-compare,
+  .kv-premium-showroom .jcr-result-title,
+  .kv-premium-showroom .jcr-design-actions,
+  .kv-premium-showroom .jcr-design-compare-box{width:100%!important;max-width:100%!important;margin-left:0!important;margin-right:0!important;}
+  .kv-premium-showroom .jcr-client-modal{padding-left:14px!important;padding-right:14px!important;}
+}
 @media(prefers-reduced-motion:reduce){.kv-premium-showroom *,.kv-lead-lightbox{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important;}}
 /* Premium V2 shell - layout only */
 .kv-wrap{max-width:1800px!important;padding:28px!important;}
@@ -2458,6 +2478,8 @@ ${baseColorText}
 
 Apply the selected base cabinet color consistently to every visible cabinet below countertop height, including all lower cabinet doors, drawer fronts, sink bases, drawer stacks, appliance-side base cabinets, exposed lower cabinet sides, exposed lower cabinet end panels, peninsula cabinets, toe-kick-adjacent cabinet faces, rails, stiles, and every island cabinet door, drawer, side, and end panel. Do not leave any visible lower cabinet surface in its original color.
 
+Do not apply the upper cabinet finish to any cabinet surface below countertop height. Every visible cabinet below countertop height must use the selected base cabinet finish.
+
 Important: BASE/LOWER CABINETS means ALL cabinets below the countertop across the entire kitchen, not just the island, not just the peninsula, and not just one section.
 
 This includes every existing lower cabinet door, drawer front, drawer stack, sink base door, range-side lower cabinet, dishwasher-side lower panel, exposed end panel, exposed side panel, island cabinet, peninsula cabinet, toe kick, rail, stile, face frame, filler strip, and trim piece attached to the lower cabinets.
@@ -3102,11 +3124,11 @@ if (designPacketBtn) {
   designPacketBtn.addEventListener("click", openClientModal);
 }
 
-if (packetBtn) packetBtn.addEventListener("click", function(event) {
-  if (event) event.preventDefault();
+let proposalOpening = false;
+function buildProposalData() {
   syncAllCatalogState();
   updateSelectedSummary();
-  const proposalData = {
+  return {
     companyKey: KV_COMPANY.companyKey || "",
     customer: getClientInfoFromModal(),
     pricing: {},
@@ -3116,14 +3138,45 @@ if (packetBtn) packetBtn.addEventListener("click", function(event) {
     },
     design: getDesignDetails(afterImg ? afterImg.src : "")
   };
+}
 
-  sessionStorage.setItem("cv_proposal_data", JSON.stringify(proposalData));
+function openProposalFromCurrentDesign(event) {
+  if (event) event.preventDefault();
+  if (event) event.stopPropagation();
+  if (proposalOpening) return;
+  proposalOpening = true;
 
-  window.location.assign(
-    "/proposal/proposal-engine.html?companyKey=" +
-    encodeURIComponent(KV_COMPANY.companyKey || "")
-  );
-});
+  const proposalUrl = "/proposal/proposal-engine.html?companyKey=" + encodeURIComponent(KV_COMPANY.companyKey || "");
+  const proposalWindow = window.open("about:blank", "_blank");
+
+  try {
+    const proposalData = buildProposalData();
+    const serialized = JSON.stringify(proposalData);
+    window.__kvLastProposalData = proposalData;
+    sessionStorage.setItem("cv_proposal_data", serialized);
+    if (proposalWindow && !proposalWindow.closed) {
+      try {
+        proposalWindow.sessionStorage.setItem("cv_proposal_data", serialized);
+      } catch (storageErr) {}
+      proposalWindow.location.href = proposalUrl;
+    } else {
+      window.location.href = proposalUrl;
+    }
+  } catch (err) {
+    if (proposalWindow && !proposalWindow.closed) proposalWindow.close();
+    status.innerText = "Could not open proposal. Generate a preview and try again.";
+  } finally {
+    setTimeout(function(){ proposalOpening = false; }, 500);
+  }
+}
+
+if (packetBtn) packetBtn.addEventListener("click", openProposalFromCurrentDesign);
+document.addEventListener("click", function(event) {
+  const btn = event.target && event.target.closest ? event.target.closest("#jcr_packet_btn") : null;
+  if (!btn || btn.dataset.kvProposalDirect === "1") return;
+  openProposalFromCurrentDesign(event);
+}, true);
+if (packetBtn) packetBtn.dataset.kvProposalDirect = "1";
 
   if (clientModal) {
     clientModal.addEventListener("click", function(e) {
