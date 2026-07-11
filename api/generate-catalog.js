@@ -302,6 +302,7 @@ Before considering the image complete, verify all of the following are true:
 
 If ANY statement above is false, the generation is incorrect.
 The catalog door image and cabinet finish swatches are mandatory requirements. They are never suggestions.
+You will be evaluated only on whether the finished cabinet doors and cabinet finishes exactly match the supplied catalog references while preserving the original kitchen. If the cabinet doors or finishes do not match the supplied references, the generation is incorrect regardless of how realistic or attractive the rest of the image appears.
 
 The final image must look like the original kitchen photo with only the selected surfaces refinished.
 `.trim();
@@ -380,6 +381,8 @@ export default async function handler(req, res) {
     observeImage("Kitchen photo", body.image, "kitchen");
     appendImage(form, doorReference, "selected-catalog-door-reference");
     observeImage("Catalog door", doorReference, "selected-catalog-door-reference");
+    appendImage(form, doorReference, "selected-catalog-door-reference-closeup");
+    observeImage("Catalog door closeup", doorReference, "selected-catalog-door-reference-closeup");
     appendImage(form, mainReference, "selected-upper-swatch-reference");
     observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "selected-base-swatch-reference");
