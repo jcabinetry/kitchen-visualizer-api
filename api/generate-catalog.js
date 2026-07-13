@@ -211,9 +211,6 @@ function buildCatalogPromptV2(body, hasMainReference, hasBaseReference, hasDoorR
 The selected catalog door profile is the primary success criterion.
 A result with the wrong cabinet door profile is a failed result, even if the color, room realism, countertops, backsplash, or flooring look good.
 Prioritize exact door profile accuracy above every other change.
-Cabinet refacing is the primary objective. Cabinet door profile and cabinet finish accuracy are more important than countertops, backsplash, flooring, or overall styling.
-Apply countertop, backsplash, and flooring changes only if they do not alter, weaken, flatten, recolor, simplify, or distort the completed cabinet doors and cabinet finish.
-If there is any conflict, preserve the cabinets exactly and reduce or skip the secondary surface change.
 
 Use the uploaded kitchen photo as the base image and create a photorealistic cabinet refacing preview, not a redesign.
 
