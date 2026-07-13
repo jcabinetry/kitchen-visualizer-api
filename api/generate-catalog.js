@@ -190,7 +190,7 @@ function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorRef
   const doorText = hasDoorReference ? `uploaded catalog door reference for ${details.doorName}` : details.doorName;
   return `
 MISSION:
-Create a realistic cabinet refacing preview using the ORIGINAL uploaded kitchen photo.
+Create a realistic cabinet door replacement and refacing preview using the ORIGINAL uploaded kitchen photo.
 This is NOT a kitchen redesign.
 The finished image must look like the same photograph taken seconds later after professionally refacing the cabinets.
 
@@ -231,6 +231,9 @@ It is NOT inspiration.
 It is NOT an example.
 It is the required finished result.
 Every visible cabinet door and drawer front must match it.
+Replace the old visible door and drawer face style completely.
+Do not preserve the original kitchen's old door face style.
+Preserve only the cabinet boxes, cabinet openings, layout, sizes, and positions.
 Use the catalog door image for door geometry, construction, panel shape, and profile only.
 Ignore the catalog door image's unfinished wood color, raw wood tone, stain tone, brightness, and material color.
 The catalog door image must never control cabinet color.
@@ -315,6 +318,7 @@ If a wall or open room surface starts white, gray, beige, painted, tiled, or any
 
 ROOM PRESERVATION:
 Do NOT change cabinet layout, cabinet sizes, cabinet locations, drawer locations, appliance locations, sink, windows, walls, ceiling, trim, lighting, or perspective.
+Do NOT preserve the old cabinet door face style; replace only the visible doors and drawer fronts with catalog-matching faces.
 Only the selected surfaces may change.
 
 OTHER SELECTED SURFACE CHANGES:
