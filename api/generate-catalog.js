@@ -143,145 +143,45 @@ function selectedDetails(body) {
   };
 }
 
-function catalogDoorDescription(body, details) {
-  const explicit = String(body.catalogDoorAiDescription || body.catalogDoorDescription || "").trim();
-  if (explicit) return explicit.slice(0, 2200);
-
-  const doorName = String(details.doorName || "").toLowerCase();
-  if (/sen\s*ridge|senridge|sensen/.test(doorName)) {
-    return "This selected catalog door reference shows a traditional five-piece cabinet door set with a separate matching five-piece drawer front above the taller lower door. The lower door has a tall vertical rectangular center panel surrounded by wide outer rails and stiles. The center panel is not flat and not flush with the outer frame. It has a raised/recessed dimensional profile with visible bevels and stepped edges around all four sides. The inside profile creates a shadow line between the outer frame and the center panel. The panel face sits within a shaped frame and has depth. The outer rails and stiles are wider and more sculpted than a plain Shaker door. The frame edges are not simple square edges. They have soft bevels and layered profile transitions. The lower door should read as a traditional profiled raised/recessed panel door, not a simple flat recessed Shaker rectangle. The drawer front above it is also a five-piece style. It has a horizontal rectangular center panel inside a profiled frame, matching the lower door's beveled and stepped profile language. The drawer front must not become a plain slab drawer. Keep the drawer front separate above the lower door. Keep the lower door as a tall vertical rectangle. Keep the center panel rectangular. Keep the profiled bevel around the center panel. Keep the wider outer rails and stiles. Keep the dimensional depth and shadow lines. Keep the traditional raised/recessed panel look. Do not create an arch. Do not create a cathedral top. Do not flatten it into a Shaker door. Do not simplify it into a plain recessed rectangle. Do not turn it into a slab door. Use the uploaded catalog door image as the source of truth for the exact shape, proportions, depth, bevels, rails, stiles, panel profile, and drawer-front construction. Use this written description only to understand the visual structure of that image. Do not use the unfinished raw wood color from the catalog door image as the final cabinet color. Cabinet color must come only from the selected finish swatch.";
-  }
-
-  return "";
-}
-
 function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference) {
   const details = selectedDetails(body);
-  const upperColorText = hasMainReference ? `uploaded upper/wall swatch reference for ${details.upperName}${details.upperHex ? ` (${details.upperHex})` : ""}` : details.upperName;
-  const baseColorText = hasBaseReference ? `uploaded base/lower swatch reference for ${details.baseName}${details.baseHex ? ` (${details.baseHex})` : ""}` : details.baseName;
-  const doorText = hasDoorReference ? `uploaded catalog door reference for ${details.doorName}` : details.doorName;
-  const doorDescription = catalogDoorDescription(body, details);
+  const upperColorText = hasMainReference ? `the attached upper/wall cabinet finish swatch (${details.upperName}${details.upperHex ? `, ${details.upperHex}` : ""})` : details.upperName;
+  const baseColorText = hasBaseReference ? `the attached base/lower cabinet finish swatch (${details.baseName}${details.baseHex ? `, ${details.baseHex}` : ""})` : details.baseName;
+  const doorText = hasDoorReference ? "the attached cabinet door reference image" : details.doorName;
+  const surfaceInstructions = [
+    details.countertop
+      ? `Countertops: replace only the visible countertop surfaces with ${details.countertop}. Keep the same countertop shape, edge, thickness, overhang, sink cutout, appliance openings, and layout.`
+      : "Countertops: keep the existing countertops unchanged.",
+    details.backsplash
+      ? `Backsplash: replace only the visible backsplash area with ${details.backsplash}. Keep outlets, windows, trim, cabinets, countertops, and wall layout unchanged.`
+      : "Backsplash: keep the existing backsplash unchanged.",
+    details.flooring
+      ? `Flooring: replace only the visible flooring with ${details.flooring}. Keep the same floor perspective, scale, shadows, cabinets, appliances, furniture, rugs, and room layout.`
+      : "Flooring: keep the existing flooring unchanged."
+  ].join("\n");
   return `
-MISSION:
-Create a realistic cabinet door replacement and refacing preview using the ORIGINAL uploaded kitchen photo.
-This is NOT a kitchen redesign.
-The finished image must look like the same photograph taken seconds later after professionally refacing the cabinets.
+Replace all existing cabinet doors and drawer fronts in the kitchen with the exact door style shown in ${doorText}.
+Match the profile, frame width, inside bevels, center panel, proportions, edge detail, and craftsmanship exactly.
+Do not simplify the profile or substitute another cabinet style.
+Preserve every detail of the reference door design.
 
-Preserve:
-- camera angle
-- lighting
-- perspective
-- cabinet layout
-- cabinet count
-- drawer count
-- appliance locations
-- windows
-- walls
-- ceiling
-- trim
-- room proportions
+Keep the cabinet boxes, cabinet layout, cabinet count, drawer count, appliance locations, walls, windows, trim, lighting, hardware placement, island, decorations, camera angle, perspective, and room dimensions exactly as they are.
+Do not redesign, modernize, or move anything.
 
-Never redesign the room.
+Fit the new door style naturally to each existing cabinet size, including double doors, narrow doors, tall pantry doors, island doors, end panels, exposed sides, and drawer fronts, while maintaining the same proportions as the reference image.
 
-PRIORITY ORDER:
-Follow these priorities exactly.
-Priority 1: Cabinet Door Reference Match
-Priority 2: Cabinet Finish Colors
-Priority 3: Cabinet Layout Preservation
-Priority 4: Countertops
-Priority 5: Backsplash
-Priority 6: Flooring
-Never sacrifice a higher priority to improve a lower priority.
+Apply ${upperColorText} uniformly to all upper cabinet doors, drawer fronts, visible face frames, side panels, end panels, fillers, toe kicks, and cabinet trim above countertop height.
+Apply ${baseColorText} uniformly to all base/lower cabinet doors, drawer fronts, visible face frames, side panels, end panels, fillers, toe kicks, island panels, peninsula panels, and cabinet trim below countertop height.
+If the upper and base finishes are the same, every cabinet in the kitchen should receive that same finish.
 
-Selected cabinet door reference image: ${doorText}.
-Selected upper/wall cabinet finish: ${upperColorText}.
-Selected base/lower cabinet finish: ${baseColorText}.
-${doorDescription ? `Hidden cabinet door description:\n${doorDescription}` : ""}
+This is a cabinet refacing visualization, not a kitchen remodel.
+The cabinet changes should be only the door style and finish.
+Everything else must remain identical to the original photograph unless listed below.
 
-CABINET DOOR REFERENCE MATCH (HIGHEST PRIORITY):
-Use the attached cabinet door reference image as the visual target for every cabinet door and drawer front.
-Every visible cabinet door and drawer front must look just like that reference image.
-Copy the visible door face from the image itself.
-Do not choose from a named cabinet category.
-Do not use a default cabinet appearance.
-Do not use the original kitchen's old door pattern.
-Keep only the existing cabinet boxes, openings, layout, sizes, and positions.
-Use the door reference image only for shape, depth, borders, rails, stiles, contours, and face pattern.
-Do not use the door reference image for cabinet color, wood tone, brightness, or material finish.
-If any text conflicts with the attached cabinet door reference image, follow the image.
-The finished kitchen should look like the exact cabinet door shown in the reference image was installed on the existing cabinet boxes.
+Optional selected surface changes, applied after the cabinet refacing is correct:
+${surfaceInstructions}
 
-CABINET FINISH (SECOND HIGHEST PRIORITY):
-The attached cabinet finish swatches are exact finish references.
-Copy the finish exactly.
-Do not estimate.
-Do not approximate.
-Do not create your own interpretation.
-The cabinet finish swatches are the ONLY approved source for cabinet color, tone, stain, paint, and material finish.
-Do not use the catalog door image's color or raw wood tone for the final cabinet finish.
-
-If the swatch is paint:
-Use a painted finish. Do not add wood grain.
-
-If the swatch is stained wood:
-Keep the wood appearance.
-Match:
-- color
-- undertone
-- saturation
-- darkness
-- warmth
-- grain visibility
-
-Do not invent a different stain.
-If Upper and Base use the same finish, every cabinet must receive that finish.
-No cabinet may remain in its original color.
-
-Apply the finish to:
-- doors
-- drawer fronts
-- face frames
-- cabinet sides
-- end panels
-- fillers
-- cabinet trim
-- toe kicks
-- islands
-- peninsulas
-
-PROTECTED NON-CABINET SURFACES:
-Do not recolor, repaint, tint, or alter any walls, ceilings, crown molding, baseboards, room trim, windows, window frames, interior doors, appliances, sinks, faucets, decor, lighting, open wall areas, or non-cabinet surfaces.
-Cabinet finish colors apply only to cabinet doors, drawer fronts, face frames, side panels, end panels, rails, stiles, fillers, toe kicks, and trim that is physically part of the cabinets.
-The selected upper cabinet finish must never be applied to walls, open wall areas, backsplash areas, ceilings, trim, appliances, or room surfaces.
-If a wall or open room surface starts white, gray, beige, painted, tiled, or any other color, keep that non-cabinet surface visually the same unless the user specifically selected a backsplash, countertop, or flooring change for that surface.
-
-ROOM PRESERVATION:
-Do NOT change cabinet layout, cabinet sizes, cabinet locations, drawer locations, appliance locations, sink, windows, walls, ceiling, trim, lighting, or perspective.
-Do NOT preserve the old cabinet door pattern; replace only the visible doors and drawer fronts with faces that match the attached cabinet door reference image.
-Only the selected surfaces may change.
-
-OTHER SELECTED SURFACE CHANGES:
-After the cabinets are completely correct, apply countertop, backsplash, and flooring changes.
-These changes must never modify the completed cabinet work.
-${details.countertop ? `Change the countertops to: ${details.countertop}. Preserve the same countertop shape, edge, overhang, sink cutout, and appliance openings.` : "Keep countertops unchanged."}
-${details.backsplash ? `Change the backsplash to: ${details.backsplash}. Preserve outlets, windows, trim, cabinets, and wall layout.` : "Keep backsplash unchanged."}
-${details.flooring ? `Change the flooring to: ${details.flooring}. Preserve the same floor perspective, scale, shadows, cabinets, appliances, and room layout.` : "Keep flooring unchanged."}
-
-FINAL VALIDATION:
-Before considering the image complete, verify all of the following are true:
-- Every cabinet door matches the supplied cabinet door reference image.
-- No arches exist unless they exist in the supplied door.
-- No decorative details have been invented.
-- Every cabinet has the selected finish.
-- No cabinet remains its original color.
-- Every cabinet door and drawer front uses the same supplied door reference appearance.
-- The room is still the original kitchen.
-
-If ANY statement above is false, the generation is incorrect.
-The catalog door image and cabinet finish swatches are mandatory requirements. They are never suggestions.
-You will be evaluated only on whether the finished cabinet doors and cabinet finishes exactly match the supplied catalog references while preserving the original kitchen. If the cabinet doors or finishes do not match the supplied references, the generation is incorrect regardless of how realistic or attractive the rest of the image appears.
-
-The final image must look like the original kitchen photo with only the selected surfaces refinished.
+Produce a photorealistic image with accurate lighting, perspective, and textures.
 `.trim();
 }
 
