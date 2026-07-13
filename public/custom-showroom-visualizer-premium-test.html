@@ -621,24 +621,14 @@ const KV_COMPANY = {
     <label>Door Style</label>
     <p class="jcr-section-note">Select the style your customer will see in their preview.</p>
     <div id="jcr_door_grid" class="jcr-door-grid">
-      <div class="jcr-door-option active" data_value="shaker cabinet doors" role="button" tabindex="0" aria-pressed="true">
-        <div class="jcr-ribbon">Most Popular</div>
-        <div class="jcr-door-preview"><img src="https://primary.jwwb.nl/public/m/q/r/temp-wfofpuxetbifsbcnmmvn/visualizer-shaker-image-high-tttcry.png" alt="Shaker Cabinet Door"></div>
-        <div class="jcr-door-name">Shaker</div>
-        <div class="jcr-door-desc">Clean recessed panel</div>
-      </div>
-      <div class="jcr-door-option" data_value="raised panel cabinet doors" role="button" tabindex="0" aria-pressed="false">
-        <div class="jcr-door-preview"><img src="https://primary.jwwb.nl/public/m/q/r/temp-wfofpuxetbifsbcnmmvn/visualizer-raised-image-high-3k9a86.png" alt="Raised Panel Cabinet Door"></div>
-        <div class="jcr-door-name">Raised Panel</div>
-        <div class="jcr-door-desc">Traditional detailed profile</div>
-      </div>
-      <div class="jcr-door-option" data_value="flat panel cabinet doors" role="button" tabindex="0" aria-pressed="false">
-        <div class="jcr-door-preview"><img src="https://primary.jwwb.nl/public/m/q/r/temp-wfofpuxetbifsbcnmmvn/visualizer-slab-image-high.png" alt="Flat Panel Cabinet Door"></div>
-        <div class="jcr-door-name">Flat Panel</div>
-        <div class="jcr-door-desc">Modern smooth slab</div>
+      <div class="jcr-door-option active" data_value="" role="button" tabindex="0" aria-pressed="true">
+        <div class="jcr-ribbon">Catalog</div>
+        <div class="jcr-door-preview"><div style="height:210px;width:100%;display:grid;place-items:center;background:linear-gradient(180deg,#f8fafc,#eef2f7);border:1px solid #e5e7eb;border-radius:16px;font-weight:900;color:#64748b;">Loading catalog doors</div></div>
+        <div class="jcr-door-name">Catalog Door</div>
+        <div class="jcr-door-desc">Assigned catalog doors will load here</div>
       </div>
     </div>
-    <input type="hidden" id="jcr_style" value="shaker cabinet doors">
+    <input type="hidden" id="jcr_style" value="">
   </div>
 
   <div class="jcr-card">
@@ -1545,7 +1535,7 @@ const KV_COMPANY = {
 
     const selectedManufacturer = manufacturerInput && manufacturerInput.options[manufacturerInput.selectedIndex] ? manufacturerInput.options[manufacturerInput.selectedIndex].text : "";
     const selectedCatalogLine = catalogLineInput && catalogLineInput.options[catalogLineInput.selectedIndex] ? catalogLineInput.options[catalogLineInput.selectedIndex].text : "";
-    const doorStyle = styleInput.value || "shaker cabinet doors";
+    const doorStyle = styleInput.value || "catalog cabinet door style";
     const upperHeight = upperHeightInput.value || "keep existing upper cabinets exactly as they are";
     const hardware = hardwareInput.value || "matte black cabinet pulls";
     let countertopText = countertopInput.value ? countertopInput.options[countertopInput.selectedIndex].text.toLowerCase() : "";
@@ -1557,7 +1547,7 @@ const KV_COMPANY = {
 
     return `
 MISSION:
-Edit this exact kitchen photo into a realistic cabinet refacing color preview.
+Edit this exact kitchen photo into a realistic cabinet door replacement and refacing preview.
 This is a catalog-based lead visualization, not a remodel.
 Apply every selected catalog and design option that the homeowner chose.
 Change the selected cabinet finish colors, selected catalog door style, countertops, backsplash, and flooring according to the selected options.
@@ -1571,13 +1561,15 @@ Use only the selected manufacturer, line, door style, and finishes described bel
 Do not invent a cabinet line that was not selected.
 
 MOST IMPORTANT RULE:
-Preserve the exact existing cabinet layout and cabinet geometry.
+Preserve the exact cabinet box layout, cabinet openings, cabinet count, drawer count, appliance openings, and room perspective.
+Do not preserve the old cabinet door face profile.
+Replace visible doors and drawer fronts with the selected catalog door profile.
 Do not redesign the kitchen.
 Do not change any door into a drawer.
 Do not change any drawer into a door.
 Do not add drawer stacks.
 Do not remove drawer stacks.
-Do not change the size, width, height, or position of any cabinet door, drawer front, panel, rail, stile, face frame, toe kick, or filler.
+Do not change the size, width, height, or position of any cabinet opening, door location, drawer location, face frame, toe kick, or filler.
 Do not move cabinet seams.
 Do not change hinge sides.
 Do not change appliance openings.
@@ -1630,7 +1622,8 @@ ${doorStyle}
 The catalog door image is the authoritative door-style reference. Match the selected catalog door image exactly: rail width, stile width, panel shape, edge profile, center panel proportions, outside frame proportions, and any slab, recessed, or raised details must follow the selected door reference as closely as possible.
 Do NOT invent arches, raised panels, slabs, bevels, rails, stiles, or profiles that are not visible in the selected door reference.
 Do NOT change the existing number, size, position, or layout of doors and drawer fronts.
-Preserve the existing cabinet layout while applying the selected catalog door profile to the visible cabinet fronts.
+Do replace the old visible door/drawer face profile with the selected catalog profile.
+Preserve the existing cabinet box layout while applying the selected catalog door profile to the visible cabinet fronts.
 
 UPPER CABINET HEIGHT INSTRUCTION:
 ${upperHeight}
@@ -1670,7 +1663,7 @@ FINAL QUALITY:
 The final image must look like the same kitchen photo with cabinet finishes updated.
 It should not look like a different kitchen.
 It should not look like new cabinet boxes were installed.
-It should look like the existing doors, drawers, and cabinet faces were professionally refinished.
+It should look like new catalog-matching doors and drawer fronts were professionally installed and refinished on the existing cabinet boxes.
     `.trim();
   }
 
@@ -2380,7 +2373,8 @@ It should look like the existing doors, drawers, and cabinet faces were professi
 
   function activeDoorImage() {
     const activeImage = document.querySelector(".jcr-door-option.active .jcr-door-preview img");
-    return activeImage ? activeImage.getAttribute("src") || "" : "";
+    const src = activeImage ? activeImage.getAttribute("src") || "" : "";
+    return /visualizer-shaker-image|visualizer-raised-image|visualizer-slab-image/i.test(src) ? "" : src;
   }
 
   button.addEventListener("click", async function() {    if (!uploadedImageData) { status.innerText = "Upload a kitchen photo first."; return; }
@@ -2393,6 +2387,10 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     syncAllCatalogFinishState();
     const prompt = buildPrompt();
     const catalogDoorImage = document.getElementById("jcr_active_catalog_door_image")?.value || activeDoorImage();
+    if (!catalogDoorImage) {
+      status.innerText = "Wait for an assigned catalog door image to load, then select the door style again.";
+      return;
+    }
     const upperSelection = syncCatalogFinishState("jcr_color");
     const baseSelection = islandInput.value === "" ? upperSelection : syncCatalogFinishState("jcr_island");
     const upperSwatchImage = upperSelection.swatch || document.getElementById("jcr_active_upper_swatch_image")?.value || selectedOptionSwatch(colorInput);
@@ -2557,7 +2555,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
   function qs(sel, root){return (root || document).querySelector(sel);}
   function qsa(sel, root){return Array.prototype.slice.call((root || document).querySelectorAll(sel));}
   function optionText(id, fallback){const el=qs("#"+id); if(!el) return fallback || "-"; if(el.tagName === "SELECT") return el.value ? el.options[el.selectedIndex].text : (fallback || "Keep Existing"); return el.value || fallback || "-";}
-  function activeDoor(){const active=qs(".jcr-door-option.active .jcr-door-name"); return active ? active.textContent.trim() : "Shaker";}
+  function activeDoor(){const active=qs(".jcr-door-option.active .jcr-door-name"); return active ? active.textContent.trim() : "Catalog Door";}
 
   function buildStep(step, index){
     const btn=document.createElement("button");
