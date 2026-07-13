@@ -131,12 +131,6 @@ function parseMaterial(prompt, heading, pattern) {
   return match ? String(match[1] || "").trim() : "";
 }
 
-function cleanMaterialValue(value) {
-  const text = String(value || "").trim();
-  if (!text || text === "-" || /^none$/i.test(text) || /^keep\b/i.test(text)) return "";
-  return text;
-}
-
 function selectedDetails(body) {
   const prompt = body.prompt || "";
   const countertopFromPrompt = parseMaterial(prompt, "COUNTERTOP INSTRUCTION", /COUNTERTOP INSTRUCTION:\s*Replace only the visible countertop surfaces with\s+(.+?)\.\s+Preserve/is);
@@ -148,21 +142,10 @@ function selectedDetails(body) {
     baseName: body.baseSwatchName || body.island || body.upperSwatchName || body.color || "selected base/lower swatch",
     upperHex: body.upperSwatchHex || body.mainCustomHex || "",
     baseHex: body.baseSwatchHex || body.islandCustomHex || body.upperSwatchHex || body.mainCustomHex || "",
-    countertop: cleanMaterialValue(body.countertop || countertopFromPrompt),
-    backsplash: cleanMaterialValue(body.backsplash || backsplashFromPrompt),
-    flooring: cleanMaterialValue(body.flooring || flooringFromPrompt)
+    countertop: body.countertop || countertopFromPrompt,
+    backsplash: body.backsplash || backsplashFromPrompt,
+    flooring: body.flooring || flooringFromPrompt
   };
-}
-
-function hasSurfaceChanges(details, references) {
-  return Boolean(
-    details.countertop ||
-    details.backsplash ||
-    details.flooring ||
-    references.countertopReference ||
-    references.backsplashReference ||
-    references.flooringReference
-  );
 }
 
 function buildLegacyCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference) {
@@ -251,77 +234,12 @@ function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorRef
   return buildCatalogPromptV2(body, hasMainReference, hasBaseReference, hasDoorReference);
 }
 
-function buildCabinetOnlyBody(body) {
-  return {
-    ...body,
-    prompt: "",
-    countertop: "",
-    backsplash: "",
-    flooring: "",
-    countertopCustomReference: null,
-    backsplashCustomReference: null,
-    flooringCustomReference: null
-  };
-}
-
-function buildSurfaceOnlyPrompt(body) {
-  const details = selectedDetails(body);
-  const instructions = [
-    details.countertop
-      ? `Countertops: replace only the visible countertop surfaces with ${details.countertop}. Preserve the exact cabinet doors, cabinet finish color, cabinet layout, sink cutout, appliance openings, edge shape, overhang, thickness, and perspective.`
-      : "Countertops: keep the existing countertops unchanged.",
-    details.backsplash
-      ? `Backsplash: replace only the visible backsplash area with ${details.backsplash}. Preserve the exact cabinet doors, cabinet finish color, cabinet layout, countertops, outlets, windows, trim, and wall layout.`
-      : "Backsplash: keep the existing backsplash unchanged.",
-    details.flooring
-      ? `Flooring: replace only the visible flooring with ${details.flooring}. Preserve the exact cabinet doors, cabinet finish color, cabinet layout, appliances, island, furniture, rugs, floor perspective, scale, and shadows.`
-      : "Flooring: keep the existing flooring unchanged."
-  ].join("\n");
-
-  return `
-Use the already-refaced kitchen image as the base image.
-
-Do not change any cabinet door style, cabinet color, cabinet geometry, cabinet count, drawer count, cabinet layout, hardware placement, or cabinet surface.
-Do not reinterpret the cabinet door reference. The cabinet work is already complete.
-Only apply the selected countertop, backsplash, and flooring changes listed below.
-
-${instructions}
-
-The final image must remain the same kitchen with the completed cabinet refacing preserved exactly. If a surface change would alter the cabinet doors or cabinet finish, do not make that surface change.
-`.trim();
-}
-
 function appendImage(form, dataUrl, fallbackName) {
   const base64 = stripDataUrl(dataUrl);
   if (!base64) return false;
   const mime = getMimeType(dataUrl, "image/jpeg");
   form.append("image[]", new File([Buffer.from(base64, "base64")], `${fallbackName}.${getExt(mime)}`, { type: mime }));
   return true;
-}
-
-function createOpenAIForm(prompt) {
-  const form = new FormData();
-  form.append("model", CATALOG_IMAGE_MODEL);
-  form.append("prompt", prompt);
-  form.append("size", "1536x1024");
-  form.append("quality", CATALOG_IMAGE_QUALITY);
-  return form;
-}
-
-async function runImageEdit(form) {
-  const response = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: form });
-  const result = await response.json();
-  return { response, result };
-}
-
-function imageFromOpenAIResult(result) {
-  const imageBase64 = result?.data?.[0]?.b64_json;
-  const imageUrl = result?.data?.[0]?.url;
-  return {
-    imageBase64,
-    imageUrl,
-    generatedImage: imageBase64 ? `data:image/png;base64,${imageBase64}` : imageUrl || ""
-  };
 }
 
 export default async function handler(req, res) {
@@ -363,9 +281,6 @@ export default async function handler(req, res) {
     const backsplashReference = body.backsplashCustomReference || null;
     const flooringReference = body.flooringCustomReference || null;
     const extraReferences = Array.isArray(body.referenceImages) ? body.referenceImages.filter(Boolean) : [];
-    const details = selectedDetails(body);
-    const surfaceReferences = { countertopReference, backsplashReference, flooringReference };
-    const useStagedGeneration = hasSurfaceChanges(details, surfaceReferences);
 
     if (!doorReference) {
       return res.status(400).json({ error: "Catalog door image was not sent. Select a catalog door again and generate after the page finishes loading." });
@@ -374,12 +289,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
     }
 
-    const selectedPrompt = useStagedGeneration
-      ? buildCatalogPrompt(buildCabinetOnlyBody(body), !!mainReference, !!baseReference, !!doorReference)
-      : buildCatalogPrompt(body, !!mainReference, !!baseReference, !!doorReference);
-    const finalPrompt = useStagedGeneration ? buildSurfaceOnlyPrompt(body) : selectedPrompt;
+    const selectedPrompt = buildCatalogPrompt(body, !!mainReference, !!baseReference, !!doorReference);
 
-    const form = createOpenAIForm(selectedPrompt);
+    const form = new FormData();
     const generationId = createGenerationId();
     const generationStartedAt = Date.now();
     const attachedImages = [];
@@ -393,11 +305,15 @@ export default async function handler(req, res) {
       catalogDoor: false,
       upperSwatch: false,
       baseSwatch: !baseReference || baseReference === mainReference,
-      countertop: useStagedGeneration || !countertopReference,
-      backsplash: useStagedGeneration || !backsplashReference,
-      flooring: useStagedGeneration || !flooringReference,
+      countertop: !countertopReference,
+      backsplash: !backsplashReference,
+      flooring: !flooringReference,
       additionalReferences: []
     };
+    form.append("model", CATALOG_IMAGE_MODEL);
+    form.append("prompt", selectedPrompt);
+    form.append("size", "1536x1024");
+    form.append("quality", CATALOG_IMAGE_QUALITY);
     attachmentStatus.kitchen = appendImage(form, body.image, "kitchen");
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
     attachmentStatus.catalogDoor = appendImage(form, doorReference, "selected-catalog-door-exact-reference");
@@ -406,12 +322,12 @@ export default async function handler(req, res) {
     if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(form, baseReference, "selected-base-swatch-reference");
     if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
-    if (!useStagedGeneration && countertopReference) attachmentStatus.countertop = appendImage(form, countertopReference, "selected-countertop-reference");
-    if (!useStagedGeneration && attachmentStatus.countertop && countertopReference) observeImage("Countertop", countertopReference, "selected-countertop-reference");
-    if (!useStagedGeneration && backsplashReference) attachmentStatus.backsplash = appendImage(form, backsplashReference, "selected-backsplash-reference");
-    if (!useStagedGeneration && attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash", backsplashReference, "selected-backsplash-reference");
-    if (!useStagedGeneration && flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
-    if (!useStagedGeneration && attachmentStatus.flooring && flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
+    if (countertopReference) attachmentStatus.countertop = appendImage(form, countertopReference, "selected-countertop-reference");
+    if (attachmentStatus.countertop && countertopReference) observeImage("Countertop", countertopReference, "selected-countertop-reference");
+    if (backsplashReference) attachmentStatus.backsplash = appendImage(form, backsplashReference, "selected-backsplash-reference");
+    if (attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash", backsplashReference, "selected-backsplash-reference");
+    if (flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
+    if (attachmentStatus.flooring && flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
     extraReferences.slice(0, 6).forEach(function(ref, index) {
       if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) {
         const attached = appendImage(form, ref, `catalog-reference-${index + 1}`);
@@ -429,9 +345,7 @@ export default async function handler(req, res) {
       size: "1536x1024",
       quality: CATALOG_IMAGE_QUALITY,
       promptVersion: CATALOG_PROMPT_VERSION,
-      generationMode: useStagedGeneration ? "staged-full" : "single-pass",
       prompt: selectedPrompt,
-      finalPrompt,
       attachmentStatus,
       attachments: attachedImages.map(function(image) {
         return {
@@ -451,7 +365,6 @@ export default async function handler(req, res) {
       model: CATALOG_IMAGE_MODEL,
       promptVersion: CATALOG_PROMPT_VERSION,
       quality: CATALOG_IMAGE_QUALITY,
-      generationMode: useStagedGeneration ? "staged-full" : "single-pass",
       attachmentStatus,
       summary: {
         companyKey: safeCompanyKey,
@@ -460,9 +373,9 @@ export default async function handler(req, res) {
         doorStyle: body.catalogDoorName || body.selectedDoorStyle || body.style || "",
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
         baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
-        countertop: details.countertop || "",
-        backsplash: details.backsplash || "",
-        flooring: details.flooring || ""
+        countertop: body.countertop || "",
+        backsplash: body.backsplash || "",
+        flooring: body.flooring || ""
       },
       prompt: selectedPrompt,
       payload: inspectorPayload,
@@ -472,7 +385,8 @@ export default async function handler(req, res) {
       console.warn("Generation inspector logging skipped.", error?.message || error);
     });
 
-    const { response: openaiResponse, result } = await runImageEdit(form);
+    const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: form });
+    const result = await openaiResponse.json();
     if (!openaiResponse.ok) {
       await updateGenerationRecord(generationId, {
         status: "error",
@@ -491,120 +405,19 @@ export default async function handler(req, res) {
       return res.status(openaiResponse.status).json({ error: result?.error?.message || result?.message || "OpenAI image edit failed." });
     }
 
-    const stageOneImage = imageFromOpenAIResult(result).generatedImage;
-    let finalResult = result;
-    let finalOpenAIResponse = openaiResponse;
-    if (useStagedGeneration) {
-      if (!stageOneImage) {
-        await updateGenerationRecord(generationId, {
-          status: "error",
-          result: {
-            generationTimeMs: Date.now() - generationStartedAt,
-            image: "",
-            imageSize: ""
-          },
-          error: {
-            status: 500,
-            message: "No cabinet-stage image returned from OpenAI."
-          }
-        }).catch(function(error) {
-          console.warn("Generation inspector staged empty result logging skipped.", error?.message || error);
-        });
-        return res.status(500).json({ error: "No cabinet-stage image returned from OpenAI." });
-      }
-
-      const stageTwoForm = createOpenAIForm(finalPrompt);
-      const stageTwoImages = [];
-      const stageTwoAttachmentStatus = {
-        cabinetStage: false,
-        countertop: !countertopReference,
-        backsplash: !backsplashReference,
-        flooring: !flooringReference
-      };
-      function observeStageTwoImage(role, dataUrl, fallbackName) {
-        if (stripDataUrl(dataUrl)) {
-          stageTwoImages.push(describeImage(role, dataUrl, `${fallbackName}.${getExt(getMimeType(dataUrl, "image/jpeg"))}`, stageTwoImages.length + 1));
-        }
-      }
-      stageTwoAttachmentStatus.cabinetStage = appendImage(stageTwoForm, stageOneImage, "cabinet-refacing-stage");
-      if (stageTwoAttachmentStatus.cabinetStage) observeStageTwoImage("Cabinet refacing stage", stageOneImage, "cabinet-refacing-stage");
-      if (countertopReference) stageTwoAttachmentStatus.countertop = appendImage(stageTwoForm, countertopReference, "selected-countertop-reference");
-      if (stageTwoAttachmentStatus.countertop && countertopReference) observeStageTwoImage("Countertop", countertopReference, "selected-countertop-reference");
-      if (backsplashReference) stageTwoAttachmentStatus.backsplash = appendImage(stageTwoForm, backsplashReference, "selected-backsplash-reference");
-      if (stageTwoAttachmentStatus.backsplash && backsplashReference) observeStageTwoImage("Backsplash", backsplashReference, "selected-backsplash-reference");
-      if (flooringReference) stageTwoAttachmentStatus.flooring = appendImage(stageTwoForm, flooringReference, "selected-flooring-reference");
-      if (stageTwoAttachmentStatus.flooring && flooringReference) observeStageTwoImage("Flooring", flooringReference, "selected-flooring-reference");
-
-      if (!stageTwoAttachmentStatus.cabinetStage) return res.status(500).json({ error: "Cabinet-stage image could not be attached for surface generation." });
-      const stageTwo = await runImageEdit(stageTwoForm);
-      finalOpenAIResponse = stageTwo.response;
-      finalResult = stageTwo.result;
-      const combinedStageImages = attachedImages.concat(stageTwoImages.map(function(image) {
-        return {
-          ...image,
-          order: attachedImages.length + image.order,
-          role: `Stage 2 ${image.role}`
-        };
-      }));
-      await updateGenerationRecord(generationId, {
-        payload: {
-          ...inspectorPayload,
-          stages: [
-            {
-              name: "cabinet-refacing",
-              prompt: selectedPrompt,
-              attachmentStatus,
-              referenceImages: attachedImages
-            },
-            {
-              name: "surface-finishing",
-              prompt: finalPrompt,
-              attachmentStatus: stageTwoAttachmentStatus,
-              referenceImages: stageTwoImages
-            }
-          ]
-        },
-        referenceImages: combinedStageImages,
-        prompt: finalPrompt,
-        attachmentStatus: {
-          stageOne: attachmentStatus,
-          stageTwo: stageTwoAttachmentStatus
-        }
-      }).catch(function(error) {
-        console.warn("Generation inspector staged logging skipped.", error?.message || error);
-      });
-      if (!finalOpenAIResponse.ok) {
-        await updateGenerationRecord(generationId, {
-          status: "error",
-          result: {
-            generationTimeMs: Date.now() - generationStartedAt,
-            image: stageOneImage,
-            imageSize: imageSizeLabel(stageOneImage)
-          },
-          error: {
-            status: finalOpenAIResponse.status,
-            message: finalResult?.error?.message || finalResult?.message || "OpenAI surface image edit failed."
-          }
-        }).catch(function(error) {
-          console.warn("Generation inspector staged error logging skipped.", error?.message || error);
-        });
-        return res.status(finalOpenAIResponse.status).json({ error: finalResult?.error?.message || finalResult?.message || "OpenAI surface image edit failed." });
-      }
-    }
-
     const updatedUsed = await redisIncr(usageKey);
     if (updatedUsed >= safeMonthlyLimit) await sendLimitEmail({ companyKey: safeCompanyKey, companyName: safeCompanyName, used: updatedUsed, limit: safeMonthlyLimit, customerName: body.customerName, customerEmail: body.customerEmail, customerPhone: body.customerPhone });
 
-    const { imageBase64, imageUrl, generatedImage } = imageFromOpenAIResult(finalResult);
+    const imageBase64 = result?.data?.[0]?.b64_json;
+    const imageUrl = result?.data?.[0]?.url;
+    const generatedImage = imageBase64 ? `data:image/png;base64,${imageBase64}` : imageUrl || "";
     if (generatedImage) {
       await updateGenerationRecord(generationId, {
         status: "complete",
         result: {
           generationTimeMs: Date.now() - generationStartedAt,
           image: generatedImage,
-          imageSize: imageSizeLabel(generatedImage),
-          stageOneImage: useStagedGeneration ? stageOneImage : "",
-          generationMode: useStagedGeneration ? "staged-full" : "single-pass"
+          imageSize: imageSizeLabel(generatedImage)
         }
       }).catch(function(error) {
         console.warn("Generation inspector result logging skipped.", error?.message || error);
