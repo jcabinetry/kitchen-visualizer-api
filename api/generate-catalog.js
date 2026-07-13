@@ -198,40 +198,12 @@ Replace the old visible door and drawer face style completely.
 Do not preserve the original kitchen's old door face style.
 Preserve only the cabinet boxes, cabinet openings, layout, sizes, and positions.
 Use the catalog door image for the visible door face only.
-Ignore the catalog door image's unfinished wood color, raw wood tone, stain tone, brightness, and material color.
+Make every cabinet door and drawer front look just like the attached catalog door image.
+Copy what is visible in the image, not what any style name or category suggests.
+Do not use the door image's unfinished wood color; use it only for the door face appearance.
 The catalog door image must never control cabinet color.
-The final doors must visually copy the same visible contours, outlines, inner shapes, outer shapes, depth changes, panel relief, edge details, and face pattern shown in the catalog image.
-Do not infer a style from words.
-Do not convert the catalog door into a common default cabinet style.
-Do not simplify the supplied door into a generic framed rectangle.
-If the label and the image disagree, follow the image.
-
-Copy exactly:
-- panel shape
-- square vs arched geometry
-- inside profile
-- outside profile
-- edge profile
-- reveal depth
-- panel depth
-- groove details
-- bead details
-- visible construction type
-- visible face pattern
-
-Do NOT:
-- invent arches
-- invent cathedral tops
-- invent grooves
-- invent bevels
-- invent decorative trim
-- invent molding
-- invent another cabinet style
-- simplify the door
-- improve the design
-
-If the attached door is square, every generated door must remain square.
-The finished kitchen should appear as though these exact cabinet doors were installed by a cabinet manufacturer.
+If any word in this request conflicts with the attached catalog door image, follow the image.
+The finished kitchen should appear as though the exact door shown in the catalog image was installed on the existing cabinet boxes.
 
 CABINET FINISH (SECOND HIGHEST PRIORITY):
 The attached cabinet finish swatches are exact finish references.
