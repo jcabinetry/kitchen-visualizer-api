@@ -78,11 +78,22 @@ async function buildDoorGeometryReference(dataUrl) {
   if (!base64) return dataUrl;
   try {
     const { default: sharp } = await import("sharp");
-    const output = await sharp(Buffer.from(base64, "base64"), { failOn: "none" })
+    const input = Buffer.from(base64, "base64");
+    const source = sharp(input, { failOn: "none" }).rotate();
+    const metadata = await source.metadata();
+    const width = Math.max(1, metadata.width || 1);
+    const height = Math.max(1, metadata.height || 1);
+    const crop = {
+      left: Math.max(0, Math.floor(width * 0.12)),
+      top: Math.max(0, Math.floor(height * 0.18)),
+      width: Math.max(1, Math.floor(width * 0.76)),
+      height: Math.max(1, Math.floor(height * 0.68))
+    };
+    const fullDoor = await sharp(input, { failOn: "none" })
       .rotate()
       .resize({
-        width: 768,
-        height: 768,
+        width: 390,
+        height: 700,
         fit: "contain",
         background: { r: 255, g: 255, b: 255, alpha: 1 }
       })
@@ -90,7 +101,48 @@ async function buildDoorGeometryReference(dataUrl) {
       .grayscale()
       .normalize()
       .sharpen()
-      .jpeg({ quality: 92, mozjpeg: true })
+      .png()
+      .toBuffer();
+    const profileZoom = await sharp(input, { failOn: "none" })
+      .rotate()
+      .extract(crop)
+      .resize({
+        width: 420,
+        height: 430,
+        fit: "contain",
+        background: { r: 255, g: 255, b: 255, alpha: 1 }
+      })
+      .flatten({ background: "#ffffff" })
+      .grayscale()
+      .normalize()
+      .sharpen()
+      .png()
+      .toBuffer();
+    const labels = Buffer.from(`
+      <svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+        <rect width="1024" height="1024" fill="#ffffff"/>
+        <text x="512" y="62" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" fill="#111827">COPY THIS CATALOG DOOR GEOMETRY</text>
+        <text x="512" y="104" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#374151">SHAPE AND PROFILE ONLY - IGNORE WOOD COLOR</text>
+        <text x="245" y="875" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="#111827">FULL DOOR + DRAWER</text>
+        <text x="748" y="735" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="#111827">PROFILE / PANEL DETAIL</text>
+        <text x="748" y="778" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="800" fill="#b91c1c">NOT SHAKER - NOT FLAT</text>
+        <text x="748" y="816" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" fill="#374151">MATCH RAISED / RECESSED DEPTH</text>
+      </svg>
+    `);
+    const output = await sharp({
+      create: {
+        width: 1024,
+        height: 1024,
+        channels: 3,
+        background: "#ffffff"
+      }
+    })
+      .composite([
+        { input: labels, left: 0, top: 0 },
+        { input: fullDoor, left: 50, top: 135 },
+        { input: profileZoom, left: 538, top: 190 }
+      ])
+      .jpeg({ quality: 94, mozjpeg: true })
       .toBuffer();
     return `data:image/jpeg;base64,${output.toString("base64")}`;
   } catch (error) {
