@@ -132,7 +132,7 @@ function selectedDetails(body) {
   const backsplashFromPrompt = parseMaterial(prompt, "BACKSPLASH INSTRUCTION", /BACKSPLASH INSTRUCTION:\s*Replace only the visible backsplash area with\s+(.+?)\.\s+Preserve/is);
   const flooringFromPrompt = parseMaterial(prompt, "FLOORING INSTRUCTION", /FLOORING INSTRUCTION:\s*Replace only the visible flooring with\s+(.+?)\.\s+Preserve/is);
   return {
-    doorName: body.catalogDoorName || body.style || "selected catalog door",
+    doorName: body.catalogDoorName || body.style || "selected catalog door reference",
     upperName: body.upperSwatchName || body.color || "selected upper/wall swatch",
     baseName: body.baseSwatchName || body.island || body.upperSwatchName || body.color || "selected base/lower swatch",
     upperHex: body.upperSwatchHex || "",
@@ -172,7 +172,7 @@ Never redesign the room.
 
 PRIORITY ORDER:
 Follow these priorities exactly.
-Priority 1: Cabinet Door Style
+Priority 1: Cabinet Door Reference Match
 Priority 2: Cabinet Finish Colors
 Priority 3: Cabinet Layout Preservation
 Priority 4: Countertops
@@ -180,30 +180,22 @@ Priority 5: Backsplash
 Priority 6: Flooring
 Never sacrifice a higher priority to improve a lower priority.
 
-Selected catalog door: ${doorText}.
+Selected cabinet door reference image: ${doorText}.
 Selected upper/wall cabinet finish: ${upperColorText}.
 Selected base/lower cabinet finish: ${baseColorText}.
 
-CABINET DOOR STYLE (HIGHEST PRIORITY):
-The attached catalog door image is the ONLY approved cabinet door style.
-Treat it as an exact manufacturing reference.
-It is NOT inspiration.
-It is NOT an example.
-It is the required finished result.
-Every visible cabinet door and drawer front must match it.
-Ignore all style category names and generic cabinet labels.
-The selected door name is only an inventory label.
-The attached catalog door image is the only source for the door appearance.
-Replace the old visible door and drawer face style completely.
-Do not preserve the original kitchen's old door face style.
-Preserve only the cabinet boxes, cabinet openings, layout, sizes, and positions.
-Use the catalog door image for the visible door face only.
-Make every cabinet door and drawer front look just like the attached catalog door image.
-Copy what is visible in the image, not what any style name or category suggests.
-Do not use the door image's unfinished wood color; use it only for the door face appearance.
-The catalog door image must never control cabinet color.
-If any word in this request conflicts with the attached catalog door image, follow the image.
-The finished kitchen should appear as though the exact door shown in the catalog image was installed on the existing cabinet boxes.
+CABINET DOOR REFERENCE MATCH (HIGHEST PRIORITY):
+Use the attached cabinet door reference image as the visual target for every cabinet door and drawer front.
+Every visible cabinet door and drawer front must look just like that reference image.
+Copy the visible door face from the image itself.
+Do not choose from a named cabinet category.
+Do not use a default cabinet appearance.
+Do not use the original kitchen's old door pattern.
+Keep only the existing cabinet boxes, openings, layout, sizes, and positions.
+Use the door reference image only for shape, depth, borders, rails, stiles, contours, and face pattern.
+Do not use the door reference image for cabinet color, wood tone, brightness, or material finish.
+If any text conflicts with the attached cabinet door reference image, follow the image.
+The finished kitchen should look like the exact cabinet door shown in the reference image was installed on the existing cabinet boxes.
 
 CABINET FINISH (SECOND HIGHEST PRIORITY):
 The attached cabinet finish swatches are exact finish references.
@@ -251,7 +243,7 @@ If a wall or open room surface starts white, gray, beige, painted, tiled, or any
 
 ROOM PRESERVATION:
 Do NOT change cabinet layout, cabinet sizes, cabinet locations, drawer locations, appliance locations, sink, windows, walls, ceiling, trim, lighting, or perspective.
-Do NOT preserve the old cabinet door face style; replace only the visible doors and drawer fronts with catalog-matching faces.
+Do NOT preserve the old cabinet door pattern; replace only the visible doors and drawer fronts with faces that match the attached cabinet door reference image.
 Only the selected surfaces may change.
 
 OTHER SELECTED SURFACE CHANGES:
@@ -263,12 +255,12 @@ ${details.flooring ? `Change the flooring to: ${details.flooring}. Preserve the 
 
 FINAL VALIDATION:
 Before considering the image complete, verify all of the following are true:
-- Every cabinet door matches the supplied catalog door.
+- Every cabinet door matches the supplied cabinet door reference image.
 - No arches exist unless they exist in the supplied door.
 - No decorative details have been invented.
 - Every cabinet has the selected finish.
 - No cabinet remains its original color.
-- Only one cabinet door style exists.
+- Every cabinet door and drawer front uses the same supplied door reference appearance.
 - The room is still the original kitchen.
 
 If ANY statement above is false, the generation is incorrect.
