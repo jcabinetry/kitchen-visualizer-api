@@ -10,6 +10,7 @@ import {
   saveGenerationRecord,
   updateGenerationRecord
 } from "./_lib/generationInspectorStore.js";
+import sharp from "sharp";
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
@@ -79,6 +80,25 @@ function imageSizeLabel(image) {
     return `${getMimeType(image, "image/png")} / ${dataUrlBytes(image)} bytes`;
   }
   return "remote image URL";
+}
+
+async function enhanceDoorReference(dataUrl) {
+  const base64 = stripDataUrl(dataUrl);
+  if (!base64) return dataUrl;
+  try {
+    const output = await sharp(Buffer.from(base64, "base64"))
+      .rotate()
+      .resize(1000, 1000, {
+        fit: "contain",
+        background: { r: 255, g: 255, b: 255, alpha: 1 }
+      })
+      .jpeg({ quality: 95 })
+      .toBuffer();
+    return `data:image/jpeg;base64,${output.toString("base64")}`;
+  } catch (error) {
+    console.warn("Catalog door reference enhancement skipped.", error?.message || error);
+    return dataUrl;
+  }
 }
 
 function getMonthKey() {
@@ -327,6 +347,7 @@ export default async function handler(req, res) {
     }
 
     const selectedPrompt = buildCatalogPrompt(body, !!mainReference, !!baseReference, !!doorReference);
+    const enhancedDoorReference = await enhanceDoorReference(doorReference);
 
     const form = new FormData();
     const generationId = createGenerationId();
@@ -342,8 +363,8 @@ export default async function handler(req, res) {
     form.append("size", "1536x1024");
     appendImage(form, body.image, "kitchen");
     observeImage("Kitchen photo", body.image, "kitchen");
-    appendImage(form, doorReference, "selected-catalog-door-exact-reference");
-    observeImage("Catalog door exact reference", doorReference, "selected-catalog-door-exact-reference");
+    appendImage(form, enhancedDoorReference, "selected-catalog-door-exact-reference");
+    observeImage("Catalog door exact reference", enhancedDoorReference, "selected-catalog-door-exact-reference");
     appendImage(form, mainReference, "selected-upper-swatch-reference");
     observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "selected-base-swatch-reference");
