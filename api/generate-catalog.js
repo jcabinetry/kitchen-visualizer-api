@@ -73,6 +73,32 @@ function describeImage(role, dataUrl, fileName, order) {
   };
 }
 
+async function buildDoorGeometryReference(dataUrl) {
+  const base64 = stripDataUrl(dataUrl);
+  if (!base64) return dataUrl;
+  try {
+    const { default: sharp } = await import("sharp");
+    const output = await sharp(Buffer.from(base64, "base64"), { failOn: "none" })
+      .rotate()
+      .resize({
+        width: 768,
+        height: 768,
+        fit: "contain",
+        background: { r: 255, g: 255, b: 255, alpha: 1 }
+      })
+      .flatten({ background: "#ffffff" })
+      .grayscale()
+      .normalize()
+      .sharpen()
+      .jpeg({ quality: 92, mozjpeg: true })
+      .toBuffer();
+    return `data:image/jpeg;base64,${output.toString("base64")}`;
+  } catch (error) {
+    console.warn("Door geometry reference preprocessing skipped.", error?.message || error);
+    return dataUrl;
+  }
+}
+
 function imageSizeLabel(image) {
   if (!image) return "";
   if (String(image).startsWith("data:")) {
@@ -372,6 +398,7 @@ export default async function handler(req, res) {
     }
 
     const selectedPrompt = buildCatalogPrompt(body, !!mainReference, !!baseReference, !!doorReference);
+    const doorGeometryReference = await buildDoorGeometryReference(doorReference);
 
     const form = new FormData();
     const generationId = createGenerationId();
@@ -387,8 +414,8 @@ export default async function handler(req, res) {
     form.append("size", "1536x1024");
     appendImage(form, body.image, "kitchen");
     observeImage("Kitchen photo", body.image, "kitchen");
-    appendImage(form, doorReference, "selected-catalog-door-reference");
-    observeImage("Catalog door", doorReference, "selected-catalog-door-reference");
+    appendImage(form, doorGeometryReference, "selected-catalog-door-geometry-reference");
+    observeImage("Catalog door geometry", doorGeometryReference, "selected-catalog-door-geometry-reference");
     appendImage(form, mainReference, "selected-upper-swatch-reference");
     observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "selected-base-swatch-reference");
@@ -400,8 +427,8 @@ export default async function handler(req, res) {
     if (flooringReference) appendImage(form, flooringReference, "selected-flooring-reference");
     if (flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
     extraReferences.slice(0, 6).forEach(function(ref, index) {
-      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) appendImage(form, ref, `catalog-reference-${index + 1}`);
-      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) observeImage(`Additional reference ${index + 1}`, ref, `catalog-reference-${index + 1}`);
+      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== doorGeometryReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) appendImage(form, ref, `catalog-reference-${index + 1}`);
+      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== doorGeometryReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) observeImage(`Additional reference ${index + 1}`, ref, `catalog-reference-${index + 1}`);
     });
 
     const inspectorPayload = {
