@@ -470,8 +470,10 @@ export default async function handler(req, res) {
     form.append("size", "1536x1024");
     appendImage(form, body.image, "kitchen");
     observeImage("Kitchen photo", body.image, "kitchen");
-    appendImage(form, doorGeometryReference, "selected-catalog-door-geometry-reference");
-    observeImage("Catalog door geometry", doorGeometryReference, "selected-catalog-door-geometry-reference");
+    appendImage(form, doorReference, "selected-catalog-door-exact-reference");
+    observeImage("Catalog door exact reference", doorReference, "selected-catalog-door-exact-reference");
+    if (doorGeometryReference && doorGeometryReference !== doorReference) appendImage(form, doorGeometryReference, "selected-catalog-door-geometry-reference");
+    if (doorGeometryReference && doorGeometryReference !== doorReference) observeImage("Catalog door geometry helper", doorGeometryReference, "selected-catalog-door-geometry-reference");
     appendImage(form, mainReference, "selected-upper-swatch-reference");
     observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "selected-base-swatch-reference");
