@@ -1524,20 +1524,6 @@ const KV_COMPANY = {
   }
 
   function buildPrompt() {
-    let upperColorText = colorInput.options[colorInput.selectedIndex].text.toLowerCase();
-    let baseColorText = islandInput.value === "" ? "the same finish as the upper/wall cabinets" : islandInput.options[islandInput.selectedIndex].text.toLowerCase();
-
-    const upperIsCustom = colorInput.value === "custom main color reference";
-    const baseIsCustom = islandInput.value === "custom base cabinet color reference";
-
-    if (upperIsCustom) upperColorText = "the uploaded custom upper/wall cabinet finish reference image";
-    if (baseIsCustom) baseColorText = "the uploaded custom base/lower cabinet finish reference image";
-
-    const selectedManufacturer = manufacturerInput && manufacturerInput.options[manufacturerInput.selectedIndex] ? manufacturerInput.options[manufacturerInput.selectedIndex].text : "";
-    const selectedCatalogLine = catalogLineInput && catalogLineInput.options[catalogLineInput.selectedIndex] ? catalogLineInput.options[catalogLineInput.selectedIndex].text : "";
-    const doorStyle = styleInput.value || "catalog cabinet door style";
-    const upperHeight = upperHeightInput.value || "keep existing upper cabinets exactly as they are";
-    const hardware = hardwareInput.value || "matte black cabinet pulls";
     let countertopText = countertopInput.value ? countertopInput.options[countertopInput.selectedIndex].text.toLowerCase() : "";
     let backsplashText = backsplashInput.value ? backsplashInput.options[backsplashInput.selectedIndex].text.toLowerCase() : "";
     let flooringText = flooringInput.value ? flooringInput.options[flooringInput.selectedIndex].text.toLowerCase() : "";
@@ -1546,96 +1532,6 @@ const KV_COMPANY = {
     if (flooringInput.value === "custom flooring reference") flooringText = "the uploaded custom flooring reference image";
 
     return `
-MISSION:
-Edit this exact kitchen photo into a realistic cabinet door replacement and refacing preview.
-This is a catalog-based lead visualization, not a remodel.
-Apply every selected catalog and design option that the homeowner chose.
-Change the selected cabinet finish colors, selected catalog door style, countertops, backsplash, and flooring according to the selected options.
-Keep the kitchen as close to the original uploaded photo as possible.
-
-CUSTOM CATALOG SELECTION:
-The cabinet dealer selected this manufacturer and cabinet line:
-Manufacturer: ${selectedManufacturer || "Not selected"}
-Cabinet Line: ${selectedCatalogLine || "Not selected"}
-Use only the selected manufacturer, line, door style, and finishes described below.
-Do not invent a cabinet line that was not selected.
-
-MOST IMPORTANT RULE:
-Preserve the exact cabinet box layout, cabinet openings, cabinet count, drawer count, appliance openings, and room perspective.
-Do not preserve the old cabinet door face profile.
-Replace visible doors and drawer fronts with the selected catalog door profile.
-Do not redesign the kitchen.
-Do not change any door into a drawer.
-Do not change any drawer into a door.
-Do not add drawer stacks.
-Do not remove drawer stacks.
-Do not change the size, width, height, or position of any cabinet opening, door location, drawer location, face frame, toe kick, or filler.
-Do not move cabinet seams.
-Do not change hinge sides.
-Do not change appliance openings.
-Do not change the cabinet box layout.
-Do not change the camera angle, perspective, or room shape.
-
-CABINET GROUPS:
-Treat the cabinets as two finish groups only.
-
-GROUP 1: UPPER/WALL CABINETS
-Upper/wall cabinets are every cabinet mounted above the countertops.
-
-GROUP 2: BASE/LOWER CABINETS
-Base/lower cabinets are every cabinet surface below the countertops.
-
-UPPER/WALL CABINET FINISH:
-Apply this finish to every existing upper/wall cabinet surface:
-${upperColorText}
-
-This includes upper cabinet doors, upper side panels, upper face frames, upper rails, upper stiles, upper fillers, and upper trim that is part of the cabinets.
-
-BASE/LOWER CABINET FINISH:
-Apply this finish to EVERY existing lower cabinet surface below the countertops:
-${baseColorText}
-
-Apply the selected base cabinet color consistently to every visible cabinet below countertop height. This includes all lower cabinet doors, drawer fronts, sink base cabinets, drawer stacks, appliance-side base cabinets, exposed lower cabinet sides, exposed lower end panels, peninsula base cabinets, toe-kick-adjacent lower cabinet faces, rails, stiles, and every other visible lower cabinet section. Apply the same selected base finish to every visible island door, drawer front, exposed side, and end panel. Do not leave any visible lower cabinet surface in its original color.
-
-Keep upper cabinets separate from base cabinets. Apply the upper/wall finish only to cabinet surfaces above countertop height.
-
-Important: BASE/LOWER CABINETS means ALL cabinets below the countertop across the entire kitchen, not just the island, not just the peninsula, and not just one section.
-
-This includes every existing lower cabinet door, drawer front, drawer stack, sink base door, range-side lower cabinet, dishwasher-side lower panel, exposed end panel, exposed side panel, island cabinet, peninsula cabinet, toe kick, rail, stile, face frame, filler strip, and trim piece attached to the lower cabinets.
-
-BASE CABINET CONSISTENCY CHECK:
-All lower/base cabinet faces must match each other across the entire kitchen.
-No lower/base cabinet part should remain in the old color.
-No lower/base cabinet drawer front should remain a different color from the doors.
-No lower/base cabinet door should remain a different color from the drawers.
-Do not leave the left-side lower cabinets, sink lower cabinets, range-side lower cabinets, or dishwasher-side lower cabinets in the original finish.
-The lower/base cabinets should look professionally refinished together as one continuous cabinet group.
-
-FINAL SELF-CHECK BEFORE OUTPUT:
-Look at every cabinet below the countertop from left to right.
-If any lower door, lower drawer front, lower panel, lower frame, toe kick, or exposed lower side is still the original finish, recolor it to the selected base/lower finish before finalizing.
-
-DOOR STYLE SELECTION:
-The customer selected this door style:
-${doorStyle}
-
-The catalog door image is the authoritative door-style reference. Match the selected catalog door image exactly: rail width, stile width, panel shape, edge profile, center panel proportions, outside frame proportions, and any slab, recessed, or raised details must follow the selected door reference as closely as possible.
-Do NOT invent arches, raised panels, slabs, bevels, rails, stiles, or profiles that are not visible in the selected door reference.
-Do NOT change the existing number, size, position, or layout of doors and drawer fronts.
-Do replace the old visible door/drawer face profile with the selected catalog profile.
-Preserve the existing cabinet box layout while applying the selected catalog door profile to the visible cabinet fronts.
-
-UPPER CABINET HEIGHT INSTRUCTION:
-${upperHeight}
-
-Only follow this instruction if it can be done without changing the rest of the kitchen layout.
-
-HARDWARE:
-Use this hardware style:
-${hardware}
-
-Keep hardware locations close to the original layout and do not move doors or drawers to fit the hardware.
-
 COUNTERTOP INSTRUCTION:
 ${countertopText ? "Replace only the visible countertop surfaces with " + countertopText + ". Preserve the exact countertop shape, edge, thickness, overhang, sink cutout, appliance openings, and layout." : "Keep the existing countertops unchanged."}
 
@@ -1662,8 +1558,6 @@ or perspective.
 FINAL QUALITY:
 The final image must look like the same kitchen photo with cabinet finishes updated.
 It should not look like a different kitchen.
-It should not look like new cabinet boxes were installed.
-It should look like new catalog-matching doors and drawer fronts were professionally installed and refinished on the existing cabinet boxes.
     `.trim();
   }
 
