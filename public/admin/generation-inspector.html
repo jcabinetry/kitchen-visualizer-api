@@ -158,6 +158,9 @@ function renderDetail(generation) {
       metric("Generation ID", generation.generationId) +
       metric("Timestamp", formatDate(generation.timestamp)) +
       metric("Status", generation.status) +
+      metric("Model", generation.model || (generation.payload && generation.payload.model)) +
+      metric("Prompt Version", generation.promptVersion || (generation.payload && generation.payload.promptVersion)) +
+      metric("Quality", generation.quality || (generation.payload && generation.payload.quality)) +
       metric("Company Key", summary.companyKey) +
       metric("Manufacturer", summary.manufacturer) +
       metric("Cabinet Line", summary.cabinetLine) +
@@ -169,6 +172,9 @@ function renderDetail(generation) {
       metric("Flooring", summary.flooring) +
       metric("Generation Time", result.generationTimeMs ? result.generationTimeMs + " ms" : "") +
       metric("Image Size", result.imageSize || "") +
+      metric("Kitchen Attached", generation.attachmentStatus ? generation.attachmentStatus.kitchen : "") +
+      metric("Door Attached", generation.attachmentStatus ? generation.attachmentStatus.catalogDoor : "") +
+      metric("Upper Swatch Attached", generation.attachmentStatus ? generation.attachmentStatus.upperSwatch : "") +
     '</div></div>' +
     (generation.error ? '<div class="section card warn"><strong>Error</strong><p class="error-text">' + escapeHtml(generation.error.message || generation.error) + '</p></div>' : '') +
     (warnings.length ? '<div class="section card warn"><strong>Warnings</strong><p>' + escapeHtml(warnings.join("\\n")) + '</p></div>' : '') +

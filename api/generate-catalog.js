@@ -13,6 +13,8 @@ import {
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
+const CATALOG_IMAGE_MODEL = "gpt-image-2";
+const CATALOG_IMAGE_QUALITY = "high";
 const CATALOG_PROMPT_VERSION = String(process.env.CATALOG_PROMPT_VERSION || "v2").trim().toLowerCase() === "legacy"
   ? "legacy"
   : "v2";
@@ -138,8 +140,8 @@ function selectedDetails(body) {
     doorName: body.catalogDoorName || body.style || "selected catalog door reference",
     upperName: body.upperSwatchName || body.color || "selected upper/wall swatch",
     baseName: body.baseSwatchName || body.island || body.upperSwatchName || body.color || "selected base/lower swatch",
-    upperHex: body.upperSwatchHex || "",
-    baseHex: body.baseSwatchHex || body.upperSwatchHex || "",
+    upperHex: body.upperSwatchHex || body.mainCustomHex || "",
+    baseHex: body.baseSwatchHex || body.islandCustomHex || body.upperSwatchHex || body.mainCustomHex || "",
     countertop: body.countertop || countertopFromPrompt,
     backsplash: body.backsplash || backsplashFromPrompt,
     flooring: body.flooring || flooringFromPrompt
@@ -298,32 +300,53 @@ export default async function handler(req, res) {
         attachedImages.push(describeImage(role, dataUrl, `${fallbackName}.${getExt(getMimeType(dataUrl, "image/jpeg"))}`, attachedImages.length + 1));
       }
     }
-    form.append("model", "gpt-image-1");
+    const attachmentStatus = {
+      kitchen: false,
+      catalogDoor: false,
+      upperSwatch: false,
+      baseSwatch: !baseReference || baseReference === mainReference,
+      countertop: !countertopReference,
+      backsplash: !backsplashReference,
+      flooring: !flooringReference,
+      additionalReferences: []
+    };
+    form.append("model", CATALOG_IMAGE_MODEL);
     form.append("prompt", selectedPrompt);
     form.append("size", "1536x1024");
-    appendImage(form, body.image, "kitchen");
-    observeImage("Kitchen photo", body.image, "kitchen");
-    appendImage(form, doorReference, "selected-catalog-door-exact-reference");
-    observeImage("Catalog door exact reference", doorReference, "selected-catalog-door-exact-reference");
-    appendImage(form, mainReference, "selected-upper-swatch-reference");
-    observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
-    if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "selected-base-swatch-reference");
-    if (baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
-    if (countertopReference) appendImage(form, countertopReference, "selected-countertop-reference");
-    if (countertopReference) observeImage("Countertop", countertopReference, "selected-countertop-reference");
-    if (backsplashReference) appendImage(form, backsplashReference, "selected-backsplash-reference");
-    if (backsplashReference) observeImage("Backsplash", backsplashReference, "selected-backsplash-reference");
-    if (flooringReference) appendImage(form, flooringReference, "selected-flooring-reference");
-    if (flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
+    form.append("quality", CATALOG_IMAGE_QUALITY);
+    attachmentStatus.kitchen = appendImage(form, body.image, "kitchen");
+    if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
+    attachmentStatus.catalogDoor = appendImage(form, doorReference, "selected-catalog-door-exact-reference");
+    if (attachmentStatus.catalogDoor) observeImage("Catalog door exact reference", doorReference, "selected-catalog-door-exact-reference");
+    attachmentStatus.upperSwatch = appendImage(form, mainReference, "selected-upper-swatch-reference");
+    if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
+    if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(form, baseReference, "selected-base-swatch-reference");
+    if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
+    if (countertopReference) attachmentStatus.countertop = appendImage(form, countertopReference, "selected-countertop-reference");
+    if (attachmentStatus.countertop && countertopReference) observeImage("Countertop", countertopReference, "selected-countertop-reference");
+    if (backsplashReference) attachmentStatus.backsplash = appendImage(form, backsplashReference, "selected-backsplash-reference");
+    if (attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash", backsplashReference, "selected-backsplash-reference");
+    if (flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
+    if (attachmentStatus.flooring && flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
     extraReferences.slice(0, 6).forEach(function(ref, index) {
-      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) appendImage(form, ref, `catalog-reference-${index + 1}`);
-      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) observeImage(`Additional reference ${index + 1}`, ref, `catalog-reference-${index + 1}`);
+      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) {
+        const attached = appendImage(form, ref, `catalog-reference-${index + 1}`);
+        attachmentStatus.additionalReferences.push({ index: index + 1, attached });
+        if (attached) observeImage(`Additional reference ${index + 1}`, ref, `catalog-reference-${index + 1}`);
+      }
     });
 
+    if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
+    if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
+    if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
+
     const inspectorPayload = {
-      model: "gpt-image-1",
+      model: CATALOG_IMAGE_MODEL,
       size: "1536x1024",
+      quality: CATALOG_IMAGE_QUALITY,
+      promptVersion: CATALOG_PROMPT_VERSION,
       prompt: selectedPrompt,
+      attachmentStatus,
       attachments: attachedImages.map(function(image) {
         return {
           order: image.order,
@@ -339,6 +362,10 @@ export default async function handler(req, res) {
       generationId,
       timestamp: new Date(generationStartedAt).toISOString(),
       status: "sent",
+      model: CATALOG_IMAGE_MODEL,
+      promptVersion: CATALOG_PROMPT_VERSION,
+      quality: CATALOG_IMAGE_QUALITY,
+      attachmentStatus,
       summary: {
         companyKey: safeCompanyKey,
         manufacturer: body.manufacturer || body.selectedCatalog || "",
