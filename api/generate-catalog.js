@@ -13,6 +13,9 @@ import {
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
+const CATALOG_PROMPT_VERSION = String(process.env.CATALOG_PROMPT_VERSION || "v2").trim().toLowerCase() === "legacy"
+  ? "legacy"
+  : "v2";
 
 function cleanEnvValue(value) {
   return String(value || "").trim().replace(/^['\"]|['\"]$/g, "");
@@ -143,7 +146,7 @@ function selectedDetails(body) {
   };
 }
 
-function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference) {
+function buildLegacyCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference) {
   const details = selectedDetails(body);
   const upperColorText = hasMainReference ? `the attached upper/wall cabinet finish swatch (${details.upperName}${details.upperHex ? `, ${details.upperHex}` : ""})` : details.upperName;
   const baseColorText = hasBaseReference ? `the attached base/lower cabinet finish swatch (${details.baseName}${details.baseHex ? `, ${details.baseHex}` : ""})` : details.baseName;
@@ -183,6 +186,50 @@ ${surfaceInstructions}
 
 Produce a photorealistic image with accurate lighting, perspective, and textures.
 `.trim();
+}
+
+function buildCatalogPromptV2(body, hasMainReference, hasBaseReference, hasDoorReference) {
+  const details = selectedDetails(body);
+  const upperFinish = hasMainReference
+    ? `the attached upper cabinet finish swatch (${details.upperName}${details.upperHex ? `, ${details.upperHex}` : ""})`
+    : details.upperName;
+  const baseFinish = hasBaseReference
+    ? `the attached base cabinet finish swatch (${details.baseName}${details.baseHex ? `, ${details.baseHex}` : ""})`
+    : details.baseName;
+  const doorReference = hasDoorReference
+    ? `the attached cabinet door reference image (${details.doorName})`
+    : details.doorName;
+  const selectedSurfaceChanges = [
+    details.countertop ? `Replace the countertops with ${details.countertop}.` : "Keep the existing countertops unchanged.",
+    details.backsplash ? `Replace the backsplash with ${details.backsplash}.` : "Keep the existing backsplash unchanged.",
+    details.flooring ? `Replace the flooring with ${details.flooring}.` : "Keep the existing flooring unchanged."
+  ].join("\n");
+
+  return `
+Use the uploaded kitchen photo as the base image and create a photorealistic cabinet refacing preview, not a redesign.
+
+Replace every existing cabinet door and drawer front with the exact door style shown in ${doorReference}. Match its profile, frame width, rail and stile proportions, inside bevels, center panel, edge detail, and craftsmanship exactly. Fit that same door style naturally to every existing cabinet size, including double doors, narrow doors, tall pantry doors, island doors, and drawer fronts.
+
+Do not simplify the reference door, substitute a shaker style, mix door styles, or invent arches, cathedral tops, panels, grooves, bevels, trim, or decorative details that are not visible in the reference image. The supplied door image is the required result, not inspiration.
+
+Apply ${upperFinish} exactly and uniformly to every visible upper cabinet door, drawer front, face frame, exposed side, end panel, filler, and cabinet trim above countertop height.
+Apply ${baseFinish} exactly and uniformly to every visible base cabinet door, drawer front, face frame, exposed side, end panel, filler, toe kick, island surface, peninsula surface, and cabinet trim below countertop height. Do not leave any corresponding cabinet surface in its original color. If the upper and base finishes are the same, apply that one finish uniformly to every cabinet surface in the kitchen.
+
+Keep the cabinet boxes, cabinet layout, cabinet count, drawer count, appliance locations, hardware placement, island, walls, windows, trim, lighting, decorations, camera angle, perspective, and room dimensions exactly as they are. Do not redesign, modernize, resize, move, add, or remove anything.
+
+Selected surface changes:
+${selectedSurfaceChanges}
+Preserve the original shape, position, openings, scale, perspective, and surrounding objects for each changed surface. Apart from the explicitly selected changes above, everything else must remain identical to the original photograph.
+
+The finished image must look like the same kitchen photographed after professional cabinet refacing. The cabinet doors must match the supplied door reference exactly, the cabinet finishes must match the supplied swatches exactly, and the lighting, perspective, and textures must remain photorealistic.
+`.trim();
+}
+
+function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference) {
+  if (CATALOG_PROMPT_VERSION === "legacy") {
+    return buildLegacyCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference);
+  }
+  return buildCatalogPromptV2(body, hasMainReference, hasBaseReference, hasDoorReference);
 }
 
 function appendImage(form, dataUrl, fallbackName) {
