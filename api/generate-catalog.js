@@ -10,7 +10,6 @@ import {
   saveGenerationRecord,
   updateGenerationRecord
 } from "./_lib/generationInspectorStore.js";
-import sharp from "sharp";
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
@@ -82,25 +81,6 @@ function imageSizeLabel(image) {
   return "remote image URL";
 }
 
-async function enhanceDoorReference(dataUrl) {
-  const base64 = stripDataUrl(dataUrl);
-  if (!base64) return dataUrl;
-  try {
-    const output = await sharp(Buffer.from(base64, "base64"))
-      .rotate()
-      .resize(1000, 1000, {
-        fit: "contain",
-        background: { r: 255, g: 255, b: 255, alpha: 1 }
-      })
-      .jpeg({ quality: 95 })
-      .toBuffer();
-    return `data:image/jpeg;base64,${output.toString("base64")}`;
-  } catch (error) {
-    console.warn("Catalog door reference enhancement skipped.", error?.message || error);
-    return dataUrl;
-  }
-}
-
 function getMonthKey() {
   return new Date().toISOString().slice(0, 7);
 }
@@ -163,11 +143,24 @@ function selectedDetails(body) {
   };
 }
 
+function catalogDoorDescription(body, details) {
+  const explicit = String(body.catalogDoorAiDescription || body.catalogDoorDescription || "").trim();
+  if (explicit) return explicit.slice(0, 2200);
+
+  const doorName = String(details.doorName || "").toLowerCase();
+  if (/sen\s*ridge|senridge|sensen/.test(doorName)) {
+    return "This selected catalog door reference shows a traditional five-piece cabinet door set with a separate matching five-piece drawer front above the taller lower door. The lower door has a tall vertical rectangular center panel surrounded by wide outer rails and stiles. The center panel is not flat and not flush with the outer frame. It has a raised/recessed dimensional profile with visible bevels and stepped edges around all four sides. The inside profile creates a shadow line between the outer frame and the center panel. The panel face sits within a shaped frame and has depth. The outer rails and stiles are wider and more sculpted than a plain Shaker door. The frame edges are not simple square edges. They have soft bevels and layered profile transitions. The lower door should read as a traditional profiled raised/recessed panel door, not a simple flat recessed Shaker rectangle. The drawer front above it is also a five-piece style. It has a horizontal rectangular center panel inside a profiled frame, matching the lower door's beveled and stepped profile language. The drawer front must not become a plain slab drawer. Keep the drawer front separate above the lower door. Keep the lower door as a tall vertical rectangle. Keep the center panel rectangular. Keep the profiled bevel around the center panel. Keep the wider outer rails and stiles. Keep the dimensional depth and shadow lines. Keep the traditional raised/recessed panel look. Do not create an arch. Do not create a cathedral top. Do not flatten it into a Shaker door. Do not simplify it into a plain recessed rectangle. Do not turn it into a slab door. Use the uploaded catalog door image as the source of truth for the exact shape, proportions, depth, bevels, rails, stiles, panel profile, and drawer-front construction. Use this written description only to understand the visual structure of that image. Do not use the unfinished raw wood color from the catalog door image as the final cabinet color. Cabinet color must come only from the selected finish swatch.";
+  }
+
+  return "";
+}
+
 function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference) {
   const details = selectedDetails(body);
   const upperColorText = hasMainReference ? `uploaded upper/wall swatch reference for ${details.upperName}${details.upperHex ? ` (${details.upperHex})` : ""}` : details.upperName;
   const baseColorText = hasBaseReference ? `uploaded base/lower swatch reference for ${details.baseName}${details.baseHex ? ` (${details.baseHex})` : ""}` : details.baseName;
   const doorText = hasDoorReference ? `uploaded catalog door reference for ${details.doorName}` : details.doorName;
+  const doorDescription = catalogDoorDescription(body, details);
   return `
 MISSION:
 Create a realistic cabinet door replacement and refacing preview using the ORIGINAL uploaded kitchen photo.
@@ -203,6 +196,7 @@ Never sacrifice a higher priority to improve a lower priority.
 Selected cabinet door reference image: ${doorText}.
 Selected upper/wall cabinet finish: ${upperColorText}.
 Selected base/lower cabinet finish: ${baseColorText}.
+${doorDescription ? `Hidden cabinet door description:\n${doorDescription}` : ""}
 
 CABINET DOOR REFERENCE MATCH (HIGHEST PRIORITY):
 Use the attached cabinet door reference image as the visual target for every cabinet door and drawer front.
@@ -347,7 +341,6 @@ export default async function handler(req, res) {
     }
 
     const selectedPrompt = buildCatalogPrompt(body, !!mainReference, !!baseReference, !!doorReference);
-    const enhancedDoorReference = await enhanceDoorReference(doorReference);
 
     const form = new FormData();
     const generationId = createGenerationId();
@@ -363,8 +356,8 @@ export default async function handler(req, res) {
     form.append("size", "1536x1024");
     appendImage(form, body.image, "kitchen");
     observeImage("Kitchen photo", body.image, "kitchen");
-    appendImage(form, enhancedDoorReference, "selected-catalog-door-exact-reference");
-    observeImage("Catalog door exact reference", enhancedDoorReference, "selected-catalog-door-exact-reference");
+    appendImage(form, doorReference, "selected-catalog-door-exact-reference");
+    observeImage("Catalog door exact reference", doorReference, "selected-catalog-door-exact-reference");
     appendImage(form, mainReference, "selected-upper-swatch-reference");
     observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) appendImage(form, baseReference, "selected-base-swatch-reference");
