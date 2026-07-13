@@ -132,7 +132,8 @@ function renderList(generations) {
 }
 
 function metric(label, value) {
-  return '<div class="metric"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value || "-") + '</strong></div>';
+  const display = value === false ? "false" : value === true ? "true" : (value || "-");
+  return '<div class="metric"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(display) + '</strong></div>';
 }
 
 function renderImages(images) {
@@ -165,6 +166,7 @@ function renderDetail(generation) {
       metric("Manufacturer", summary.manufacturer) +
       metric("Cabinet Line", summary.cabinetLine) +
       metric("Door Style", summary.doorStyle) +
+      metric("Drawer Front", summary.drawerFront) +
       metric("Upper Finish", summary.upperFinish) +
       metric("Base Finish", summary.baseFinish) +
       metric("Countertop", summary.countertop) +
@@ -174,6 +176,7 @@ function renderDetail(generation) {
       metric("Image Size", result.imageSize || "") +
       metric("Kitchen Attached", generation.attachmentStatus ? generation.attachmentStatus.kitchen : "") +
       metric("Door Attached", generation.attachmentStatus ? generation.attachmentStatus.catalogDoor : "") +
+      metric("Drawer Attached", generation.attachmentStatus ? generation.attachmentStatus.catalogDrawer : "") +
       metric("Upper Swatch Attached", generation.attachmentStatus ? generation.attachmentStatus.upperSwatch : "") +
     '</div></div>' +
     (generation.error ? '<div class="section card warn"><strong>Error</strong><p class="error-text">' + escapeHtml(generation.error.message || generation.error) + '</p></div>' : '') +

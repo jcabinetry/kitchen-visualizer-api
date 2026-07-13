@@ -2312,9 +2312,17 @@ It should not look like a different kitchen.
   }
 
   function activeDoorImage() {
-    const activeImage = document.querySelector(".jcr-door-option.active .jcr-door-preview img");
+    const activeCard = document.querySelector(".jcr-door-option.active");
+    if (activeCard && activeCard.dataset.aiDoorReference) return activeCard.dataset.aiDoorReference;
+    const activeImage = activeCard ? activeCard.querySelector(".jcr-door-preview img") : null;
     const src = activeImage ? activeImage.getAttribute("src") || "" : "";
     return /visualizer-shaker-image|visualizer-raised-image|visualizer-slab-image/i.test(src) ? "" : src;
+  }
+
+  function activeDrawerImage() {
+    const activeCard = document.querySelector(".jcr-door-option.active");
+    if (!activeCard) return "";
+    return activeCard.dataset.aiDrawerReference || activeCard.dataset.drawerReference || "";
   }
 
   button.addEventListener("click", async function() {    if (!uploadedImageData) { status.innerText = "Upload a kitchen photo first."; return; }
@@ -2326,7 +2334,8 @@ It should not look like a different kitchen.
 
     syncAllCatalogFinishState();
     const prompt = buildPrompt();
-    const catalogDoorImage = document.getElementById("jcr_active_catalog_door_image")?.value || activeDoorImage();
+    const catalogDoorImage = activeDoorImage() || document.getElementById("jcr_active_catalog_door_image")?.value;
+    const catalogDrawerImage = activeDrawerImage();
     if (!catalogDoorImage) {
       status.innerText = "Wait for an assigned catalog door image to load, then select the door style again.";
       return;
@@ -2366,6 +2375,7 @@ It should not look like a different kitchen.
     if (uploadedBacksplashCustomData) referenceImages.push(uploadedBacksplashCustomData);
     if (uploadedFlooringCustomData) referenceImages.push(uploadedFlooringCustomData);
     if (catalogDoorImage) referenceImages.unshift(catalogDoorImage);
+    if (catalogDrawerImage && catalogDrawerImage !== catalogDoorImage) referenceImages.unshift(catalogDrawerImage);
     if (upperSwatchImage) referenceImages.unshift(upperSwatchImage);
     if (baseSwatchImage && baseSwatchImage !== upperSwatchImage) referenceImages.unshift(baseSwatchImage);
     const uniqueReferenceImages = Array.from(new Set(referenceImages.filter(Boolean))).slice(0, 8);
@@ -2391,7 +2401,9 @@ It should not look like a different kitchen.
           selectedFinishColor: upperFinishName || colorInput.value || null,
           selectedBaseFinishColor: baseFinishName || baseFinishValue || null,
           catalogDoorReference: catalogDoorImage || null,
+          catalogDrawerReference: catalogDrawerImage || null,
           catalogDoorName: doorStyleName || styleInput.value || null,
+          catalogDrawerName: catalogDrawerImage ? (doorStyleName || styleInput.value || null) : null,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,
           upperSwatchName: upperFinishName || colorInput.value || null,

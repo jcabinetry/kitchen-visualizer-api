@@ -138,6 +138,7 @@ function selectedDetails(body) {
   const flooringFromPrompt = parseMaterial(prompt, "FLOORING INSTRUCTION", /FLOORING INSTRUCTION:\s*Replace only the visible flooring with\s+(.+?)\.\s+Preserve/is);
   return {
     doorName: body.catalogDoorName || body.style || "selected catalog door reference",
+    drawerName: body.catalogDrawerName || body.catalogDoorName || body.style || "selected drawer front reference",
     upperName: body.upperSwatchName || body.color || "selected upper/wall swatch",
     baseName: body.baseSwatchName || body.island || body.upperSwatchName || body.color || "selected base/lower swatch",
     upperHex: body.upperSwatchHex || body.mainCustomHex || "",
@@ -148,11 +149,12 @@ function selectedDetails(body) {
   };
 }
 
-function buildLegacyCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference) {
+function buildLegacyCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference) {
   const details = selectedDetails(body);
   const upperColorText = hasMainReference ? `the attached upper/wall cabinet finish swatch (${details.upperName}${details.upperHex ? `, ${details.upperHex}` : ""})` : details.upperName;
   const baseColorText = hasBaseReference ? `the attached base/lower cabinet finish swatch (${details.baseName}${details.baseHex ? `, ${details.baseHex}` : ""})` : details.baseName;
   const doorText = hasDoorReference ? "the attached cabinet door reference image" : details.doorName;
+  const drawerText = hasDrawerReference ? "the attached drawer front reference image" : doorText;
   const surfaceInstructions = [
     details.countertop
       ? `Countertops: replace only the visible countertop surfaces with ${details.countertop}. Keep the same countertop shape, edge, thickness, overhang, sink cutout, appliance openings, and layout.`
@@ -173,7 +175,8 @@ Preserve every detail of the reference door design.
 Keep the cabinet boxes, cabinet layout, cabinet count, drawer count, appliance locations, walls, windows, trim, lighting, hardware placement, island, decorations, camera angle, perspective, and room dimensions exactly as they are.
 Do not redesign, modernize, or move anything.
 
-Fit the new door style naturally to each existing cabinet size, including double doors, narrow doors, tall pantry doors, island doors, end panels, exposed sides, and drawer fronts, while maintaining the same proportions as the reference image.
+Fit the new door style naturally to each existing cabinet size, including double doors, narrow doors, tall pantry doors, island doors, end panels, and exposed sides, while maintaining the same proportions as the reference image.
+Replace drawer fronts with ${drawerText}. If a separate drawer front reference is attached, drawer fronts must use that drawer-front geometry instead of stretching the tall door geometry.
 
 Apply ${upperColorText} uniformly to all upper cabinet doors, drawer fronts, visible face frames, side panels, end panels, fillers, toe kicks, and cabinet trim above countertop height.
 Apply ${baseColorText} uniformly to all base/lower cabinet doors, drawer fronts, visible face frames, side panels, end panels, fillers, toe kicks, island panels, peninsula panels, and cabinet trim below countertop height.
@@ -190,7 +193,7 @@ Produce a photorealistic image with accurate lighting, perspective, and textures
 `.trim();
 }
 
-function buildCatalogPromptV2(body, hasMainReference, hasBaseReference, hasDoorReference) {
+function buildCatalogPromptV2(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference) {
   const details = selectedDetails(body);
   const upperFinish = hasMainReference
     ? `the attached upper cabinet finish swatch (${details.upperName}${details.upperHex ? `, ${details.upperHex}` : ""})`
@@ -201,6 +204,9 @@ function buildCatalogPromptV2(body, hasMainReference, hasBaseReference, hasDoorR
   const doorReference = hasDoorReference
     ? `the attached cabinet door reference image (${details.doorName})`
     : details.doorName;
+  const drawerReference = hasDrawerReference
+    ? `the attached drawer front reference image (${details.drawerName})`
+    : doorReference;
   const selectedSurfaceChanges = [
     details.countertop ? `Replace the countertops with ${details.countertop}.` : "Keep the existing countertops unchanged.",
     details.backsplash ? `Replace the backsplash with ${details.backsplash}.` : "Keep the existing backsplash unchanged.",
@@ -214,7 +220,9 @@ Prioritize exact door profile accuracy above every other change.
 
 Use the uploaded kitchen photo as the base image and create a photorealistic cabinet refacing preview, not a redesign.
 
-Replace every existing cabinet door and drawer front with the exact door profile shown in ${doorReference}. Match its profile, frame width, rail and stile proportions, raised/recessed panel depth, inside bevels, inner shadow lines, center panel relief, stepped edges, edge detail, and craftsmanship exactly. The raised/recessed panel relief must be visibly dimensional from normal viewing distance, with strong bevel shadows, stepped inner edges, and clear raised-panel depth. Fit that same door profile to every existing cabinet size, including double doors, narrow doors, tall pantry doors, island doors, and drawer fronts.
+Replace every existing cabinet door with the exact door profile shown in ${doorReference}. Match its profile, frame width, rail and stile proportions, raised/recessed panel depth, inside bevels, inner shadow lines, center panel relief, stepped edges, edge detail, and craftsmanship exactly. The raised/recessed panel relief must be visibly dimensional from normal viewing distance, with strong bevel shadows, stepped inner edges, and clear raised-panel depth. Fit that same door profile to every existing cabinet door size, including double doors, narrow doors, tall pantry doors, and island doors.
+
+Replace every drawer front with ${drawerReference}. Drawer fronts are allowed to be shorter than doors, but they must keep the same bevel language, rail/stile proportions, inner profile, stepped edges, and raised/recessed relief shown in their reference. Do not flatten drawer fronts into plain slabs.
 
 Do not flatten the center panel into a plain rectangle. The inner profile must create visible light and shadow like the catalog door. Do not simplify the reference door, substitute a generic cabinet style, mix door styles, or invent arches, cathedral tops, panels, grooves, bevels, trim, or decorative details that are not visible in the reference image. The supplied door image is the required result, not inspiration.
 
@@ -231,11 +239,11 @@ The finished image must look like the same kitchen photographed after profession
 `.trim();
 }
 
-function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference) {
+function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference) {
   if (CATALOG_PROMPT_VERSION === "legacy") {
-    return buildLegacyCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference);
+    return buildLegacyCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference);
   }
-  return buildCatalogPromptV2(body, hasMainReference, hasBaseReference, hasDoorReference);
+  return buildCatalogPromptV2(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference);
 }
 
 function appendImage(form, dataUrl, fallbackName) {
@@ -281,6 +289,7 @@ export default async function handler(req, res) {
     const mainReference = body.mainCustomReference || body.mainCustomColorImage || body.mainCustomColorData || body.catalogSwatchReference || null;
     const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || body.catalogBaseSwatchReference || mainReference;
     const doorReference = body.catalogDoorReference || null;
+    const drawerReference = body.catalogDrawerReference || null;
     const countertopReference = body.countertopCustomReference || null;
     const backsplashReference = body.backsplashCustomReference || null;
     const flooringReference = body.flooringCustomReference || null;
@@ -293,7 +302,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
     }
 
-    const selectedPrompt = buildCatalogPrompt(body, !!mainReference, !!baseReference, !!doorReference);
+    const selectedPrompt = buildCatalogPrompt(body, !!mainReference, !!baseReference, !!doorReference, !!drawerReference);
 
     const form = new FormData();
     const generationId = createGenerationId();
@@ -307,6 +316,7 @@ export default async function handler(req, res) {
     const attachmentStatus = {
       kitchen: false,
       catalogDoor: false,
+      catalogDrawer: !drawerReference,
       upperSwatch: false,
       baseSwatch: !baseReference || baseReference === mainReference,
       countertop: !countertopReference,
@@ -322,6 +332,8 @@ export default async function handler(req, res) {
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
     attachmentStatus.catalogDoor = appendImage(form, doorReference, "selected-catalog-door-exact-reference");
     if (attachmentStatus.catalogDoor) observeImage("Catalog door exact reference", doorReference, "selected-catalog-door-exact-reference");
+    if (drawerReference) attachmentStatus.catalogDrawer = appendImage(form, drawerReference, "selected-catalog-drawer-front-reference");
+    if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Catalog drawer front reference", drawerReference, "selected-catalog-drawer-front-reference");
     attachmentStatus.upperSwatch = appendImage(form, mainReference, "selected-upper-swatch-reference");
     if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(form, baseReference, "selected-base-swatch-reference");
@@ -333,7 +345,7 @@ export default async function handler(req, res) {
     if (flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
     if (attachmentStatus.flooring && flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
     extraReferences.slice(0, 6).forEach(function(ref, index) {
-      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) {
+      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== drawerReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) {
         const attached = appendImage(form, ref, `catalog-reference-${index + 1}`);
         attachmentStatus.additionalReferences.push({ index: index + 1, attached });
         if (attached) observeImage(`Additional reference ${index + 1}`, ref, `catalog-reference-${index + 1}`);
@@ -342,6 +354,7 @@ export default async function handler(req, res) {
 
     if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
+    if (drawerReference && !attachmentStatus.catalogDrawer) return res.status(400).json({ error: "Catalog drawer front image could not be attached. Select the catalog door style again after the page finishes loading." });
     if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
 
     const inspectorPayload = {
@@ -375,6 +388,7 @@ export default async function handler(req, res) {
         manufacturer: body.manufacturer || body.selectedCatalog || "",
         cabinetLine: body.cabinetLine || "",
         doorStyle: body.catalogDoorName || body.selectedDoorStyle || body.style || "",
+        drawerFront: body.catalogDrawerName || "",
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
         baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
         countertop: body.countertop || "",
