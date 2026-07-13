@@ -35,6 +35,51 @@ function getExt(mime) {
 }
 
 function buildPrompt(kind, name) {
+  if (kind === "drawer") {
+    return `
+Create an AI-readable drawer-front reference image from the attached catalog drawer-front photo.
+
+Recreate only the single drawer front shown in the source image${name ? ` for ${name}` : ""}.
+
+This is a horizontal drawer front, not a cabinet door.
+Do not turn it into a mini cabinet door.
+Do not add a tall door-style center panel.
+Do not change its proportions or add/remove details.
+
+Preserve the drawer-front proportions exactly:
+- Very wide horizontal shape
+- Short height
+- Shallow raised center panel if present
+- Long horizontal rails
+- Short vertical stiles
+- Outer bevel
+- Inner bevel
+- Subtle recessed border
+- Same edge profile and depth as the source image
+- Position and shape of every existing detail
+
+Make the existing drawer-front profiles more pronounced and easier to read, but do not change the design.
+
+Output requirements:
+- Exactly one drawer front
+- Straight-on front view
+- Centered and fully visible
+- Plain white background
+- Neutral matte white or very light-gray finish
+- No visible wood grain
+- Clear studio lighting that reveals the shallow profile depth
+- No perspective angle
+- No cabinet door
+- No room, countertop, or cabinet box
+- No handles, knobs, hinges, or hardware
+- No text, labels, logos, or watermark
+- No props or additional objects
+
+Geometry accuracy is more important than color or styling.
+Return only the finished image.
+`.trim();
+  }
+
   const label = kind === "drawer" ? "drawer front" : "cabinet door";
   const oneItem = kind === "drawer" ? "Exactly one drawer front" : "Exactly one cabinet door";
   const noOther = kind === "drawer" ? "No cabinet door" : "No drawer front";
