@@ -125,8 +125,8 @@ async function buildDoorGeometryReference(dataUrl) {
         <text x="512" y="104" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#374151">SHAPE AND PROFILE ONLY - IGNORE WOOD COLOR</text>
         <text x="245" y="875" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="#111827">FULL DOOR + DRAWER</text>
         <text x="748" y="735" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="#111827">PROFILE / PANEL DETAIL</text>
-        <text x="748" y="778" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="800" fill="#b91c1c">NOT SHAKER - NOT FLAT</text>
-        <text x="748" y="816" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" fill="#374151">MATCH RAISED / RECESSED DEPTH</text>
+        <text x="748" y="778" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="800" fill="#b91c1c">COPY VISIBLE PROFILE ONLY</text>
+        <text x="748" y="816" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" fill="#374151">MATCH THE IMAGE, NOT A CATEGORY</text>
       </svg>
     `);
     const output = await sharp({
@@ -221,20 +221,6 @@ function selectedDetails(body) {
   };
 }
 
-function doorSpecificInstruction(doorName) {
-  const name = String(doorName || "").toLowerCase();
-  if (name.includes("raised")) {
-    return "Because the selected door is a raised-panel style, show a raised center panel with shaped/beveled profile detail. Do not render it as an inset, recessed-panel, flat shaker, or slab door.";
-  }
-  if (name.includes("slab")) {
-    return "Because the selected door is a slab style, show a plain flat slab face. Do not add shaker rails, raised panels, or recessed panels.";
-  }
-  if (name.includes("shaker")) {
-    return "Because the selected door is a shaker style, match the selected shaker proportions and rail/stile profile from the reference image. Do not substitute a different shaker profile.";
-  }
-  return "Match the visible panel shape, edge profile, rail/stile proportions, and center-panel depth from the selected catalog door reference image.";
-}
-
 function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference) {
   const details = selectedDetails(body);
   const upperColorText = hasMainReference ? `uploaded upper/wall swatch reference for ${details.upperName}${details.upperHex ? ` (${details.upperHex})` : ""}` : details.upperName;
@@ -283,22 +269,24 @@ It is NOT inspiration.
 It is NOT an example.
 It is the required finished result.
 Every visible cabinet door and drawer front must match it.
+Ignore all style category names and generic cabinet labels.
+The selected door name is only an inventory label.
+The attached catalog door image is the only source for the door appearance.
 Replace the old visible door and drawer face style completely.
 Do not preserve the original kitchen's old door face style.
 Preserve only the cabinet boxes, cabinet openings, layout, sizes, and positions.
-Use the catalog door image for door geometry, construction, panel shape, and profile only.
+Use the catalog door image for the visible door face only.
 Ignore the catalog door image's unfinished wood color, raw wood tone, stain tone, brightness, and material color.
 The catalog door image must never control cabinet color.
-The catalog door image must still control all visible raised/recessed profile depth, inner contouring, bevels, and panel relief.
-Do not flatten a raised or recessed catalog door into a plain shaker door.
-The final doors must show the same inner profile depth and same panel relief visible in the catalog image.
+The final doors must visually copy the same visible contours, outlines, inner shapes, outer shapes, depth changes, panel relief, edge details, and face pattern shown in the catalog image.
+Do not infer a style from words.
+Do not convert the catalog door into a common default cabinet style.
+Do not simplify the supplied door into a generic framed rectangle.
+If the label and the image disagree, follow the image.
 
 Copy exactly:
 - panel shape
 - square vs arched geometry
-- rail width
-- stile width
-- frame proportions
 - inside profile
 - outside profile
 - edge profile
@@ -306,8 +294,8 @@ Copy exactly:
 - panel depth
 - groove details
 - bead details
-- slab vs framed construction
-- raised vs recessed construction
+- visible construction type
+- visible face pattern
 
 Do NOT:
 - invent arches
@@ -321,7 +309,6 @@ Do NOT:
 - improve the design
 
 If the attached door is square, every generated door must remain square.
-If the attached door is slab, every generated door must remain slab.
 The finished kitchen should appear as though these exact cabinet doors were installed by a cabinet manufacturer.
 
 CABINET FINISH (SECOND HIGHEST PRIORITY):
