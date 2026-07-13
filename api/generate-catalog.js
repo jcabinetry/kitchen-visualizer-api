@@ -208,11 +208,15 @@ function buildCatalogPromptV2(body, hasMainReference, hasBaseReference, hasDoorR
   ].join("\n");
 
   return `
+The selected catalog door profile is the primary success criterion.
+A result with the wrong cabinet door profile is a failed result, even if the color, room realism, countertops, backsplash, or flooring look good.
+Prioritize exact door profile accuracy above every other change.
+
 Use the uploaded kitchen photo as the base image and create a photorealistic cabinet refacing preview, not a redesign.
 
-Replace every existing cabinet door and drawer front with the exact door style shown in ${doorReference}. Match its profile, frame width, rail and stile proportions, inside bevels, center panel, edge detail, and craftsmanship exactly. Fit that same door style naturally to every existing cabinet size, including double doors, narrow doors, tall pantry doors, island doors, and drawer fronts.
+Replace every existing cabinet door and drawer front with the exact door profile shown in ${doorReference}. Match its profile, frame width, rail and stile proportions, raised/recessed panel depth, inside bevels, inner shadow lines, center panel relief, stepped edges, edge detail, and craftsmanship exactly. Fit that same door profile to every existing cabinet size, including double doors, narrow doors, tall pantry doors, island doors, and drawer fronts.
 
-Do not simplify the reference door, substitute a generic cabinet style, mix door styles, or invent arches, cathedral tops, panels, grooves, bevels, trim, or decorative details that are not visible in the reference image. The supplied door image is the required result, not inspiration.
+Do not flatten the panel relief into a plain rectangle. Do not simplify the reference door, substitute a generic cabinet style, mix door styles, or invent arches, cathedral tops, panels, grooves, bevels, trim, or decorative details that are not visible in the reference image. The supplied door image is the required result, not inspiration.
 
 Apply ${upperFinish} exactly and uniformly to every visible upper cabinet door, drawer front, face frame, exposed side, end panel, filler, and cabinet trim above countertop height.
 Apply ${baseFinish} exactly and uniformly to every visible base cabinet door, drawer front, face frame, exposed side, end panel, filler, toe kick, island surface, peninsula surface, and cabinet trim below countertop height. Do not leave any corresponding cabinet surface in its original color. If the upper and base finishes are the same, apply that one finish uniformly to every cabinet surface in the kitchen.
