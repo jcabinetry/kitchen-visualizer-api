@@ -1,5 +1,6 @@
 import { setCorsHeaders } from "../_lib/cors.js";
-import { processCatalogAiReferenceJobs } from "../_lib/catalogAiReferenceQueue.js";
+import { getCatalog } from "../_lib/catalogStore.js";
+import { enqueueMissingCatalogAiReferenceJobs, processCatalogAiReferenceJobs } from "../_lib/catalogAiReferenceQueue.js";
 
 export const config = {
   maxDuration: 300
@@ -28,8 +29,15 @@ export default async function handler(req, res) {
 
   try {
     const limit = Math.max(1, Math.min(Number(req.query.limit || req.body?.limit || 1), 3));
+    const catalogId = String(req.query.catalogId || req.body?.catalogId || "").trim();
+    let enqueued = null;
+    if (catalogId) {
+      const catalog = await getCatalog(catalogId);
+      if (!catalog) return res.status(404).json({ error: "Catalog not found." });
+      enqueued = await enqueueMissingCatalogAiReferenceJobs(catalog);
+    }
     const result = await processCatalogAiReferenceJobs({ limit });
-    return res.status(200).json(result);
+    return res.status(200).json({ ...result, enqueued });
   } catch (error) {
     return res.status(400).json({ error: error?.message || "Catalog AI reference processing failed." });
   }
