@@ -7,10 +7,13 @@ export const config = {
 
 function requireRunner(req, res) {
   const required = process.env.ADMIN_API_TOKEN || process.env.ADMIN_TOKEN || "";
+  const cronSecret = process.env.CRON_SECRET || "";
   const supplied = req.headers["x-admin-token"] || req.headers.authorization?.replace(/^Bearer\s+/i, "");
-  const isCron = req.headers["x-vercel-cron"] === "1";
+  const userAgent = String(req.headers["user-agent"] || "");
+  const isCron = req.headers["x-vercel-cron"] === "1" || /vercel-cron/i.test(userAgent);
 
   if (isCron) return true;
+  if (cronSecret && supplied === cronSecret) return true;
   if (required && supplied === required) return true;
 
   res.status(401).json({ error: "Unauthorized." });
