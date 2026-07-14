@@ -1,6 +1,14 @@
 import { setCorsHeaders } from "./_lib/cors.js";
 import { archiveCatalog, getCatalog, listCatalogs, listCatalogVersions, saveCatalog } from "./_lib/catalogStore.js";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "50mb"
+    }
+  }
+};
+
 function setNoStore(res) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
 }
