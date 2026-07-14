@@ -5,6 +5,7 @@ import { generateCatalogReferenceImage } from "../generate-catalog-reference.js"
 
 const QUEUE_KEY = "visualizer:catalog-ai-reference-jobs:queue";
 const JOB_PREFIX = "visualizer:catalog-ai-reference-job:";
+const STALE_JOB_MS = 7 * 60 * 1000;
 
 function jobKey(id) {
   return `${JOB_PREFIX}${id}`;
@@ -21,6 +22,12 @@ function parseMaybeJson(value) {
 
 function hasValue(value) {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isStaleJob(job, nowMs) {
+  if (!job || !["queued", "running"].includes(job.status)) return false;
+  const stamp = Date.parse(job.startedAt || job.updatedAt || job.createdAt || "");
+  return Number.isFinite(stamp) && nowMs - stamp > STALE_JOB_MS;
 }
 
 function makeJobId(catalogId, manufacturerIndex, lineIndex, doorIndex, kind) {
@@ -85,26 +92,31 @@ export function findMissingCatalogAiReferenceJobs(catalog) {
 export async function enqueueMissingCatalogAiReferenceJobs(catalog) {
   const redis = getRedis();
   const now = new Date().toISOString();
+  const nowMs = Date.now();
   const jobs = findMissingCatalogAiReferenceJobs(catalog);
   let queued = 0;
+  let requeued = 0;
 
   for (const job of jobs) {
     const key = jobKey(job.id);
     const existing = parseMaybeJson(await redis.get(key).catch(() => null));
-    if (existing && ["queued", "running", "complete"].includes(existing.status)) continue;
+    if (existing && existing.status === "complete") continue;
+    if (existing && ["queued", "running"].includes(existing.status) && !isStaleJob(existing, nowMs)) continue;
 
     await redis.set(key, {
       ...job,
       status: "queued",
       attempts: Number(existing?.attempts || 0),
+      lastError: existing?.error || existing?.lastError || "",
       createdAt: existing?.createdAt || now,
       updatedAt: now
     });
     await redis.rpush(QUEUE_KEY, job.id);
-    queued += 1;
+    if (existing && ["queued", "running"].includes(existing.status)) requeued += 1;
+    else queued += 1;
   }
 
-  return { queued, pending: jobs.length };
+  return { queued, requeued, pending: jobs.length };
 }
 
 export async function processCatalogAiReferenceJobs({ limit = 1 } = {}) {
@@ -122,7 +134,7 @@ export async function processCatalogAiReferenceJobs({ limit = 1 } = {}) {
     if (!job || job.status === "complete") continue;
 
     const now = new Date().toISOString();
-    await redis.set(key, { ...job, status: "running", attempts: Number(job.attempts || 0) + 1, updatedAt: now });
+    await redis.set(key, { ...job, status: "running", attempts: Number(job.attempts || 0) + 1, startedAt: now, updatedAt: now });
 
     try {
       const catalog = await getCatalog(job.catalogId);

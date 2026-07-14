@@ -2,7 +2,7 @@ import { setCorsHeaders } from "../_lib/cors.js";
 import { processCatalogAiReferenceJobs } from "../_lib/catalogAiReferenceQueue.js";
 
 export const config = {
-  maxDuration: 60
+  maxDuration: 300
 };
 
 function requireRunner(req, res) {
