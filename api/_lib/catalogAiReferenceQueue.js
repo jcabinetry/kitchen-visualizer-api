@@ -100,7 +100,6 @@ export async function enqueueMissingCatalogAiReferenceJobs(catalog) {
   for (const job of jobs) {
     const key = jobKey(job.id);
     const existing = parseMaybeJson(await redis.get(key).catch(() => null));
-    if (existing && existing.status === "complete") continue;
     if (existing && ["queued", "running"].includes(existing.status) && !isStaleJob(existing, nowMs)) continue;
 
     await redis.set(key, {
@@ -112,7 +111,7 @@ export async function enqueueMissingCatalogAiReferenceJobs(catalog) {
       updatedAt: now
     });
     await redis.rpush(QUEUE_KEY, job.id);
-    if (existing && ["queued", "running"].includes(existing.status)) requeued += 1;
+    if (existing) requeued += 1;
     else queued += 1;
   }
 
