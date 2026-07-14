@@ -193,7 +193,7 @@ function renderDetail(generation) {
 async function loadList() {
   listEl.innerHTML = '<div class="empty">Loading...</div>';
   try {
-    const data = await api("/api/admin/generation-inspector?limit=30");
+    const data = await api("/api/admin/generation-inspector?limit=4");
     renderList(data.generations || []);
     if ((data.generations || []).length) loadDetail(data.generations[0].generationId);
   } catch (error) {

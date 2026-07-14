@@ -2,7 +2,7 @@ import { getRedis } from "./redisClient.js";
 
 const GENERATION_INDEX_KEY = "generation-inspector:index";
 const GENERATION_PREFIX = "generation-inspector:record:";
-const MAX_RECORDS = 50;
+const MAX_RECORDS = 4;
 const TTL_SECONDS = 60 * 60 * 24 * 14;
 
 function recordKey(id) {
@@ -33,6 +33,24 @@ function normalizeRecord(record) {
   };
 }
 
+async function trimGenerationRecords(redis) {
+  const ids = await redis.lrange(GENERATION_INDEX_KEY, 0, -1).catch(function() { return []; });
+  const orderedIds = toArray(ids).filter(Boolean);
+  const keepIds = orderedIds.slice(0, MAX_RECORDS);
+  const keepSet = new Set(keepIds);
+  const staleIds = Array.from(new Set(orderedIds.slice(MAX_RECORDS).filter(function(id) {
+    return !keepSet.has(id);
+  })));
+
+  await redis.ltrim(GENERATION_INDEX_KEY, 0, MAX_RECORDS - 1).catch(function() {});
+
+  if (staleIds.length) {
+    await Promise.all(staleIds.map(function(id) {
+      return redis.del(recordKey(id)).catch(function() {});
+    }));
+  }
+}
+
 export async function saveGenerationRecord(record) {
   const normalized = normalizeRecord(record);
   if (!normalized.generationId) return null;
@@ -41,7 +59,7 @@ export async function saveGenerationRecord(record) {
     redis.set(recordKey(normalized.generationId), normalized, { ex: TTL_SECONDS }),
     redis.lpush(GENERATION_INDEX_KEY, normalized.generationId)
   ]);
-  await redis.ltrim(GENERATION_INDEX_KEY, 0, MAX_RECORDS - 1).catch(function() {});
+  await trimGenerationRecords(redis);
   return normalized;
 }
 
@@ -68,6 +86,7 @@ export async function getGenerationRecord(generationId) {
 
 export async function listGenerationRecords(limit = 20) {
   const redis = getRedis();
+  await trimGenerationRecords(redis);
   const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), MAX_RECORDS);
   const ids = await redis.lrange(GENERATION_INDEX_KEY, 0, safeLimit - 1).catch(function() { return []; });
   const uniqueIds = Array.from(new Set(toArray(ids).filter(Boolean)));
