@@ -469,7 +469,7 @@
   function closeQuickDrawer(){
     const drawer=$("#adminQuickDrawer");
     if(drawer)drawer.classList.remove("active");
-    if(!$(".catalog-modal.active"))document.body.classList.remove("modal-lock");
+      document.body.classList.remove("modal-lock");
   }
 
   function setupBackToTop(){
@@ -489,7 +489,7 @@
   function setupModalScrollLock(){
     let previousScroll=0;
     function sync(){
-      const open=!!$(".catalog-modal.active")||!!$("#adminQuickDrawer.active");
+    const open=!!$("#adminQuickDrawer.active");
       if(open&&!document.body.classList.contains("modal-lock"))previousScroll=window.scrollY;
       document.body.classList.toggle("modal-lock",open);
       if(!open&&previousScroll)window.scrollTo({top:previousScroll});
