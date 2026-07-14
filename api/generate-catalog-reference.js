@@ -123,6 +123,38 @@ Return only the finished image.
 `.trim();
 }
 
+export async function generateCatalogReferenceImage({ kind = "door", name = "", image = "" } = {}) {
+  if (!process.env.OPENAI_API_KEY) throw new Error("Missing OPENAI_API_KEY.");
+  const sourceImage = image || "";
+  const base64 = stripDataUrl(sourceImage);
+  if (!base64) throw new Error("Upload a catalog image before generating an AI reference.");
+
+  const safeKind = String(kind || "door").toLowerCase() === "drawer" ? "drawer" : "door";
+  const mime = getMimeType(sourceImage);
+  const form = new FormData();
+  form.append("model", "gpt-image-2");
+  form.append("prompt", buildPrompt(safeKind, name || ""));
+  form.append("size", safeKind === "drawer" ? "1536x1024" : "1024x1536");
+  form.append("quality", "high");
+  form.append("image[]", new File([Buffer.from(base64, "base64")], `catalog-${safeKind}-source.${getExt(mime)}`, { type: mime }));
+
+  const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+    body: form
+  });
+  const result = await openaiResponse.json().catch(() => ({}));
+  if (!openaiResponse.ok) {
+    throw new Error(result?.error?.message || "OpenAI reference generation failed.");
+  }
+
+  const imageBase64 = result?.data?.[0]?.b64_json;
+  const imageUrl = result?.data?.[0]?.url;
+  if (imageBase64) return `data:image/png;base64,${imageBase64}`;
+  if (imageUrl) return imageUrl;
+  throw new Error("No AI reference image returned.");
+}
+
 export default async function handler(req, res) {
   if (setCorsHeaders(req, res, "POST, OPTIONS")) return;
   res.setHeader("Cache-Control", "no-store, max-age=0");
@@ -130,36 +162,13 @@ export default async function handler(req, res) {
   if (!requireAdmin(req, res)) return;
 
   try {
-    if (!process.env.OPENAI_API_KEY) return res.status(500).json({ error: "Missing OPENAI_API_KEY." });
     const body = req.body || {};
-    const sourceImage = body.image || "";
-    const base64 = stripDataUrl(sourceImage);
-    if (!base64) return res.status(400).json({ error: "Upload a catalog image before generating an AI reference." });
-
-    const kind = String(body.kind || "door").toLowerCase() === "drawer" ? "drawer" : "door";
-    const mime = getMimeType(sourceImage);
-    const form = new FormData();
-    form.append("model", "gpt-image-2");
-    form.append("prompt", buildPrompt(kind, body.name || ""));
-    form.append("size", kind === "drawer" ? "1536x1024" : "1024x1536");
-    form.append("quality", "high");
-    form.append("image[]", new File([Buffer.from(base64, "base64")], `catalog-${kind}-source.${getExt(mime)}`, { type: mime }));
-
-    const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: form
+    const image = await generateCatalogReferenceImage({
+      kind: body.kind || "door",
+      name: body.name || "",
+      image: body.image || ""
     });
-    const result = await openaiResponse.json().catch(() => ({}));
-    if (!openaiResponse.ok) {
-      return res.status(openaiResponse.status).json({ error: result?.error?.message || "OpenAI reference generation failed." });
-    }
-
-    const imageBase64 = result?.data?.[0]?.b64_json;
-    const imageUrl = result?.data?.[0]?.url;
-    if (imageBase64) return res.status(200).json({ image: `data:image/png;base64,${imageBase64}` });
-    if (imageUrl) return res.status(200).json({ image: imageUrl });
-    return res.status(500).json({ error: "No AI reference image returned." });
+    return res.status(200).json({ image });
   } catch (error) {
     return res.status(400).json({ error: error?.message || "AI reference generation failed." });
   }

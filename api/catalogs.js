@@ -1,5 +1,6 @@
 import { setCorsHeaders } from "./_lib/cors.js";
 import { archiveCatalog, getCatalog, listCatalogs, listCatalogVersions, saveCatalog } from "./_lib/catalogStore.js";
+import { enqueueMissingCatalogAiReferenceJobs } from "./_lib/catalogAiReferenceQueue.js";
 
 export const config = {
   api: {
@@ -52,7 +53,10 @@ export default async function handler(req, res) {
 
     if (req.method === "POST" || req.method === "PATCH") {
       const catalog = await saveCatalog(req.body || {});
-      return res.status(200).json({ catalog });
+      const aiReferenceJobs = await enqueueMissingCatalogAiReferenceJobs(catalog).catch(function(error) {
+        return { queued: 0, pending: 0, error: error?.message || "AI reference queue failed." };
+      });
+      return res.status(200).json({ catalog, aiReferenceJobs });
     }
 
     if (req.method === "DELETE") {
