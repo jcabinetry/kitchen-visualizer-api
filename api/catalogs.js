@@ -1,6 +1,6 @@
 import { setCorsHeaders } from "./_lib/cors.js";
 import { archiveCatalog, getCatalog, listCatalogs, listCatalogVersions, saveCatalog } from "./_lib/catalogStore.js";
-import { enqueueMissingCatalogAiReferenceJobs } from "./_lib/catalogAiReferenceQueue.js";
+import { enqueueMissingCatalogAiReferenceJobs, getCatalogAiReferenceStatus } from "./_lib/catalogAiReferenceQueue.js";
 
 export const config = {
   api: {
@@ -25,6 +25,14 @@ function requireAdmin(req, res) {
   return false;
 }
 
+async function attachAiReferenceStatus(catalog) {
+  if (!catalog) return catalog;
+  const aiReferenceStatus = await getCatalogAiReferenceStatus(catalog).catch(function(error) {
+    return { error: error?.message || "AI reference status unavailable." };
+  });
+  return { ...catalog, aiReferenceStatus };
+}
+
 export default async function handler(req, res) {
   if (setCorsHeaders(req, res, "GET, POST, PATCH, DELETE, OPTIONS")) return;
   setNoStore(res);
@@ -37,16 +45,16 @@ export default async function handler(req, res) {
         if (!catalog || catalog.status === "archived") return res.status(404).json({ error: "Catalog not found." });
 
         const includeVersions = String(req.query.versions || "") === "1";
-        if (!includeVersions) return res.status(200).json(catalog);
+        if (!includeVersions) return res.status(200).json(await attachAiReferenceStatus(catalog));
 
         const versions = await listCatalogVersions(catalog.catalogId, 20);
-        return res.status(200).json({ ...catalog, versions });
+        return res.status(200).json({ ...(await attachAiReferenceStatus(catalog)), versions });
       }
 
       const catalogs = (await listCatalogs()).filter(function(catalog) {
         return catalog && catalog.status !== "archived";
       });
-      return res.status(200).json({ catalogs });
+      return res.status(200).json({ catalogs: await Promise.all(catalogs.map(attachAiReferenceStatus)) });
     }
 
     if (!requireAdmin(req, res)) return;

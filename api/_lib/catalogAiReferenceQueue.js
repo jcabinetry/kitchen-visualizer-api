@@ -119,6 +119,59 @@ export async function enqueueMissingCatalogAiReferenceJobs(catalog) {
   return { queued, requeued, pending: jobs.length };
 }
 
+export async function getCatalogAiReferenceStatus(catalog) {
+  const redis = getRedis();
+  const status = {
+    total: 0,
+    ready: 0,
+    missing: 0,
+    queued: 0,
+    running: 0,
+    failed: 0,
+    stale: 0,
+    pending: 0,
+    errors: []
+  };
+  const pending = [];
+  const nowMs = Date.now();
+
+  (catalog.manufacturers || []).forEach(function(manufacturer, manufacturerIndex) {
+    (manufacturer.lines || []).forEach(function(line, lineIndex) {
+      (line.doors || []).forEach(function(door, doorIndex) {
+        const catalogId = catalog.catalogId;
+        if (door.image || door.thumbnail) {
+          status.total += 1;
+          if (door.aiDoorReference || door.aiImage) status.ready += 1;
+          else pending.push(makeJobId(catalogId, manufacturerIndex, lineIndex, doorIndex, "door"));
+        }
+        if (door.drawerImage || door.drawerThumbnail) {
+          status.total += 1;
+          if (door.aiDrawerReference || door.aiDrawerImage) status.ready += 1;
+          else pending.push(makeJobId(catalogId, manufacturerIndex, lineIndex, doorIndex, "drawer"));
+        }
+      });
+    });
+  });
+
+  for (const id of pending) {
+    const job = parseMaybeJson(await redis.get(jobKey(id)).catch(() => null));
+    if (job?.status === "queued") status.queued += 1;
+    else if (job?.status === "running") {
+      if (isStaleJob(job, nowMs)) status.stale += 1;
+      else status.running += 1;
+    } else if (job?.status === "failed") {
+      status.failed += 1;
+      if (job.error) status.errors.push(job.error);
+    } else {
+      status.missing += 1;
+    }
+  }
+
+  status.pending = status.missing + status.queued + status.running + status.failed + status.stale;
+  status.errors = [...new Set(status.errors)].slice(0, 3);
+  return status;
+}
+
 export async function processCatalogAiReferenceJobs({ limit = 1 } = {}) {
   const redis = getRedis();
   const processed = [];
