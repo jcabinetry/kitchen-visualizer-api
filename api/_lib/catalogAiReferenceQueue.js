@@ -211,7 +211,10 @@ export async function processCatalogAiReferenceJobs({ limit = 1 } = {}) {
       const generated = await generateCatalogReferenceImage({
         kind: job.kind,
         name: door.label || door.name || job.doorLabel || "",
-        image: source
+        image: source,
+        constructionType: job.kind === "drawer"
+          ? (door.drawerConstructionType || "")
+          : (door.doorConstructionType || "")
       });
       const compressed = await compressReferenceImage(generated, job.kind);
 
