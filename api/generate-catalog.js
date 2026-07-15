@@ -13,9 +13,16 @@ import {
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
-const CATALOG_IMAGE_MODEL = "gpt-image-2";
+const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
+const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const CATALOG_IMAGE_QUALITY = "high";
-const CATALOG_PROMPT_VERSION = "v9";
+const CATALOG_PROMPT_VERSION = "v10";
+
+function selectCatalogImageModel(value) {
+  return String(value || "").trim().toLowerCase() === TEST_CATALOG_IMAGE_MODEL
+    ? TEST_CATALOG_IMAGE_MODEL
+    : DEFAULT_CATALOG_IMAGE_MODEL;
+}
 
 function cleanEnvValue(value) {
   return String(value || "").trim().replace(/^['\"]|['\"]$/g, "");
@@ -308,12 +315,12 @@ ${attachments.join("\n")}
 No original catalog source images are attached. Never blend the door master, drawer master, finish swatches, or surface references.
 
 CABINET DOORS — PRIMARY SUCCESS CRITERION
-Copy image 2 onto every cabinet door. Preserve its exact visible face pattern, outer contour, panel outline, rail/stile proportions, profile steps, bevels, reveals, molding, edge treatment, and depth. Classification: ${details.doorConstructionType}. The classification controls depth direction only; it is not permission to substitute a generic ${details.doorConstructionType} door.
+Match image 2 closely enough that an average customer immediately recognizes the selected catalog door style at normal viewing size. Preserve its visible face pattern, outer contour, panel outline, rail/stile proportions, profile steps, bevels, reveals, molding, edge treatment, and depth. Tiny photorealistic differences in texture, lighting, or microscopic edge detail are acceptable. A wrong depth direction, generic profile, changed bevel/step sequence, or visibly different proportions are not acceptable. Classification: ${details.doorConstructionType}. The classification controls depth direction only; it is not permission to substitute a generic ${details.doorConstructionType} door.
 Saved door geometry specification: ${doorDescription}
 Door must avoid: ${doorMustAvoid}
 
 DRAWER FRONTS — SEPARATE SPECIFICATION
-Copy image 3 onto every drawer front. Keep its own horizontal proportions and geometry; do not stretch the door master or copy door geometry into drawer areas. Classification: ${details.drawerConstructionType}.
+Match image 3 closely enough that an average customer recognizes the selected drawer-front style at normal viewing size. Keep its own horizontal proportions, relief direction, and profile sequence; do not stretch the door master or copy door geometry into drawer areas. Tiny texture and lighting differences are acceptable, but a generic or visibly different drawer profile is not. Classification: ${details.drawerConstructionType}.
 Saved drawer-front geometry specification: ${drawerDescription}
 Drawer front must avoid: ${drawerMustAvoid}
 
@@ -407,6 +414,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
     }
 
+    const imageModel = selectCatalogImageModel(body.imageModel);
     const selectedPrompt = buildCatalogPrompt(
       body,
       !!mainReference,
@@ -435,7 +443,7 @@ export default async function handler(req, res) {
       backsplash: !backsplashReference,
       flooring: !flooringReference
     };
-    form.append("model", CATALOG_IMAGE_MODEL);
+    form.append("model", imageModel);
     form.append("prompt", selectedPrompt);
     form.append("size", "1536x1024");
     form.append("quality", CATALOG_IMAGE_QUALITY);
@@ -462,7 +470,7 @@ export default async function handler(req, res) {
     if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
 
     const inspectorPayload = {
-      model: CATALOG_IMAGE_MODEL,
+      model: imageModel,
       size: "1536x1024",
       quality: CATALOG_IMAGE_QUALITY,
       promptVersion: CATALOG_PROMPT_VERSION,
@@ -486,7 +494,7 @@ export default async function handler(req, res) {
       generationId,
       timestamp: new Date(generationStartedAt).toISOString(),
       status: "sent",
-      model: CATALOG_IMAGE_MODEL,
+      model: imageModel,
       promptVersion: CATALOG_PROMPT_VERSION,
       quality: CATALOG_IMAGE_QUALITY,
       attachmentStatus,

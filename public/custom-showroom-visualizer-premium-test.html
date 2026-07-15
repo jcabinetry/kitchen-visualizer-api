@@ -2429,6 +2429,7 @@ It should not look like a different kitchen.
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: uploadedImageData,
+          imageModel: new URLSearchParams(window.location.search).get("imageModel") === "gpt-image-1" ? "gpt-image-1" : "gpt-image-2",
           prompt: prompt,
           companyKey: KV_COMPANY.companyKey,
           companyName: KV_COMPANY.companyName,
