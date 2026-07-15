@@ -907,7 +907,17 @@ const KV_COMPANY = {
 
   // registerCustomerFromPage();
 
-  document.documentElement.style.setProperty("--kv-primary", KV_COMPANY.primaryColor || "#1f2937");
+const kvBranding = KV_COMPANY.branding || {};
+const kvPrimary = KV_COMPANY.primaryColor || kvBranding.primaryColor || "#1f2937";
+const kvSecondary = KV_COMPANY.secondaryColor || kvBranding.secondaryColor || "#64748b";
+const kvAccent = KV_COMPANY.accentColor || kvBranding.accentColor || "#2563eb";
+const kvBackground = KV_COMPANY.backgroundColor || kvBranding.backgroundColor || "#f8fafc";
+const kvCard = KV_COMPANY.cardColor || kvBranding.cardColor || "#ffffff";
+document.documentElement.style.setProperty("--kv-primary", kvPrimary);
+document.documentElement.style.setProperty("--kv-secondary", kvSecondary);
+document.documentElement.style.setProperty("--kv-accent", kvAccent);
+document.documentElement.style.setProperty("--kv-background", kvBackground);
+document.documentElement.style.setProperty("--kv-card", kvCard);
 
   document.getElementById("kv_title").innerText = KV_COMPANY.companyName + " Custom Cabinet Visualizer";
   document.getElementById("kv_subtitle").innerText = "Upload a kitchen photo and preview catalog cabinet lines, door styles, finishes, countertops, backsplash, flooring, and hardware.";
