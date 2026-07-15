@@ -303,6 +303,38 @@ function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorRef
   return buildCatalogPromptV8(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference, hasDoorSourceReference, hasDrawerSourceReference);
 }
 
+function buildSurfacePassPrompt(body, hasCountertopReference, hasBacksplashReference, hasFlooringReference) {
+  const details = selectedDetails(body);
+  let attachmentNumber = 2;
+  const attachmentGuide = [];
+  if (hasCountertopReference) attachmentGuide.push(`${attachmentNumber++}. COUNTERTOP material reference; use only for the countertop.`);
+  if (hasBacksplashReference) attachmentGuide.push(`${attachmentNumber++}. BACKSPLASH material reference; use only for the backsplash.`);
+  if (hasFlooringReference) attachmentGuide.push(`${attachmentNumber++}. FLOORING material reference; use only for the flooring.`);
+  const countertopInstruction = details.countertop
+    ? `Replace only the visible countertop surfaces with ${details.countertop}${hasCountertopReference ? ", matching the attached countertop reference" : ""}. Preserve their exact shape, edge, thickness, overhang, sink cutout, appliance openings, seams, shadows, and layout.`
+    : "Keep the countertops exactly unchanged.";
+  const backsplashInstruction = details.backsplash
+    ? `Replace only the visible backsplash area with ${details.backsplash}${hasBacksplashReference ? ", matching the attached backsplash reference" : ""}. Preserve outlets, windows, trim, cabinets, countertops, wall layout, shadows, and perspective.`
+    : "Keep the backsplash exactly unchanged.";
+  const flooringInstruction = details.flooring
+    ? `Replace only the visible flooring with ${details.flooring}${hasFlooringReference ? ", matching the attached flooring reference" : ""}. Preserve floor perspective, plank or tile scale, shadows, cabinets, appliances, furniture, rugs, walls, and room layout.`
+    : "Keep the flooring exactly unchanged.";
+
+  return `
+This is the second, surface-only pass of an existing cabinet visualization.
+The first attached image is the approved cabinet result. Its cabinet doors, drawer fronts, cabinet colors, cabinet boxes, hardware, and cabinet geometry are locked and must remain pixel-for-pixel visually unchanged. Do not regenerate, reinterpret, simplify, recolor, resize, move, add, or remove any cabinet part.
+${attachmentGuide.length ? `The remaining attached images have these separate roles:\n${attachmentGuide.join("\n")}` : "No additional material reference images are attached."}
+
+Apply only the selected surface changes below:
+${countertopInstruction}
+${backsplashInstruction}
+${flooringInstruction}
+
+Keep every cabinet door profile and drawer-front profile exactly as it appears in the first image. Keep cabinet finishes, face frames, panels, fillers, toe kicks, island cabinetry, and peninsula cabinetry unchanged. Also preserve appliances, walls outside the selected backsplash, windows, trim, lighting, decorations, camera angle, perspective, and room dimensions.
+This is a localized material edit, not a redesign. Return the same photorealistic kitchen with only the explicitly selected countertop, backsplash, and flooring surfaces changed.
+`.trim();
+}
+
 function appendImage(form, dataUrl, fallbackName) {
   const base64 = stripDataUrl(dataUrl);
   if (!base64) return false;
@@ -358,6 +390,7 @@ export default async function handler(req, res) {
     const doorConstructionType = normalizeConstructionType(body.catalogDoorConstructionType);
     const drawerConstructionType = normalizeConstructionType(body.catalogDrawerConstructionType);
     const requireConstructionTypes = body.requireConstructionTypes === true;
+    const twoPass = body.twoPass === true;
     const countertopReference = body.countertopCustomReference || null;
     const backsplashReference = body.backsplashCustomReference || null;
     const flooringReference = body.flooringCustomReference || null;
@@ -385,8 +418,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
     }
 
+    const cabinetPromptBody = twoPass
+      ? { ...body, prompt: "", countertop: "", backsplash: "", flooring: "" }
+      : body;
     const selectedPrompt = buildCatalogPrompt(
-      body,
+      cabinetPromptBody,
       !!mainReference,
       !!baseReference,
       !!doorReference,
@@ -412,9 +448,9 @@ export default async function handler(req, res) {
       catalogDrawerSource: !drawerSourceReference,
       upperSwatch: false,
       baseSwatch: !baseReference || baseReference === mainReference,
-      countertop: !countertopReference,
-      backsplash: !backsplashReference,
-      flooring: !flooringReference,
+      countertop: twoPass || !countertopReference,
+      backsplash: twoPass || !backsplashReference,
+      flooring: twoPass || !flooringReference,
       additionalReferences: []
     };
     form.append("model", CATALOG_IMAGE_MODEL);
@@ -435,12 +471,12 @@ export default async function handler(req, res) {
     if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(form, baseReference, "selected-base-swatch-reference");
     if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
-    if (countertopReference) attachmentStatus.countertop = appendImage(form, countertopReference, "selected-countertop-reference");
-    if (attachmentStatus.countertop && countertopReference) observeImage("Countertop", countertopReference, "selected-countertop-reference");
-    if (backsplashReference) attachmentStatus.backsplash = appendImage(form, backsplashReference, "selected-backsplash-reference");
-    if (attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash", backsplashReference, "selected-backsplash-reference");
-    if (flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
-    if (attachmentStatus.flooring && flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
+    if (!twoPass && countertopReference) attachmentStatus.countertop = appendImage(form, countertopReference, "selected-countertop-reference");
+    if (!twoPass && attachmentStatus.countertop && countertopReference) observeImage("Countertop", countertopReference, "selected-countertop-reference");
+    if (!twoPass && backsplashReference) attachmentStatus.backsplash = appendImage(form, backsplashReference, "selected-backsplash-reference");
+    if (!twoPass && attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash", backsplashReference, "selected-backsplash-reference");
+    if (!twoPass && flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
+    if (!twoPass && attachmentStatus.flooring && flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
     extraReferences.slice(0, 6).forEach(function(ref, index) {
       if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== drawerReference && ref !== doorSourceReference && ref !== drawerSourceReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) {
         const attached = appendImage(form, ref, `catalog-reference-${index + 1}`);
@@ -456,12 +492,27 @@ export default async function handler(req, res) {
     if (drawerSourceReference && !attachmentStatus.catalogDrawerSource) return res.status(400).json({ error: "The original catalog drawer-front image could not be attached. Re-save this drawer front in Catalog Manager, reload, and try again." });
     if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
 
+    const hasSurfaceChanges = Boolean(body.countertop || body.backsplash || body.flooring);
+    const surfacePassPrompt = twoPass && hasSurfaceChanges
+      ? buildSurfacePassPrompt(body, !!countertopReference, !!backsplashReference, !!flooringReference)
+      : "";
+    const activePromptVersion = twoPass ? `${CATALOG_PROMPT_VERSION}-two-pass` : CATALOG_PROMPT_VERSION;
+    const inspectorPrompt = surfacePassPrompt
+      ? `PASS 1 - CABINETS ONLY\n\n${selectedPrompt}\n\nPASS 2 - SURFACES ONLY\n\n${surfacePassPrompt}`
+      : selectedPrompt;
     const inspectorPayload = {
       model: CATALOG_IMAGE_MODEL,
       size: "1536x1024",
       quality: CATALOG_IMAGE_QUALITY,
-      promptVersion: CATALOG_PROMPT_VERSION,
-      prompt: selectedPrompt,
+      promptVersion: activePromptVersion,
+      prompt: inspectorPrompt,
+      generationMode: twoPass ? "two-pass" : "single-pass",
+      passes: surfacePassPrompt
+        ? [
+            { stage: "cabinets", prompt: selectedPrompt },
+            { stage: "surfaces", prompt: surfacePassPrompt }
+          ]
+        : [{ stage: twoPass ? "cabinets" : "combined", prompt: selectedPrompt }],
       attachmentStatus,
       attachments: attachedImages.map(function(image) {
         return {
@@ -479,7 +530,7 @@ export default async function handler(req, res) {
       timestamp: new Date(generationStartedAt).toISOString(),
       status: "sent",
       model: CATALOG_IMAGE_MODEL,
-      promptVersion: CATALOG_PROMPT_VERSION,
+      promptVersion: activePromptVersion,
       quality: CATALOG_IMAGE_QUALITY,
       attachmentStatus,
       summary: {
@@ -496,7 +547,7 @@ export default async function handler(req, res) {
         backsplash: body.backsplash || "",
         flooring: body.flooring || ""
       },
-      prompt: selectedPrompt,
+      prompt: inspectorPrompt,
       payload: inspectorPayload,
       referenceImages: attachedImages,
       warnings: attachedImages.length ? [] : ["No image attachments were recorded before OpenAI request."]
@@ -505,7 +556,7 @@ export default async function handler(req, res) {
     });
 
     const openaiResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: form });
-    const result = await openaiResponse.json();
+    let result = await openaiResponse.json();
     if (!openaiResponse.ok) {
       await updateGenerationRecord(generationId, {
         status: "error",
@@ -522,6 +573,67 @@ export default async function handler(req, res) {
         console.warn("Generation inspector error logging skipped.", error?.message || error);
       });
       return res.status(openaiResponse.status).json({ error: result?.error?.message || result?.message || "OpenAI image edit failed." });
+    }
+
+    if (surfacePassPrompt) {
+      const cabinetImageBase64 = result?.data?.[0]?.b64_json;
+      if (!cabinetImageBase64) {
+        await updateGenerationRecord(generationId, {
+          status: "error",
+          error: { status: 500, stage: "surfaces", message: "The cabinet pass did not return image data for the surface pass." }
+        }).catch(function(error) {
+          console.warn("Generation inspector two-pass error logging skipped.", error?.message || error);
+        });
+        return res.status(500).json({ error: "The cabinet pass finished, but the surface pass could not start. Please try again." });
+      }
+
+      const surfaceForm = new FormData();
+      surfaceForm.append("model", CATALOG_IMAGE_MODEL);
+      surfaceForm.append("prompt", surfacePassPrompt);
+      surfaceForm.append("size", "1536x1024");
+      surfaceForm.append("quality", CATALOG_IMAGE_QUALITY);
+      const cabinetPassImage = `data:image/png;base64,${cabinetImageBase64}`;
+      if (!appendImage(surfaceForm, cabinetPassImage, "approved-cabinet-pass")) {
+        return res.status(500).json({ error: "The cabinet result could not be attached for the surface pass. Please try again." });
+      }
+      if (countertopReference) {
+        appendImage(surfaceForm, countertopReference, "selected-countertop-reference");
+        observeImage("Surface pass countertop reference", countertopReference, "selected-countertop-reference");
+      }
+      if (backsplashReference) {
+        appendImage(surfaceForm, backsplashReference, "selected-backsplash-reference");
+        observeImage("Surface pass backsplash reference", backsplashReference, "selected-backsplash-reference");
+      }
+      if (flooringReference) {
+        appendImage(surfaceForm, flooringReference, "selected-flooring-reference");
+        observeImage("Surface pass flooring reference", flooringReference, "selected-flooring-reference");
+      }
+
+      await updateGenerationRecord(generationId, {
+        status: "surface-pass",
+        payload: {
+          ...inspectorPayload,
+          attachments: attachedImages.map(function(image) {
+            return { order: image.order, role: image.role, fileName: image.fileName, mime: image.mime, bytes: image.bytes, dataUrl: image.dataUrl };
+          })
+        },
+        referenceImages: attachedImages
+      }).catch(function(error) {
+        console.warn("Generation inspector surface-pass logging skipped.", error?.message || error);
+      });
+
+      const surfaceResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: surfaceForm });
+      result = await surfaceResponse.json();
+      if (!surfaceResponse.ok) {
+        await updateGenerationRecord(generationId, {
+          status: "error",
+          result: { generationTimeMs: Date.now() - generationStartedAt, image: "", imageSize: "" },
+          error: { status: surfaceResponse.status, stage: "surfaces", message: result?.error?.message || result?.message || "OpenAI surface edit failed." }
+        }).catch(function(error) {
+          console.warn("Generation inspector surface error logging skipped.", error?.message || error);
+        });
+        return res.status(surfaceResponse.status).json({ error: result?.error?.message || result?.message || "The cabinet pass finished, but the surface pass failed." });
+      }
     }
 
     const updatedUsed = await redisIncr(usageKey);

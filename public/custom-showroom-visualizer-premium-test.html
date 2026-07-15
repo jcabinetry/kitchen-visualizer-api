@@ -2432,6 +2432,7 @@ It should not look like a different kitchen.
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: uploadedImageData,
+          twoPass: true,
           prompt: prompt,
           companyKey: KV_COMPANY.companyKey,
           companyName: KV_COMPANY.companyName,

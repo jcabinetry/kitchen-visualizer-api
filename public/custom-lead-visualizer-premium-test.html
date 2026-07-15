@@ -2455,6 +2455,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: uploadedImageData,
+          twoPass: true,
           prompt: prompt,
           companyKey: KV_COMPANY.companyKey,
           companyName: KV_COMPANY.companyName,
