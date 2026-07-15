@@ -15,9 +15,9 @@ const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 const CATALOG_IMAGE_MODEL = "gpt-image-2";
 const CATALOG_IMAGE_QUALITY = "high";
-const CATALOG_PROMPT_VERSION = String(process.env.CATALOG_PROMPT_VERSION || "v6").trim().toLowerCase() === "legacy"
+const CATALOG_PROMPT_VERSION = String(process.env.CATALOG_PROMPT_VERSION || "v7").trim().toLowerCase() === "legacy"
   ? "legacy"
-  : "v6";
+  : "v7";
 
 function cleanEnvValue(value) {
   return String(value || "").trim().replace(/^['\"]|['\"]$/g, "");
@@ -218,7 +218,7 @@ Produce a photorealistic image with accurate lighting, perspective, and textures
 `.trim();
 }
 
-function buildCatalogPromptV5(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference) {
+function buildCatalogPromptV7(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference, hasDoorSourceReference, hasDrawerSourceReference) {
   const details = selectedDetails(body);
   const upperFinish = hasMainReference
     ? `the attached upper cabinet finish swatch (${details.upperName}${details.upperHex ? `, ${details.upperHex}` : ""})`
@@ -226,20 +226,36 @@ function buildCatalogPromptV5(body, hasMainReference, hasBaseReference, hasDoorR
   const baseFinish = hasBaseReference
     ? `the attached base cabinet finish swatch (${details.baseName}${details.baseHex ? `, ${details.baseHex}` : ""})`
     : details.baseName;
-  const doorReference = hasDoorReference
-    ? `the attached cabinet door reference image (${details.doorName})`
+  const cleanedDoorReference = hasDoorReference
+    ? `the cleaned cabinet door geometry reference (${details.doorName})`
     : details.doorName;
-  const drawerReference = hasDrawerReference
-    ? `the attached drawer front reference image (${details.drawerName})`
-    : doorReference;
-  const geometryAttachmentGuide = hasDrawerReference
-    ? `2. The second image is the exact DRAWER-FRONT reference (${details.drawerName}). Use it only for drawer fronts.\n3. The third image is the exact cabinet DOOR reference (${details.doorName}). Use it only for cabinet doors.\nAny images after the third image are finish or surface references.`
-    : `2. The second image is the exact cabinet DOOR reference (${details.doorName}). Use it only for cabinet doors.\nNo separate drawer-front image is attached. Derive the drawer-front design from the cabinet door reference without inventing unrelated geometry. Any images after the second image are finish or surface references.`;
+  const cleanedDrawerReference = hasDrawerReference
+    ? `the cleaned drawer-front geometry reference (${details.drawerName})`
+    : cleanedDoorReference;
+  const originalDoorReference = hasDoorSourceReference
+    ? `the original uploaded catalog door image (${details.doorName})`
+    : cleanedDoorReference;
+  const originalDrawerReference = hasDrawerSourceReference
+    ? `the original uploaded catalog drawer-front image (${details.drawerName})`
+    : cleanedDrawerReference;
+  const doorSpecification = hasDoorSourceReference
+    ? `${originalDoorReference} for the exact unique design and ${cleanedDoorReference} only as a secondary clarity and depth aid`
+    : cleanedDoorReference;
+  const drawerSpecification = hasDrawerSourceReference
+    ? `${originalDrawerReference} for the exact unique design and ${cleanedDrawerReference} only as a secondary clarity and depth aid`
+    : cleanedDrawerReference;
+  let attachmentNumber = 2;
+  const geometryAttachments = [];
+  if (hasDrawerReference) geometryAttachments.push(`${attachmentNumber++}. CLEANED DRAWER-FRONT reference (${details.drawerName}); use only for drawer-front clarity and depth.`);
+  if (hasDoorReference) geometryAttachments.push(`${attachmentNumber++}. CLEANED CABINET DOOR reference (${details.doorName}); use only for door clarity and depth.`);
+  if (hasDrawerSourceReference) geometryAttachments.push(`${attachmentNumber++}. ORIGINAL UPLOADED DRAWER-FRONT image (${details.drawerName}); this is the authority for its unique design and proportions.`);
+  if (hasDoorSourceReference) geometryAttachments.push(`${attachmentNumber++}. ORIGINAL UPLOADED CABINET DOOR image (${details.doorName}); this is the authority for its unique design and proportions.`);
+  const geometryAttachmentGuide = `${geometryAttachments.join("\n")}\nAny images after image ${attachmentNumber - 1} are finish or surface references.`;
   const drawerInstruction = hasDrawerReference
-    ? `Replace every drawer front with the exact drawer-front geometry shown in ${drawerReference}. Use this reference only on drawer fronts. Preserve its horizontal proportions and reproduce its exact visible face pattern, outer contour, edge profile, depth transitions, dimensional relief, and shadow lines.`
-    : `Replace every drawer front with a horizontally proportioned version of ${drawerReference}. Preserve the reference construction while fitting it naturally to the shorter drawer-front height.`;
-  const doorConstructionInstruction = constructionInstruction("door", details.doorConstructionType, doorReference);
-  const drawerConstructionInstruction = constructionInstruction("drawer", details.drawerConstructionType, drawerReference);
+    ? `Replace every drawer front using ${drawerSpecification}. Use these drawer references only on drawer fronts. Preserve the original upload's horizontal proportions and reproduce its exact visible face pattern, outer contour, rail and stile widths, panel outline, molding or bevel sequence, edge profile, and transitions. Do not replace its distinctive details with a generic ${details.drawerConstructionType || "catalog"} drawer front.`
+    : `Replace every drawer front with a horizontally proportioned version of ${doorSpecification}. Preserve the reference construction while fitting it naturally to the shorter drawer-front height.`;
+  const doorConstructionInstruction = constructionInstruction("door", details.doorConstructionType, doorSpecification);
+  const drawerConstructionInstruction = constructionInstruction("drawer", details.drawerConstructionType, drawerSpecification);
   const selectedSurfaceChanges = [
     details.countertop ? `Replace the countertops with ${details.countertop}.` : "Keep the existing countertops unchanged.",
     details.backsplash ? `Replace the backsplash with ${details.backsplash}.` : "Keep the existing backsplash unchanged.",
@@ -257,7 +273,7 @@ ${geometryAttachmentGuide} Finish and surface references control color or materi
 
 Use the uploaded kitchen photo as the base image and create a photorealistic cabinet refacing preview, not a redesign.
 
-Replace every existing cabinet door with the exact door profile shown in ${doorReference}. Match its exact visible face pattern, outer contour, proportions, edge details, profile transitions, dimensional relief, and shadow lines. Fit that same design naturally to every cabinet-door size, including upper doors, base doors, double doors, narrow doors, tall pantry doors, and island doors.
+Replace every existing cabinet door using ${doorSpecification}. The original uploaded catalog image is authoritative for the style-specific geometry: exact visible face pattern, panel outline, outer contour, rail and stile widths, proportions, molding and bevel sequence, number and placement of profile steps, edge details, and transitions. The cleaned reference may clarify edges and three-dimensional depth but must never simplify, normalize, reinterpret, or replace those unique details. Do not substitute a generic ${details.doorConstructionType || "catalog"} door. Fit the same exact uploaded design naturally to every cabinet-door size, including upper doors, base doors, double doors, narrow doors, tall pantry doors, and island doors.
 
 ${doorConstructionInstruction}
 
@@ -265,7 +281,7 @@ ${drawerInstruction}
 
 ${drawerConstructionInstruction}
 
-The door and drawer-front references are separate exact specifications, not inspiration. The door reference and its administrator-supplied construction type control cabinet doors only. The drawer-front reference and its administrator-supplied construction type control drawer fronts only. Never copy, stretch, blend, or transfer geometry between them. Do not retain the kitchen's original door style, substitute a generic style, mix styles, or invent details absent from the appropriate reference.
+The door and drawer-front references are separate exact specifications, not inspiration. For each component, the ORIGINAL uploaded catalog image controls the unique shape and design; the CLEANED reference is secondary and controls only clarity and readable relief; the administrator-supplied construction type controls whether the center is inset/recessed, raised, or slab. If references appear to conflict, preserve the original upload's distinctive geometry and proportions, apply the administrator construction type for depth direction, and use the cleaned reference only to clarify that combination. Door references control cabinet doors only. Drawer-front references control drawer fronts only. Never copy, stretch, blend, or transfer geometry between them. Do not retain the kitchen's original door style, substitute a generic style, mix styles, or invent details absent from the appropriate original upload.
 
 Apply ${upperFinish} exactly and uniformly to every visible upper cabinet door, drawer front, face frame, exposed side, end panel, filler, and cabinet trim above countertop height.
 Apply ${baseFinish} exactly and uniformly to every visible base cabinet door, drawer front, face frame, exposed side, end panel, filler, toe kick, island surface, peninsula surface, and cabinet trim below countertop height. Do not leave any corresponding cabinet surface in its original color. If the upper and base finishes are the same, apply that one finish uniformly to every cabinet surface in the kitchen.
@@ -280,11 +296,11 @@ The finished image must look like the same kitchen photographed after profession
 `.trim();
 }
 
-function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference) {
+function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference, hasDoorSourceReference, hasDrawerSourceReference) {
   if (CATALOG_PROMPT_VERSION === "legacy") {
     return buildLegacyCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference);
   }
-  return buildCatalogPromptV5(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference);
+  return buildCatalogPromptV7(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference, hasDoorSourceReference, hasDrawerSourceReference);
 }
 
 function appendImage(form, dataUrl, fallbackName) {
@@ -331,7 +347,14 @@ export default async function handler(req, res) {
     const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || body.catalogBaseSwatchReference || mainReference;
     const doorReference = body.catalogDoorReference || null;
     const drawerReference = body.catalogDrawerReference || null;
+    const doorSourceReference = body.catalogDoorSourceReference && body.catalogDoorSourceReference !== doorReference
+      ? body.catalogDoorSourceReference
+      : null;
+    const drawerSourceReference = body.catalogDrawerSourceReference && body.catalogDrawerSourceReference !== drawerReference
+      ? body.catalogDrawerSourceReference
+      : null;
     const requireDrawerReference = body.requireDrawerReference === true;
+    const requireSourceReferences = body.requireSourceReferences === true;
     const doorConstructionType = normalizeConstructionType(body.catalogDoorConstructionType);
     const drawerConstructionType = normalizeConstructionType(body.catalogDrawerConstructionType);
     const requireConstructionTypes = body.requireConstructionTypes === true;
@@ -346,6 +369,12 @@ export default async function handler(req, res) {
     if (requireDrawerReference && !drawerReference) {
       return res.status(400).json({ error: "Catalog drawer image was not sent. Add and generate the separate AI drawer reference in Catalog Manager before creating this premium custom preview." });
     }
+    if (requireSourceReferences && !doorSourceReference) {
+      return res.status(400).json({ error: "The original uploaded catalog door image was not sent. Re-save this door in Catalog Manager, reload the visualizer, and try again." });
+    }
+    if (requireSourceReferences && !drawerSourceReference) {
+      return res.status(400).json({ error: "The original uploaded catalog drawer-front image was not sent. Re-save this drawer front in Catalog Manager, reload the visualizer, and try again." });
+    }
     if (requireConstructionTypes && !doorConstructionType) {
       return res.status(400).json({ error: "Catalog door construction type was not sent. Edit this door in Catalog Manager and select Inset, Raised panel, or Slab." });
     }
@@ -356,7 +385,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
     }
 
-    const selectedPrompt = buildCatalogPrompt(body, !!mainReference, !!baseReference, !!doorReference, !!drawerReference);
+    const selectedPrompt = buildCatalogPrompt(
+      body,
+      !!mainReference,
+      !!baseReference,
+      !!doorReference,
+      !!drawerReference,
+      !!doorSourceReference,
+      !!drawerSourceReference
+    );
 
     const form = new FormData();
     const generationId = createGenerationId();
@@ -371,6 +408,8 @@ export default async function handler(req, res) {
       kitchen: false,
       catalogDoor: false,
       catalogDrawer: !drawerReference,
+      catalogDoorSource: !doorSourceReference,
+      catalogDrawerSource: !drawerSourceReference,
       upperSwatch: false,
       baseSwatch: !baseReference || baseReference === mainReference,
       countertop: !countertopReference,
@@ -388,6 +427,10 @@ export default async function handler(req, res) {
     if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Catalog drawer front reference", drawerReference, "selected-catalog-drawer-front-reference");
     attachmentStatus.catalogDoor = appendImage(form, doorReference, "selected-catalog-door-exact-reference");
     if (attachmentStatus.catalogDoor) observeImage("Catalog door exact reference", doorReference, "selected-catalog-door-exact-reference");
+    if (drawerSourceReference) attachmentStatus.catalogDrawerSource = appendImage(form, drawerSourceReference, "original-catalog-drawer-front-source");
+    if (attachmentStatus.catalogDrawerSource && drawerSourceReference) observeImage("Original catalog drawer front source", drawerSourceReference, "original-catalog-drawer-front-source");
+    if (doorSourceReference) attachmentStatus.catalogDoorSource = appendImage(form, doorSourceReference, "original-catalog-door-source");
+    if (attachmentStatus.catalogDoorSource && doorSourceReference) observeImage("Original catalog door source", doorSourceReference, "original-catalog-door-source");
     attachmentStatus.upperSwatch = appendImage(form, mainReference, "selected-upper-swatch-reference");
     if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(form, baseReference, "selected-base-swatch-reference");
@@ -399,7 +442,7 @@ export default async function handler(req, res) {
     if (flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
     if (attachmentStatus.flooring && flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
     extraReferences.slice(0, 6).forEach(function(ref, index) {
-      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== drawerReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) {
+      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== drawerReference && ref !== doorSourceReference && ref !== drawerSourceReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) {
         const attached = appendImage(form, ref, `catalog-reference-${index + 1}`);
         attachmentStatus.additionalReferences.push({ index: index + 1, attached });
         if (attached) observeImage(`Additional reference ${index + 1}`, ref, `catalog-reference-${index + 1}`);
@@ -409,6 +452,8 @@ export default async function handler(req, res) {
     if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
     if (drawerReference && !attachmentStatus.catalogDrawer) return res.status(400).json({ error: "Catalog drawer front image could not be attached. Select the catalog door style again after the page finishes loading." });
+    if (doorSourceReference && !attachmentStatus.catalogDoorSource) return res.status(400).json({ error: "The original catalog door image could not be attached. Re-save this door in Catalog Manager, reload, and try again." });
+    if (drawerSourceReference && !attachmentStatus.catalogDrawerSource) return res.status(400).json({ error: "The original catalog drawer-front image could not be attached. Re-save this drawer front in Catalog Manager, reload, and try again." });
     if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
 
     const inspectorPayload = {

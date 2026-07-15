@@ -96,7 +96,7 @@
   };
 })();
 </script>
-<script src="custom-catalogs.js?v=20260714-ai-door-drawer-1"></script>
+<script src="custom-catalogs.js?v=20260714-original-cleaned-2"></script>
 <style>
 /* Custom Lead premium test overrides only. Production visualizers are untouched. */
 body{margin:0;background:var(--kv-background,#eef4fb);font-family:var(--kv-font,Inter,Arial,sans-serif);color:var(--kv-text,#0f172a);}
@@ -2356,6 +2356,16 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     return activeCard ? activeCard.dataset.aiDrawerReference || "" : "";
   }
 
+  function activeDoorSourceImage() {
+    const activeCard = document.querySelector(".jcr-door-option.active");
+    return activeCard ? activeCard.dataset.doorReference || "" : "";
+  }
+
+  function activeDrawerSourceImage() {
+    const activeCard = document.querySelector(".jcr-door-option.active");
+    return activeCard ? activeCard.dataset.drawerReference || "" : "";
+  }
+
   function activeDoorConstructionType() {
     const activeCard = document.querySelector(".jcr-door-option.active");
     return activeCard ? activeCard.dataset.doorConstructionType || "" : "";
@@ -2379,6 +2389,8 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     const prompt = buildPrompt();
     const catalogDoorImage = activeDoorImage();
     const catalogDrawerImage = activeDrawerImage();
+    const catalogDoorSourceImage = activeDoorSourceImage();
+    const catalogDrawerSourceImage = activeDrawerSourceImage();
     const catalogDoorConstructionType = activeDoorConstructionType();
     const catalogDrawerConstructionType = activeDrawerConstructionType();
     if (!catalogDoorImage) {
@@ -2387,6 +2399,10 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     }
     if (!catalogDrawerImage) {
       status.innerText = "This catalog style is missing its separate AI drawer reference. Upload the matching drawer front and generate its AI reference in Catalog Manager, then reload this page.";
+      return;
+    }
+    if (!catalogDoorSourceImage || !catalogDrawerSourceImage) {
+      status.innerText = "This catalog style is missing its original uploaded door or drawer-front image. Re-save both source images in Catalog Manager, then reload this page.";
       return;
     }
     if (!catalogDoorConstructionType || !catalogDrawerConstructionType) {
@@ -2454,12 +2470,15 @@ It should look like the existing doors, drawers, and cabinet faces were professi
           selectedBaseFinishColor: baseFinishName || baseFinishValue || null,
           catalogDoorReference: catalogDoorImage || null,
           catalogDrawerReference: catalogDrawerImage || null,
+          catalogDoorSourceReference: catalogDoorSourceImage || null,
+          catalogDrawerSourceReference: catalogDrawerSourceImage || null,
           catalogDoorName: doorStyleName || styleInput.value || null,
           catalogDrawerName: doorStyleName || styleInput.value || null,
           catalogDoorConstructionType: catalogDoorConstructionType,
           catalogDrawerConstructionType: catalogDrawerConstructionType,
           requireConstructionTypes: true,
           requireDrawerReference: true,
+          requireSourceReferences: true,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,
           upperSwatchName: upperFinishName || colorInput.value || null,
