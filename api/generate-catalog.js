@@ -15,9 +15,9 @@ const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 const CATALOG_IMAGE_MODEL = "gpt-image-2";
 const CATALOG_IMAGE_QUALITY = "high";
-const CATALOG_PROMPT_VERSION = String(process.env.CATALOG_PROMPT_VERSION || "v3").trim().toLowerCase() === "legacy"
+const CATALOG_PROMPT_VERSION = String(process.env.CATALOG_PROMPT_VERSION || "v4").trim().toLowerCase() === "legacy"
   ? "legacy"
-  : "v3";
+  : "v4";
 
 function cleanEnvValue(value) {
   return String(value || "").trim().replace(/^['\"]|['\"]$/g, "");
@@ -193,7 +193,7 @@ Produce a photorealistic image with accurate lighting, perspective, and textures
 `.trim();
 }
 
-function buildCatalogPromptV3(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference) {
+function buildCatalogPromptV4(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference) {
   const details = selectedDetails(body);
   const upperFinish = hasMainReference
     ? `the attached upper cabinet finish swatch (${details.upperName}${details.upperHex ? `, ${details.upperHex}` : ""})`
@@ -211,8 +211,8 @@ function buildCatalogPromptV3(body, hasMainReference, hasBaseReference, hasDoorR
     ? `3. The third image is the exact DRAWER-FRONT reference (${details.drawerName}). Use it only for drawer fronts.\nAny images after the third image are finish or surface references.`
     : "No separate drawer-front image is attached. Derive the drawer-front design from the cabinet door reference without inventing unrelated geometry. Any images after the second image are finish or surface references.";
   const drawerInstruction = hasDrawerReference
-    ? `Replace every drawer front with the exact drawer front shown in ${drawerReference}. Copy only the geometry actually visible in the drawer reference. If it is flat or slab-style with only a perimeter bevel, keep it flat or slab-style with that exact bevel. If it has rails, stiles, a raised or recessed center panel, grooves, steps, or other relief, reproduce those features exactly. Preserve its horizontal proportions when fitting it to drawers of different widths. Do not borrow the cabinet door's center panel, rails, stiles, or relief unless those same features are visibly present in the drawer reference.`
-    : `Replace every drawer front with a horizontally proportioned version of ${drawerReference}. Preserve the construction and profile visible in the door reference while fitting it naturally to the shorter drawer-front height. Do not invent an unrelated drawer style.`;
+    ? `Replace every drawer front with the exact drawer-front geometry shown in ${drawerReference}. Use this reference only on drawer fronts. Preserve its horizontal proportions and reproduce only the rails, stiles, panel, bevels, grooves, steps, and relief actually visible in that drawer-front reference.`
+    : `Replace every drawer front with a horizontally proportioned version of ${drawerReference}. Preserve the reference construction while fitting it naturally to the shorter drawer-front height.`;
   const selectedSurfaceChanges = [
     details.countertop ? `Replace the countertops with ${details.countertop}.` : "Keep the existing countertops unchanged.",
     details.backsplash ? `Replace the backsplash with ${details.backsplash}.` : "Keep the existing backsplash unchanged.",
@@ -220,9 +220,9 @@ function buildCatalogPromptV3(body, hasMainReference, hasBaseReference, hasDoorR
   ].join("\n");
 
   return `
-The selected catalog door and drawer-front profiles are the primary success criteria.
-A result with the wrong door or drawer-front geometry is a failed result, even if the color, room realism, countertops, backsplash, or flooring look good.
-Prioritize exact door and drawer-front accuracy above every other change.
+The selected catalog cabinet DOOR profile is the primary success criterion.
+A result with the wrong cabinet-door geometry is a failed result, even if the drawer fronts, color, room realism, countertops, backsplash, or flooring look good.
+Prioritize exact cabinet-door accuracy above every other change. After the doors are correct, match the drawer-front reference exactly within drawer areas only.
 
 The attached images have distinct jobs and must not be blended together:
 1. The first image is the original kitchen and is the layout, perspective, lighting, and composition source.
@@ -231,19 +231,13 @@ ${drawerAttachmentGuide} They control color or material only and must not change
 
 Use the uploaded kitchen photo as the base image and create a photorealistic cabinet refacing preview, not a redesign.
 
-Replace every existing cabinet door with the exact door shown in ${doorReference}. Copy only the geometry actually visible in that reference: its outer edge, frame or slab construction, rail and stile widths when present, center-panel shape when present, bevels, steps, grooves, relief, proportions, and shadow lines. If the reference is a slab door, keep it a slab. If the reference shows a raised center panel, the center panel must visibly project forward from the surrounding inner profile at normal kitchen viewing distance, with the same sloped panel bevel, stepped inner edges, highlight, shadow, and clear raised-panel depth shown in the reference. Never flatten a raised center panel into a recessed or plain rectangle. If the reference shows a recessed panel, preserve that recessed depth instead of raising or flattening it. Do not add details that are absent from the door reference and do not simplify details that are present. Fit the same reference design naturally to every existing cabinet-door size, including double doors, narrow doors, tall pantry doors, and island doors.
+Replace every existing cabinet door with the exact door profile shown in ${doorReference}. Match its outer edge, frame or slab construction, rail and stile widths, center-panel shape, bevels, steps, grooves, dimensional relief, proportions, and shadow lines exactly. Fit that same door profile naturally to every cabinet-door size, including upper doors, base doors, double doors, narrow doors, tall pantry doors, and island doors.
+
+If the door reference contains a raised center panel, every applicable cabinet door must have a clearly raised, dimensional center panel that visibly projects forward from its surrounding inner profile at normal kitchen viewing distance. Reproduce the reference's sloped panel bevel, stepped inner edges, highlights, shadow depth, and center-panel relief. Never flatten a raised center panel into a recessed panel, shallow outline, or plain rectangle. If the reference is recessed, preserve its recessed depth. If it is slab-style, keep it slab-style.
 
 ${drawerInstruction}
 
-Treat the door and drawer references as exact specifications, not inspiration. Do not use the original kitchen's existing cabinet style as the target style. Do not substitute a generic cabinet style, mix styles, transfer geometry between the door and drawer references, or invent arches, cathedral tops, panels, grooves, bevels, trim, or decorative details that are not visible in the appropriate reference image.
-
-CABINET GEOMETRY LOCK — complete this before applying finishes or changing any other surface:
-- Every visible cabinet door must share the exact construction, profile sequence, panel shape, frame proportions, edge treatment, and dimensional relief of the attached door reference.
-- Preserve the reference's small profile transitions and shadow lines at normal kitchen viewing distance. The applied finish must not wash out, blur, flatten, or hide those details.
-- A raised-panel reference must produce visibly raised center panels on every cabinet door; a recessed-panel reference must produce recessed center panels; and a slab reference must remain slab-style. Confusing these three constructions is a failed result.
-- Do not leave any original door style in the kitchen. Do not fall back to a generic Shaker, slab, raised-panel, or recessed-panel design unless that exact construction is shown in the door reference.
-- Keep door geometry consistent across upper cabinets, base cabinets, the island, narrow doors, paired doors, and tall doors. Only the overall width and height may adapt to the existing opening.
-- Every visible drawer front must independently pass the same comparison against the drawer-front reference.
+The door and drawer-front references are separate exact specifications, not inspiration. The door reference controls cabinet doors only. The drawer-front reference controls drawer fronts only. Never copy, stretch, or transfer the drawer-front geometry onto cabinet doors, and never allow a flat or shallow drawer-front profile to flatten or simplify a raised-panel cabinet door. Do not retain the kitchen's original door style, substitute a generic style, mix styles, or invent details absent from the appropriate reference.
 
 Apply ${upperFinish} exactly and uniformly to every visible upper cabinet door, drawer front, face frame, exposed side, end panel, filler, and cabinet trim above countertop height.
 Apply ${baseFinish} exactly and uniformly to every visible base cabinet door, drawer front, face frame, exposed side, end panel, filler, toe kick, island surface, peninsula surface, and cabinet trim below countertop height. Do not leave any corresponding cabinet surface in its original color. If the upper and base finishes are the same, apply that one finish uniformly to every cabinet surface in the kitchen.
@@ -262,7 +256,7 @@ function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorRef
   if (CATALOG_PROMPT_VERSION === "legacy") {
     return buildLegacyCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference);
   }
-  return buildCatalogPromptV3(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference);
+  return buildCatalogPromptV4(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference);
 }
 
 function appendImage(form, dataUrl, fallbackName) {
