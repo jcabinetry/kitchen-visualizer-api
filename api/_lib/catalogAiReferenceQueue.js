@@ -225,6 +225,7 @@ export async function processCatalogAiReferenceJobs({ limit = 1 } = {}) {
         door.aiDoorReference = compressed;
         door.aiImage = compressed;
       }
+      door.profileAnalysisStatus = "outdated";
 
       await saveCatalog(catalog);
       await redis.set(key, { ...job, status: "complete", completedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });

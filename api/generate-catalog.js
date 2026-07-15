@@ -15,9 +15,7 @@ const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 const CATALOG_IMAGE_MODEL = "gpt-image-2";
 const CATALOG_IMAGE_QUALITY = "high";
-const CATALOG_PROMPT_VERSION = String(process.env.CATALOG_PROMPT_VERSION || "v8").trim().toLowerCase() === "legacy"
-  ? "legacy"
-  : "v8";
+const CATALOG_PROMPT_VERSION = "v9";
 
 function cleanEnvValue(value) {
   return String(value || "").trim().replace(/^['\"]|['\"]$/g, "");
@@ -137,21 +135,6 @@ function normalizeConstructionType(value) {
   if (type === "inset" || type === "recessed" || type === "recessed-panel" || type === "inset-panel") return "inset";
   if (type === "slab" || type === "flat" || type === "flat-panel") return "slab";
   return "";
-}
-
-function constructionInstruction(kind, type, reference) {
-  const subject = kind === "drawer" ? "drawer front" : "cabinet door";
-  const plural = kind === "drawer" ? "drawer fronts" : "cabinet doors";
-  if (type === "raised") {
-    return `CATALOG CONSTRUCTION: ${subject.toUpperCase()} = RAISED PANEL. This classification is supplied by the catalog administrator and must not be reinterpreted. Use ${reference} for the exact design. Every ${subject} must have a pronounced, unmistakably three-dimensional center panel that visibly projects forward from the surrounding inner profile. The forward projection must remain obvious at normal full-room viewing size, with a substantial sloped bevel or stepped transition and physically consistent highlights on the raised face and shadows along the lower transition. Copy the reference's exact panel shape, bevel path, transition widths, frame proportions, and craftsmanship; strengthen the visible depth rather than flattening or simplifying it. A center panel that reads as recessed, nearly flat, shallow applied molding, or decorative outline is a failed result. Apply this same clearly raised construction to all ${plural}.`;
-  }
-  if (type === "inset") {
-    return `CATALOG CONSTRUCTION: ${subject.toUpperCase()} = INSET / RECESSED PANEL. This classification is supplied by the catalog administrator and must not be reinterpreted. Use ${reference} for the exact design. Every ${subject} must have a center panel that visibly sits behind its surrounding frame. Copy the reference's exact inset depth, panel shape, inner profile, frame proportions, edge transitions, highlights, and shadow lines onto all ${plural}.`;
-  }
-  if (type === "slab") {
-    return `CATALOG CONSTRUCTION: ${subject.toUpperCase()} = SLAB. This classification is supplied by the catalog administrator and must not be reinterpreted. Use ${reference} for the exact design. Every ${subject} must be one continuous face with the exact thickness, perimeter edge, bevel, corner treatment, proportions, highlights, and shadows visible in the reference.`;
-  }
-  return `Use ${reference} as the exact visual specification for every ${subject}.`;
 }
 
 function selectedDetails(body) {
@@ -296,43 +279,56 @@ The finished image must look like the same kitchen photographed after profession
 `.trim();
 }
 
-function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference, hasDoorSourceReference, hasDrawerSourceReference) {
-  if (CATALOG_PROMPT_VERSION === "legacy") {
-    return buildLegacyCatalogPrompt(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference);
-  }
-  return buildCatalogPromptV8(body, hasMainReference, hasBaseReference, hasDoorReference, hasDrawerReference, hasDoorSourceReference, hasDrawerSourceReference);
+function buildCatalogPromptV9(body, hasMainReference, hasBaseReference, hasCountertopReference, hasBacksplashReference, hasFlooringReference) {
+  const details = selectedDetails(body);
+  const doorDescription = String(body.catalogDoorProfileDescription || "").trim();
+  const drawerDescription = String(body.catalogDrawerProfileDescription || "").trim();
+  const doorMustAvoid = String(body.catalogDoorProfileMustAvoid || "").trim();
+  const drawerMustAvoid = String(body.catalogDrawerProfileMustAvoid || "").trim();
+  let order = 4;
+  const attachments = [
+    "1. ORIGINAL KITCHEN PHOTO: layout, objects, lighting, perspective, and composition source.",
+    `2. APPROVED AI CABINET DOOR MASTER (${details.doorName}): exact geometry for cabinet doors only.`,
+    `3. APPROVED AI DRAWER-FRONT MASTER (${details.drawerName}): exact geometry for drawer fronts only.`
+  ];
+  if (hasMainReference) attachments.push(`${order++}. UPPER CABINET FINISH SWATCH: color/material only.`);
+  if (hasBaseReference) attachments.push(`${order++}. BASE CABINET FINISH SWATCH: color/material only.`);
+  if (hasCountertopReference) attachments.push(`${order++}. COUNTERTOP REFERENCE: countertop material only.`);
+  if (hasBacksplashReference) attachments.push(`${order++}. BACKSPLASH REFERENCE: backsplash material only.`);
+  if (hasFlooringReference) attachments.push(`${order++}. FLOORING REFERENCE: flooring material only.`);
+  const surfaces = [
+    details.countertop ? `Countertop: change to ${details.countertop}; preserve exact shape, edge, openings, and position.` : "Countertop: keep unchanged.",
+    details.backsplash ? `Backsplash: change to ${details.backsplash}; preserve exact area, outlets, windows, and trim.` : "Backsplash: keep unchanged.",
+    details.flooring ? `Flooring: change to ${details.flooring}; preserve perspective, scale, shadows, and room layout.` : "Flooring: keep unchanged."
+  ].join("\n");
+  return `Create one photorealistic cabinet-refacing edit of image 1. This is one generation request, not a staged redesign.
+
+ATTACHMENT ORDER AND AUTHORITY
+${attachments.join("\n")}
+No original catalog source images are attached. Never blend the door master, drawer master, finish swatches, or surface references.
+
+CABINET DOORS — PRIMARY SUCCESS CRITERION
+Copy image 2 onto every cabinet door. Preserve its exact visible face pattern, outer contour, panel outline, rail/stile proportions, profile steps, bevels, reveals, molding, edge treatment, and depth. Classification: ${details.doorConstructionType}. The classification controls depth direction only; it is not permission to substitute a generic ${details.doorConstructionType} door.
+Saved door geometry specification: ${doorDescription}
+Door must avoid: ${doorMustAvoid}
+
+DRAWER FRONTS — SEPARATE SPECIFICATION
+Copy image 3 onto every drawer front. Keep its own horizontal proportions and geometry; do not stretch the door master or copy door geometry into drawer areas. Classification: ${details.drawerConstructionType}.
+Saved drawer-front geometry specification: ${drawerDescription}
+Drawer front must avoid: ${drawerMustAvoid}
+
+FINISHES
+Apply ${details.upperName}${details.upperHex ? ` (${details.upperHex})` : ""} to every visible upper cabinet face, frame, side, filler, and trim. Apply ${details.baseName}${details.baseHex ? ` (${details.baseHex})` : ""} to every visible base, island, and peninsula cabinet face, frame, side, filler, trim, and toe kick. Finish references control color/material only and cannot alter geometry.
+
+SELECTED SURFACES
+${surfaces}
+
+LOCKED SCENE
+Keep cabinet boxes, layout, counts, openings, hardware placement, appliances, walls, windows, trim, decorations, camera angle, perspective, and room dimensions unchanged. Fit the exact masters naturally to upper, base, narrow, double, tall, and island faces without simplifying either profile. A visually generic door or drawer front is a failed result even when the rest of the room looks good.`;
 }
 
-function buildSurfacePassPrompt(body, hasCountertopReference, hasBacksplashReference, hasFlooringReference) {
-  const details = selectedDetails(body);
-  let attachmentNumber = 2;
-  const attachmentGuide = [];
-  if (hasCountertopReference) attachmentGuide.push(`${attachmentNumber++}. COUNTERTOP material reference; use only for the countertop.`);
-  if (hasBacksplashReference) attachmentGuide.push(`${attachmentNumber++}. BACKSPLASH material reference; use only for the backsplash.`);
-  if (hasFlooringReference) attachmentGuide.push(`${attachmentNumber++}. FLOORING material reference; use only for the flooring.`);
-  const countertopInstruction = details.countertop
-    ? `Replace only the visible countertop surfaces with ${details.countertop}${hasCountertopReference ? ", matching the attached countertop reference" : ""}. Preserve their exact shape, edge, thickness, overhang, sink cutout, appliance openings, seams, shadows, and layout.`
-    : "Keep the countertops exactly unchanged.";
-  const backsplashInstruction = details.backsplash
-    ? `Replace only the visible backsplash area with ${details.backsplash}${hasBacksplashReference ? ", matching the attached backsplash reference" : ""}. Preserve outlets, windows, trim, cabinets, countertops, wall layout, shadows, and perspective.`
-    : "Keep the backsplash exactly unchanged.";
-  const flooringInstruction = details.flooring
-    ? `Replace only the visible flooring with ${details.flooring}${hasFlooringReference ? ", matching the attached flooring reference" : ""}. Preserve floor perspective, plank or tile scale, shadows, cabinets, appliances, furniture, rugs, walls, and room layout.`
-    : "Keep the flooring exactly unchanged.";
-
-  return `
-This is the second, surface-only pass of an existing cabinet visualization.
-The first attached image is the approved cabinet result. Its cabinet doors, drawer fronts, cabinet colors, cabinet boxes, hardware, and cabinet geometry are locked and must remain pixel-for-pixel visually unchanged. Do not regenerate, reinterpret, simplify, recolor, resize, move, add, or remove any cabinet part.
-${attachmentGuide.length ? `The remaining attached images have these separate roles:\n${attachmentGuide.join("\n")}` : "No additional material reference images are attached."}
-
-Apply only the selected surface changes below:
-${countertopInstruction}
-${backsplashInstruction}
-${flooringInstruction}
-
-Keep every cabinet door profile and drawer-front profile exactly as it appears in the first image. Keep cabinet finishes, face frames, panels, fillers, toe kicks, island cabinetry, and peninsula cabinetry unchanged. Also preserve appliances, walls outside the selected backsplash, windows, trim, lighting, decorations, camera angle, perspective, and room dimensions.
-This is a localized material edit, not a redesign. Return the same photorealistic kitchen with only the explicitly selected countertop, backsplash, and flooring surfaces changed.
-`.trim();
+function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasCountertopReference, hasBacksplashReference, hasFlooringReference) {
+  return buildCatalogPromptV9(body, hasMainReference, hasBaseReference, hasCountertopReference, hasBacksplashReference, hasFlooringReference);
 }
 
 function appendImage(form, dataUrl, fallbackName) {
@@ -379,22 +375,18 @@ export default async function handler(req, res) {
     const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || body.catalogBaseSwatchReference || mainReference;
     const doorReference = body.catalogDoorReference || null;
     const drawerReference = body.catalogDrawerReference || null;
-    const doorSourceReference = body.catalogDoorSourceReference && body.catalogDoorSourceReference !== doorReference
-      ? body.catalogDoorSourceReference
-      : null;
-    const drawerSourceReference = body.catalogDrawerSourceReference && body.catalogDrawerSourceReference !== drawerReference
-      ? body.catalogDrawerSourceReference
-      : null;
     const requireDrawerReference = body.requireDrawerReference === true;
-    const requireSourceReferences = body.requireSourceReferences === true;
     const doorConstructionType = normalizeConstructionType(body.catalogDoorConstructionType);
     const drawerConstructionType = normalizeConstructionType(body.catalogDrawerConstructionType);
     const requireConstructionTypes = body.requireConstructionTypes === true;
-    const twoPass = body.twoPass === true;
+    const doorProfileDescription = String(body.catalogDoorProfileDescription || "").trim();
+    const drawerProfileDescription = String(body.catalogDrawerProfileDescription || "").trim();
+    const doorProfileMustAvoid = String(body.catalogDoorProfileMustAvoid || "").trim();
+    const drawerProfileMustAvoid = String(body.catalogDrawerProfileMustAvoid || "").trim();
+    const requireProfileDescriptions = body.requireProfileDescriptions === true;
     const countertopReference = body.countertopCustomReference || null;
     const backsplashReference = body.backsplashCustomReference || null;
     const flooringReference = body.flooringCustomReference || null;
-    const extraReferences = Array.isArray(body.referenceImages) ? body.referenceImages.filter(Boolean) : [];
 
     if (!doorReference) {
       return res.status(400).json({ error: "Catalog door image was not sent. Select a catalog door again and generate after the page finishes loading." });
@@ -402,33 +394,26 @@ export default async function handler(req, res) {
     if (requireDrawerReference && !drawerReference) {
       return res.status(400).json({ error: "Catalog drawer image was not sent. Add and generate the separate AI drawer reference in Catalog Manager before creating this premium custom preview." });
     }
-    if (requireSourceReferences && !doorSourceReference) {
-      return res.status(400).json({ error: "The original uploaded catalog door image was not sent. Re-save this door in Catalog Manager, reload the visualizer, and try again." });
-    }
-    if (requireSourceReferences && !drawerSourceReference) {
-      return res.status(400).json({ error: "The original uploaded catalog drawer-front image was not sent. Re-save this drawer front in Catalog Manager, reload the visualizer, and try again." });
-    }
     if (requireConstructionTypes && !doorConstructionType) {
       return res.status(400).json({ error: "Catalog door construction type was not sent. Edit this door in Catalog Manager and select Inset, Raised panel, or Slab." });
     }
     if (requireConstructionTypes && !drawerConstructionType) {
       return res.status(400).json({ error: "Catalog drawer-front construction type was not sent. Edit this door in Catalog Manager and select Inset, Raised panel, or Slab for its drawer front." });
     }
+    if (requireProfileDescriptions && (!doorProfileDescription || !drawerProfileDescription || !doorProfileMustAvoid || !drawerProfileMustAvoid || body.profileAnalysisStatus !== "ready")) {
+      return res.status(400).json({ error: "This style needs current door and drawer geometry descriptions. Generate them in Catalog Manager, save the catalog, and reload the visualizer." });
+    }
     if (!mainReference) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
     }
 
-    const cabinetPromptBody = twoPass
-      ? { ...body, prompt: "", countertop: "", backsplash: "", flooring: "" }
-      : body;
     const selectedPrompt = buildCatalogPrompt(
-      cabinetPromptBody,
+      body,
       !!mainReference,
-      !!baseReference,
-      !!doorReference,
-      !!drawerReference,
-      !!doorSourceReference,
-      !!drawerSourceReference
+      !!(baseReference && baseReference !== mainReference),
+      !!countertopReference,
+      !!backsplashReference,
+      !!flooringReference
     );
 
     const form = new FormData();
@@ -444,14 +429,11 @@ export default async function handler(req, res) {
       kitchen: false,
       catalogDoor: false,
       catalogDrawer: !drawerReference,
-      catalogDoorSource: !doorSourceReference,
-      catalogDrawerSource: !drawerSourceReference,
       upperSwatch: false,
       baseSwatch: !baseReference || baseReference === mainReference,
-      countertop: twoPass || !countertopReference,
-      backsplash: twoPass || !backsplashReference,
-      flooring: twoPass || !flooringReference,
-      additionalReferences: []
+      countertop: !countertopReference,
+      backsplash: !backsplashReference,
+      flooring: !flooringReference
     };
     form.append("model", CATALOG_IMAGE_MODEL);
     form.append("prompt", selectedPrompt);
@@ -459,60 +441,35 @@ export default async function handler(req, res) {
     form.append("quality", CATALOG_IMAGE_QUALITY);
     attachmentStatus.kitchen = appendImage(form, body.image, "kitchen");
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
-    if (drawerReference) attachmentStatus.catalogDrawer = appendImage(form, drawerReference, "selected-catalog-drawer-front-reference");
-    if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Catalog drawer front reference", drawerReference, "selected-catalog-drawer-front-reference");
     attachmentStatus.catalogDoor = appendImage(form, doorReference, "selected-catalog-door-exact-reference");
-    if (attachmentStatus.catalogDoor) observeImage("Catalog door exact reference", doorReference, "selected-catalog-door-exact-reference");
-    if (drawerSourceReference) attachmentStatus.catalogDrawerSource = appendImage(form, drawerSourceReference, "original-catalog-drawer-front-source");
-    if (attachmentStatus.catalogDrawerSource && drawerSourceReference) observeImage("Original catalog drawer front source", drawerSourceReference, "original-catalog-drawer-front-source");
-    if (doorSourceReference) attachmentStatus.catalogDoorSource = appendImage(form, doorSourceReference, "original-catalog-door-source");
-    if (attachmentStatus.catalogDoorSource && doorSourceReference) observeImage("Original catalog door source", doorSourceReference, "original-catalog-door-source");
+    if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
+    if (drawerReference) attachmentStatus.catalogDrawer = appendImage(form, drawerReference, "selected-catalog-drawer-front-reference");
+    if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Approved AI drawer-front master", drawerReference, "selected-catalog-drawer-front-reference");
     attachmentStatus.upperSwatch = appendImage(form, mainReference, "selected-upper-swatch-reference");
     if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(form, baseReference, "selected-base-swatch-reference");
     if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
-    if (!twoPass && countertopReference) attachmentStatus.countertop = appendImage(form, countertopReference, "selected-countertop-reference");
-    if (!twoPass && attachmentStatus.countertop && countertopReference) observeImage("Countertop", countertopReference, "selected-countertop-reference");
-    if (!twoPass && backsplashReference) attachmentStatus.backsplash = appendImage(form, backsplashReference, "selected-backsplash-reference");
-    if (!twoPass && attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash", backsplashReference, "selected-backsplash-reference");
-    if (!twoPass && flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
-    if (!twoPass && attachmentStatus.flooring && flooringReference) observeImage("Flooring", flooringReference, "selected-flooring-reference");
-    extraReferences.slice(0, 6).forEach(function(ref, index) {
-      if (ref && ref !== mainReference && ref !== baseReference && ref !== doorReference && ref !== drawerReference && ref !== doorSourceReference && ref !== drawerSourceReference && ref !== countertopReference && ref !== backsplashReference && ref !== flooringReference) {
-        const attached = appendImage(form, ref, `catalog-reference-${index + 1}`);
-        attachmentStatus.additionalReferences.push({ index: index + 1, attached });
-        if (attached) observeImage(`Additional reference ${index + 1}`, ref, `catalog-reference-${index + 1}`);
-      }
-    });
+    if (countertopReference) attachmentStatus.countertop = appendImage(form, countertopReference, "selected-countertop-reference");
+    if (attachmentStatus.countertop && countertopReference) observeImage("Countertop reference", countertopReference, "selected-countertop-reference");
+    if (backsplashReference) attachmentStatus.backsplash = appendImage(form, backsplashReference, "selected-backsplash-reference");
+    if (attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash reference", backsplashReference, "selected-backsplash-reference");
+    if (flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
+    if (attachmentStatus.flooring && flooringReference) observeImage("Flooring reference", flooringReference, "selected-flooring-reference");
 
     if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
     if (drawerReference && !attachmentStatus.catalogDrawer) return res.status(400).json({ error: "Catalog drawer front image could not be attached. Select the catalog door style again after the page finishes loading." });
-    if (doorSourceReference && !attachmentStatus.catalogDoorSource) return res.status(400).json({ error: "The original catalog door image could not be attached. Re-save this door in Catalog Manager, reload, and try again." });
-    if (drawerSourceReference && !attachmentStatus.catalogDrawerSource) return res.status(400).json({ error: "The original catalog drawer-front image could not be attached. Re-save this drawer front in Catalog Manager, reload, and try again." });
     if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
 
-    const hasSurfaceChanges = Boolean(body.countertop || body.backsplash || body.flooring);
-    const surfacePassPrompt = twoPass && hasSurfaceChanges
-      ? buildSurfacePassPrompt(body, !!countertopReference, !!backsplashReference, !!flooringReference)
-      : "";
-    const activePromptVersion = twoPass ? `${CATALOG_PROMPT_VERSION}-two-pass` : CATALOG_PROMPT_VERSION;
-    const inspectorPrompt = surfacePassPrompt
-      ? `PASS 1 - CABINETS ONLY\n\n${selectedPrompt}\n\nPASS 2 - SURFACES ONLY\n\n${surfacePassPrompt}`
-      : selectedPrompt;
     const inspectorPayload = {
       model: CATALOG_IMAGE_MODEL,
       size: "1536x1024",
       quality: CATALOG_IMAGE_QUALITY,
-      promptVersion: activePromptVersion,
-      prompt: inspectorPrompt,
-      generationMode: twoPass ? "two-pass" : "single-pass",
-      passes: surfacePassPrompt
-        ? [
-            { stage: "cabinets", prompt: selectedPrompt },
-            { stage: "surfaces", prompt: surfacePassPrompt }
-          ]
-        : [{ stage: twoPass ? "cabinets" : "combined", prompt: selectedPrompt }],
+      promptVersion: CATALOG_PROMPT_VERSION,
+      prompt: selectedPrompt,
+      generationMode: "single-pass",
+      requestCount: 1,
+      passes: [{ stage: "combined", prompt: selectedPrompt }],
       attachmentStatus,
       attachments: attachedImages.map(function(image) {
         return {
@@ -530,7 +487,7 @@ export default async function handler(req, res) {
       timestamp: new Date(generationStartedAt).toISOString(),
       status: "sent",
       model: CATALOG_IMAGE_MODEL,
-      promptVersion: activePromptVersion,
+      promptVersion: CATALOG_PROMPT_VERSION,
       quality: CATALOG_IMAGE_QUALITY,
       attachmentStatus,
       summary: {
@@ -541,13 +498,18 @@ export default async function handler(req, res) {
         drawerFront: body.catalogDrawerName || "",
         doorConstructionType,
         drawerConstructionType,
+        doorProfileDescription,
+        drawerProfileDescription,
+        doorProfileMustAvoid,
+        drawerProfileMustAvoid,
+        requestCount: 1,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
         baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
         countertop: body.countertop || "",
         backsplash: body.backsplash || "",
         flooring: body.flooring || ""
       },
-      prompt: inspectorPrompt,
+      prompt: selectedPrompt,
       payload: inspectorPayload,
       referenceImages: attachedImages,
       warnings: attachedImages.length ? [] : ["No image attachments were recorded before OpenAI request."]
@@ -573,67 +535,6 @@ export default async function handler(req, res) {
         console.warn("Generation inspector error logging skipped.", error?.message || error);
       });
       return res.status(openaiResponse.status).json({ error: result?.error?.message || result?.message || "OpenAI image edit failed." });
-    }
-
-    if (surfacePassPrompt) {
-      const cabinetImageBase64 = result?.data?.[0]?.b64_json;
-      if (!cabinetImageBase64) {
-        await updateGenerationRecord(generationId, {
-          status: "error",
-          error: { status: 500, stage: "surfaces", message: "The cabinet pass did not return image data for the surface pass." }
-        }).catch(function(error) {
-          console.warn("Generation inspector two-pass error logging skipped.", error?.message || error);
-        });
-        return res.status(500).json({ error: "The cabinet pass finished, but the surface pass could not start. Please try again." });
-      }
-
-      const surfaceForm = new FormData();
-      surfaceForm.append("model", CATALOG_IMAGE_MODEL);
-      surfaceForm.append("prompt", surfacePassPrompt);
-      surfaceForm.append("size", "1536x1024");
-      surfaceForm.append("quality", CATALOG_IMAGE_QUALITY);
-      const cabinetPassImage = `data:image/png;base64,${cabinetImageBase64}`;
-      if (!appendImage(surfaceForm, cabinetPassImage, "approved-cabinet-pass")) {
-        return res.status(500).json({ error: "The cabinet result could not be attached for the surface pass. Please try again." });
-      }
-      if (countertopReference) {
-        appendImage(surfaceForm, countertopReference, "selected-countertop-reference");
-        observeImage("Surface pass countertop reference", countertopReference, "selected-countertop-reference");
-      }
-      if (backsplashReference) {
-        appendImage(surfaceForm, backsplashReference, "selected-backsplash-reference");
-        observeImage("Surface pass backsplash reference", backsplashReference, "selected-backsplash-reference");
-      }
-      if (flooringReference) {
-        appendImage(surfaceForm, flooringReference, "selected-flooring-reference");
-        observeImage("Surface pass flooring reference", flooringReference, "selected-flooring-reference");
-      }
-
-      await updateGenerationRecord(generationId, {
-        status: "surface-pass",
-        payload: {
-          ...inspectorPayload,
-          attachments: attachedImages.map(function(image) {
-            return { order: image.order, role: image.role, fileName: image.fileName, mime: image.mime, bytes: image.bytes, dataUrl: image.dataUrl };
-          })
-        },
-        referenceImages: attachedImages
-      }).catch(function(error) {
-        console.warn("Generation inspector surface-pass logging skipped.", error?.message || error);
-      });
-
-      const surfaceResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: surfaceForm });
-      result = await surfaceResponse.json();
-      if (!surfaceResponse.ok) {
-        await updateGenerationRecord(generationId, {
-          status: "error",
-          result: { generationTimeMs: Date.now() - generationStartedAt, image: "", imageSize: "" },
-          error: { status: surfaceResponse.status, stage: "surfaces", message: result?.error?.message || result?.message || "OpenAI surface edit failed." }
-        }).catch(function(error) {
-          console.warn("Generation inspector surface error logging skipped.", error?.message || error);
-        });
-        return res.status(surfaceResponse.status).json({ error: result?.error?.message || result?.message || "The cabinet pass finished, but the surface pass failed." });
-      }
     }
 
     const updatedUsed = await redisIncr(usageKey);

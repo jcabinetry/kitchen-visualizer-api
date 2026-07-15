@@ -161,6 +161,7 @@ function renderDetail(generation) {
       metric("Status", generation.status) +
       metric("Model", generation.model || (generation.payload && generation.payload.model)) +
       metric("Prompt Version", generation.promptVersion || (generation.payload && generation.payload.promptVersion)) +
+      metric("OpenAI Requests", summary.requestCount || (generation.payload && generation.payload.requestCount) || 1) +
       metric("Quality", generation.quality || (generation.payload && generation.payload.quality)) +
       metric("Company Key", summary.companyKey) +
       metric("Manufacturer", summary.manufacturer) +
@@ -186,6 +187,12 @@ function renderDetail(generation) {
     '<div class="section"><button class="secondary" type="button" id="copyPromptBtn">Copy Prompt</button> ' +
     '<button class="secondary" type="button" id="copyPayloadBtn">Copy Payload</button> ' +
     '<button class="primary" type="button" id="downloadJsonBtn">Download Debug JSON</button></div>' +
+    '<div class="section"><h2>Saved Geometry Specifications</h2><div class="summary">' +
+      metric("Door Construction", summary.doorConstructionType) +
+      metric("Drawer Construction", summary.drawerConstructionType) +
+      metric("Attachment Order", (generation.referenceImages || []).map(function(image) { return "#" + image.order + " " + image.role; }).join(" | ")) +
+    '</div><h3>Door</h3><pre>' + escapeHtml(summary.doorProfileDescription || "Missing") + '\n\nMUST AVOID: ' + escapeHtml(summary.doorProfileMustAvoid || "Missing") + '</pre>' +
+    '<h3>Drawer Front</h3><pre>' + escapeHtml(summary.drawerProfileDescription || "Missing") + '\n\nMUST AVOID: ' + escapeHtml(summary.drawerProfileMustAvoid || "Missing") + '</pre></div>' +
     '<div class="section"><h2>Prompt</h2><pre>' + escapeHtml(generation.prompt || "") + '</pre></div>' +
     '<div class="section"><h2>Payload JSON</h2><pre>' + escapeHtml(JSON.stringify(generation.payload || {}, null, 2)) + '</pre></div>' +
     '<div class="section"><h2>Reference Images</h2>' + renderImages(generation.referenceImages || []) + '</div>' +

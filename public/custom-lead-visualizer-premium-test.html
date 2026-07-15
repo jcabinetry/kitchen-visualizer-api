@@ -2376,6 +2376,11 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     return activeCard ? activeCard.dataset.drawerConstructionType || "" : "";
   }
 
+  function activeProfileField(name) {
+    const activeCard = document.querySelector(".jcr-door-option.active");
+    return activeCard ? activeCard.dataset[name] || "" : "";
+  }
+
   button.addEventListener("click", async function() {
     if (!leadName.value || !leadPhone.value || !leadEmail.value) { status.innerText = "Please enter your name, phone, and email first."; return; }
     if (!uploadedImageData) { status.innerText = "Upload a kitchen photo first."; return; }
@@ -2389,10 +2394,13 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     const prompt = buildPrompt();
     const catalogDoorImage = activeDoorImage();
     const catalogDrawerImage = activeDrawerImage();
-    const catalogDoorSourceImage = activeDoorSourceImage();
-    const catalogDrawerSourceImage = activeDrawerSourceImage();
     const catalogDoorConstructionType = activeDoorConstructionType();
     const catalogDrawerConstructionType = activeDrawerConstructionType();
+    const catalogDoorProfileDescription = activeProfileField("doorProfileDescription");
+    const catalogDrawerProfileDescription = activeProfileField("drawerProfileDescription");
+    const catalogDoorProfileMustAvoid = activeProfileField("doorProfileMustAvoid");
+    const catalogDrawerProfileMustAvoid = activeProfileField("drawerProfileMustAvoid");
+    const profileAnalysisStatus = activeProfileField("profileAnalysisStatus");
     if (!catalogDoorImage) {
       status.innerText = "This catalog style is missing its AI door reference. Generate and save the AI door reference in Catalog Manager, then reload this page.";
       return;
@@ -2401,12 +2409,12 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       status.innerText = "This catalog style is missing its separate AI drawer reference. Upload the matching drawer front and generate its AI reference in Catalog Manager, then reload this page.";
       return;
     }
-    if (!catalogDoorSourceImage || !catalogDrawerSourceImage) {
-      status.innerText = "This catalog style is missing its original uploaded door or drawer-front image. Re-save both source images in Catalog Manager, then reload this page.";
-      return;
-    }
     if (!catalogDoorConstructionType || !catalogDrawerConstructionType) {
       status.innerText = "This catalog style is missing its door or drawer construction type. Edit it in Catalog Manager, choose Inset, Raised panel, or Slab for both, save, then reload this page.";
+      return;
+    }
+    if (!catalogDoorProfileDescription || !catalogDrawerProfileDescription || !catalogDoorProfileMustAvoid || !catalogDrawerProfileMustAvoid || profileAnalysisStatus !== "ready") {
+      status.innerText = "This catalog style needs current door and drawer descriptions. In Catalog Manager, click Generate Door & Drawer Descriptions, save, then reload this page.";
       return;
     }
     const upperSelection = syncCatalogFinishState("jcr_color");
@@ -2433,17 +2441,6 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     const baseReference = baseInheritsUpper
       ? mainReference
       : (baseSwatchImage || uploadedIslandCustomColorData || upperSwatchImage || null);
-    const referenceImages = [];
-    if (uploadedMainCustomColorData) referenceImages.push(uploadedMainCustomColorData);
-    if (uploadedIslandCustomColorData) referenceImages.push(uploadedIslandCustomColorData);
-    if (uploadedCountertopCustomData) referenceImages.push(uploadedCountertopCustomData);
-    if (uploadedBacksplashCustomData) referenceImages.push(uploadedBacksplashCustomData);
-    if (uploadedFlooringCustomData) referenceImages.push(uploadedFlooringCustomData);
-    if (catalogDoorImage) referenceImages.push(catalogDoorImage);
-    if (catalogDrawerImage && catalogDrawerImage !== catalogDoorImage) referenceImages.push(catalogDrawerImage);
-    if (upperSwatchImage) referenceImages.push(upperSwatchImage);
-    if (baseSwatchImage && baseSwatchImage !== upperSwatchImage) referenceImages.push(baseSwatchImage);
-    const uniqueReferenceImages = Array.from(new Set(referenceImages.filter(Boolean))).slice(0, 8);
     status.innerText = "Creating your preview...";
     button.disabled = true;
     button.style.opacity = "0.75";
@@ -2455,7 +2452,6 @@ It should look like the existing doors, drawers, and cabinet faces were professi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: uploadedImageData,
-          twoPass: true,
           prompt: prompt,
           companyKey: KV_COMPANY.companyKey,
           companyName: KV_COMPANY.companyName,
@@ -2471,15 +2467,18 @@ It should look like the existing doors, drawers, and cabinet faces were professi
           selectedBaseFinishColor: baseFinishName || baseFinishValue || null,
           catalogDoorReference: catalogDoorImage || null,
           catalogDrawerReference: catalogDrawerImage || null,
-          catalogDoorSourceReference: catalogDoorSourceImage || null,
-          catalogDrawerSourceReference: catalogDrawerSourceImage || null,
           catalogDoorName: doorStyleName || styleInput.value || null,
           catalogDrawerName: doorStyleName || styleInput.value || null,
           catalogDoorConstructionType: catalogDoorConstructionType,
           catalogDrawerConstructionType: catalogDrawerConstructionType,
+          catalogDoorProfileDescription: catalogDoorProfileDescription,
+          catalogDrawerProfileDescription: catalogDrawerProfileDescription,
+          catalogDoorProfileMustAvoid: catalogDoorProfileMustAvoid,
+          catalogDrawerProfileMustAvoid: catalogDrawerProfileMustAvoid,
+          profileAnalysisStatus: profileAnalysisStatus,
           requireConstructionTypes: true,
           requireDrawerReference: true,
-          requireSourceReferences: true,
+          requireProfileDescriptions: true,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,
           upperSwatchName: upperFinishName || colorInput.value || null,
@@ -2503,8 +2502,7 @@ It should look like the existing doors, drawers, and cabinet faces were professi
           islandCustomReference: baseReference,
           countertopCustomReference: uploadedCountertopCustomData || null,
           backsplashCustomReference: uploadedBacksplashCustomData || null,
-          flooringCustomReference: uploadedFlooringCustomData || null,
-          referenceImages: uniqueReferenceImages
+          flooringCustomReference: uploadedFlooringCustomData || null
         })
       });
       const data = await response.json();
