@@ -15,9 +15,9 @@ const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 const CATALOG_IMAGE_MODEL = "gpt-image-2";
 const CATALOG_IMAGE_QUALITY = "high";
-const CATALOG_PROMPT_VERSION = String(process.env.CATALOG_PROMPT_VERSION || "v5").trim().toLowerCase() === "legacy"
+const CATALOG_PROMPT_VERSION = String(process.env.CATALOG_PROMPT_VERSION || "v6").trim().toLowerCase() === "legacy"
   ? "legacy"
-  : "v5";
+  : "v6";
 
 function cleanEnvValue(value) {
   return String(value || "").trim().replace(/^['\"]|['\"]$/g, "");
@@ -143,7 +143,7 @@ function constructionInstruction(kind, type, reference) {
   const subject = kind === "drawer" ? "drawer front" : "cabinet door";
   const plural = kind === "drawer" ? "drawer fronts" : "cabinet doors";
   if (type === "raised") {
-    return `CATALOG CONSTRUCTION: ${subject.toUpperCase()} = RAISED PANEL. This classification is supplied by the catalog administrator and must not be reinterpreted. Use ${reference} for the exact design. Every ${subject} must have a clearly dimensional center panel that visibly projects forward from its surrounding inner profile. Copy the reference's exact panel shape, sloped bevel, stepped transitions, frame proportions, highlights, shadows, and forward relief onto all ${plural}.`;
+    return `CATALOG CONSTRUCTION: ${subject.toUpperCase()} = RAISED PANEL. This classification is supplied by the catalog administrator and must not be reinterpreted. Use ${reference} for the exact design. Every ${subject} must have a pronounced, unmistakably three-dimensional center panel that visibly projects forward from the surrounding inner profile. The forward projection must remain obvious at normal full-room viewing size, with a substantial sloped bevel or stepped transition and physically consistent highlights on the raised face and shadows along the lower transition. Copy the reference's exact panel shape, bevel path, transition widths, frame proportions, and craftsmanship; strengthen the visible depth rather than flattening or simplifying it. A center panel that reads as recessed, nearly flat, shallow applied molding, or decorative outline is a failed result. Apply this same clearly raised construction to all ${plural}.`;
   }
   if (type === "inset") {
     return `CATALOG CONSTRUCTION: ${subject.toUpperCase()} = INSET / RECESSED PANEL. This classification is supplied by the catalog administrator and must not be reinterpreted. Use ${reference} for the exact design. Every ${subject} must have a center panel that visibly sits behind its surrounding frame. Copy the reference's exact inset depth, panel shape, inner profile, frame proportions, edge transitions, highlights, and shadow lines onto all ${plural}.`;
