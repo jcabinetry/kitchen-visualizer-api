@@ -2323,16 +2323,12 @@ It should not look like a different kitchen.
 
   function activeDoorImage() {
     const activeCard = document.querySelector(".jcr-door-option.active");
-    if (activeCard && activeCard.dataset.aiDoorReference) return activeCard.dataset.aiDoorReference;
-    const activeImage = activeCard ? activeCard.querySelector(".jcr-door-preview img") : null;
-    const src = activeImage ? activeImage.getAttribute("src") || "" : "";
-    return /visualizer-shaker-image|visualizer-raised-image|visualizer-slab-image/i.test(src) ? "" : src;
+    return activeCard ? activeCard.dataset.aiDoorReference || "" : "";
   }
 
   function activeDrawerImage() {
     const activeCard = document.querySelector(".jcr-door-option.active");
-    if (!activeCard) return "";
-    return activeCard.dataset.aiDrawerReference || activeCard.dataset.drawerReference || "";
+    return activeCard ? activeCard.dataset.aiDrawerReference || "" : "";
   }
 
   button.addEventListener("click", async function() {    if (!uploadedImageData) { status.innerText = "Upload a kitchen photo first."; return; }
@@ -2344,10 +2340,14 @@ It should not look like a different kitchen.
 
     syncAllCatalogFinishState();
     const prompt = buildPrompt();
-    const catalogDoorImage = activeDoorImage() || document.getElementById("jcr_active_catalog_door_image")?.value;
+    const catalogDoorImage = activeDoorImage();
     const catalogDrawerImage = activeDrawerImage();
     if (!catalogDoorImage) {
-      status.innerText = "Wait for an assigned catalog door image to load, then select the door style again.";
+      status.innerText = "This catalog style is missing its AI door reference. Generate and save the AI door reference in Catalog Manager, then reload this page.";
+      return;
+    }
+    if (!catalogDrawerImage) {
+      status.innerText = "This catalog style is missing its separate AI drawer reference. Upload the matching drawer front and generate its AI reference in Catalog Manager, then reload this page.";
       return;
     }
     const upperSelection = syncCatalogFinishState("jcr_color");
@@ -2413,7 +2413,8 @@ It should not look like a different kitchen.
           catalogDoorReference: catalogDoorImage || null,
           catalogDrawerReference: catalogDrawerImage || null,
           catalogDoorName: doorStyleName || styleInput.value || null,
-          catalogDrawerName: catalogDrawerImage ? (doorStyleName || styleInput.value || null) : null,
+          catalogDrawerName: doorStyleName || styleInput.value || null,
+          requireDrawerReference: true,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,
           upperSwatchName: upperFinishName || colorInput.value || null,

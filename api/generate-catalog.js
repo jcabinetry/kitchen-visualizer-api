@@ -290,6 +290,7 @@ export default async function handler(req, res) {
     const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || body.catalogBaseSwatchReference || mainReference;
     const doorReference = body.catalogDoorReference || null;
     const drawerReference = body.catalogDrawerReference || null;
+    const requireDrawerReference = body.requireDrawerReference === true;
     const countertopReference = body.countertopCustomReference || null;
     const backsplashReference = body.backsplashCustomReference || null;
     const flooringReference = body.flooringCustomReference || null;
@@ -297,6 +298,9 @@ export default async function handler(req, res) {
 
     if (!doorReference) {
       return res.status(400).json({ error: "Catalog door image was not sent. Select a catalog door again and generate after the page finishes loading." });
+    }
+    if (requireDrawerReference && !drawerReference) {
+      return res.status(400).json({ error: "Catalog drawer image was not sent. Add and generate the separate AI drawer reference in Catalog Manager before creating this premium custom preview." });
     }
     if (!mainReference) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
