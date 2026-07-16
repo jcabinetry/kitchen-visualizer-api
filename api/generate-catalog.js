@@ -17,6 +17,8 @@ const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const CATALOG_IMAGE_QUALITY = "high";
 const CATALOG_PROMPT_VERSION = "v10";
+const CLEAN_TEST_COMPANY_KEY = "13333";
+const CLEAN_TEST_PROMPT_VERSION = "v11-clean";
 
 function selectCatalogImageModel(value) {
   return String(value || "").trim().toLowerCase() === TEST_CATALOG_IMAGE_MODEL
@@ -338,6 +340,51 @@ function buildCatalogPrompt(body, hasMainReference, hasBaseReference, hasCounter
   return buildCatalogPromptV9(body, hasMainReference, hasBaseReference, hasCountertopReference, hasBacksplashReference, hasFlooringReference);
 }
 
+function buildCatalogPromptV11Clean(body, hasMainReference, hasBaseReference, hasCountertopReference, hasBacksplashReference, hasFlooringReference) {
+  const details = selectedDetails(body);
+  let order = 4;
+  const attachments = [
+    "1. ORIGINAL KITCHEN PHOTO.",
+    `2. APPROVED AI-READABLE CABINET DOOR (${details.doorName}).`,
+    `3. APPROVED AI-READABLE DRAWER FRONT (${details.drawerName}).`
+  ];
+  if (hasMainReference) attachments.push(`${order++}. UPPER CABINET FINISH SWATCH.`);
+  if (hasBaseReference) attachments.push(`${order++}. BASE CABINET FINISH SWATCH.`);
+  if (hasCountertopReference) attachments.push(`${order++}. SELECTED COUNTERTOP REFERENCE.`);
+  if (hasBacksplashReference) attachments.push(`${order++}. SELECTED BACKSPLASH REFERENCE.`);
+  if (hasFlooringReference) attachments.push(`${order++}. SELECTED FLOORING REFERENCE.`);
+
+  const selectedSurfaces = [];
+  if (details.countertop) {
+    selectedSurfaces.push(`Change only the visible countertops to ${hasCountertopReference ? "the selected countertop reference image" : details.countertop}. Preserve their existing shape, edge, thickness, overhang, sink cutout, appliance openings, and position.`);
+  }
+  if (details.backsplash) {
+    selectedSurfaces.push(`Change only the visible backsplash to ${hasBacksplashReference ? "the selected backsplash reference image" : details.backsplash}. Preserve its existing area, outlets, windows, trim, cabinets, countertops, and position.`);
+  }
+  if (details.flooring) {
+    selectedSurfaces.push(`Change only the visible flooring to ${hasFlooringReference ? "the selected flooring reference image" : details.flooring}. Preserve its perspective, scale, shadows, cabinets, appliances, furniture, rugs, and room layout.`);
+  }
+
+  const surfaceSection = selectedSurfaces.length
+    ? `After the cabinet doors and drawer fronts are correct, make only these additional selected surface changes:\n${selectedSurfaces.join("\n")}\nThese surface selections must not influence cabinet-door or drawer-front geometry.`
+    : "No additional surface changes were selected. Keep every countertop, backsplash, floor, and other non-cabinet surface unchanged.";
+
+  return `Attachment order:
+${attachments.join("\n")}
+
+Replace all existing cabinet doors in image 1 with the exact cabinet-door design shown in image 2. Replace every drawer front with the exact drawer-front design shown in image 3. Copy their visible profiles, panel shapes, frame widths, inside bevels, center panels, proportions, edge details, depth, and craftsmanship exactly. Do not simplify either design or substitute another cabinet style.
+
+Apply the attached cabinet finish swatch or swatches uniformly to all cabinet doors, drawer fronts, visible face frames, cabinet sides, end panels, fillers, trim, and toe kicks. If only one cabinet finish is attached, use it on every cabinet surface.
+
+Keep the cabinet boxes, cabinet layout, cabinet count, door count, drawer count, appliance locations, countertops, backsplash, flooring, walls, windows, trim, lighting, hardware placement, island, decorations, camera angle, perspective, and room dimensions exactly as they are. Do not redesign, modernize, resize, move, add, or remove anything.
+
+This is a cabinet refacing visualization, not a kitchen remodel. The only cabinet changes should be the exact door style from image 2, the exact drawer-front style from image 3, and the selected cabinet finish.
+
+${surfaceSection}
+
+Produce one photorealistic image with accurate lighting, perspective, and textures.`;
+}
+
 function appendImage(form, dataUrl, fallbackName) {
   const base64 = stripDataUrl(dataUrl);
   if (!base64) return false;
@@ -362,6 +409,7 @@ export default async function handler(req, res) {
 
     const safeCompanyKey = cleanKey(body.companyKey);
     const safeCompanyName = body.companyName || safeCompanyKey;
+    const cleanPromptTest = safeCompanyKey === CLEAN_TEST_COMPANY_KEY;
     const safeMonthlyLimit = Math.max(1, parseInt(body.monthlyLimit ?? DEFAULT_MONTHLY_LIMIT, 10) || DEFAULT_MONTHLY_LIMIT);
     const customerRecord = (await redisGet(`visualizer:customer:${safeCompanyKey}`)) || (await redisGet(`customer:${safeCompanyKey}`));
     if (customerRecord) {
@@ -401,13 +449,13 @@ export default async function handler(req, res) {
     if (requireDrawerReference && !drawerReference) {
       return res.status(400).json({ error: "Catalog drawer image was not sent. Add and generate the separate AI drawer reference in Catalog Manager before creating this premium custom preview." });
     }
-    if (requireConstructionTypes && !doorConstructionType) {
+    if (!cleanPromptTest && requireConstructionTypes && !doorConstructionType) {
       return res.status(400).json({ error: "Catalog door construction type was not sent. Edit this door in Catalog Manager and select Inset, Raised panel, or Slab." });
     }
-    if (requireConstructionTypes && !drawerConstructionType) {
+    if (!cleanPromptTest && requireConstructionTypes && !drawerConstructionType) {
       return res.status(400).json({ error: "Catalog drawer-front construction type was not sent. Edit this door in Catalog Manager and select Inset, Raised panel, or Slab for its drawer front." });
     }
-    if (requireProfileDescriptions && (!doorProfileDescription || !drawerProfileDescription || !doorProfileMustAvoid || !drawerProfileMustAvoid || body.profileAnalysisStatus !== "ready")) {
+    if (!cleanPromptTest && requireProfileDescriptions && (!doorProfileDescription || !drawerProfileDescription || !doorProfileMustAvoid || !drawerProfileMustAvoid || body.profileAnalysisStatus !== "ready")) {
       return res.status(400).json({ error: "This style needs current door and drawer geometry descriptions. Generate them in Catalog Manager, save the catalog, and reload the visualizer." });
     }
     if (!mainReference) {
@@ -415,14 +463,9 @@ export default async function handler(req, res) {
     }
 
     const imageModel = selectCatalogImageModel(body.imageModel);
-    const selectedPrompt = buildCatalogPrompt(
-      body,
-      !!mainReference,
-      !!(baseReference && baseReference !== mainReference),
-      !!countertopReference,
-      !!backsplashReference,
-      !!flooringReference
-    );
+    const promptBuilder = cleanPromptTest ? buildCatalogPromptV11Clean : buildCatalogPrompt;
+    const activePromptVersion = cleanPromptTest ? CLEAN_TEST_PROMPT_VERSION : CATALOG_PROMPT_VERSION;
+    const selectedPrompt = promptBuilder(body, !!mainReference, !!(baseReference && baseReference !== mainReference), !!countertopReference, !!backsplashReference, !!flooringReference);
 
     const form = new FormData();
     const generationId = createGenerationId();
@@ -473,7 +516,7 @@ export default async function handler(req, res) {
       model: imageModel,
       size: "1536x1024",
       quality: CATALOG_IMAGE_QUALITY,
-      promptVersion: CATALOG_PROMPT_VERSION,
+      promptVersion: activePromptVersion,
       prompt: selectedPrompt,
       generationMode: "single-pass",
       requestCount: 1,
@@ -495,7 +538,7 @@ export default async function handler(req, res) {
       timestamp: new Date(generationStartedAt).toISOString(),
       status: "sent",
       model: imageModel,
-      promptVersion: CATALOG_PROMPT_VERSION,
+      promptVersion: activePromptVersion,
       quality: CATALOG_IMAGE_QUALITY,
       attachmentStatus,
       summary: {
@@ -504,12 +547,13 @@ export default async function handler(req, res) {
         cabinetLine: body.cabinetLine || "",
         doorStyle: body.catalogDoorName || body.selectedDoorStyle || body.style || "",
         drawerFront: body.catalogDrawerName || "",
-        doorConstructionType,
-        drawerConstructionType,
-        doorProfileDescription,
-        drawerProfileDescription,
-        doorProfileMustAvoid,
-        drawerProfileMustAvoid,
+        doorConstructionType: cleanPromptTest ? "" : doorConstructionType,
+        drawerConstructionType: cleanPromptTest ? "" : drawerConstructionType,
+        doorProfileDescription: cleanPromptTest ? "" : doorProfileDescription,
+        drawerProfileDescription: cleanPromptTest ? "" : drawerProfileDescription,
+        doorProfileMustAvoid: cleanPromptTest ? "" : doorProfileMustAvoid,
+        drawerProfileMustAvoid: cleanPromptTest ? "" : drawerProfileMustAvoid,
+        promptMode: cleanPromptTest ? "clean-reference-only" : "catalog-guided",
         requestCount: 1,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
         baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",

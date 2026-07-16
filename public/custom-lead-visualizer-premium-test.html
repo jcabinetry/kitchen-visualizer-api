@@ -1986,7 +1986,8 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     status.innerText = "Preparing kitchen photo...";
     photoName.innerText = "Selected: " + file.name;
     try {
-      uploadedImageData = await resizeImage(file, 1400, 0.82);
+      const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
+      uploadedImageData = await resizeImage(file, cleanPromptTest ? 2048 : 1400, cleanPromptTest ? 0.92 : 0.82);
       status.innerText = "Kitchen photo ready.";
     } catch (err) { status.innerText = "Could not read kitchen photo."; }
   }
@@ -2409,11 +2410,12 @@ It should look like the existing doors, drawers, and cabinet faces were professi
       status.innerText = "This catalog style is missing its separate AI drawer reference. Upload the matching drawer front and generate its AI reference in Catalog Manager, then reload this page.";
       return;
     }
-    if (!catalogDoorConstructionType || !catalogDrawerConstructionType) {
+    const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
+    if (!cleanPromptTest && (!catalogDoorConstructionType || !catalogDrawerConstructionType)) {
       status.innerText = "This catalog style is missing its door or drawer construction type. Edit it in Catalog Manager, choose Inset, Raised panel, or Slab for both, save, then reload this page.";
       return;
     }
-    if (!catalogDoorProfileDescription || !catalogDrawerProfileDescription || !catalogDoorProfileMustAvoid || !catalogDrawerProfileMustAvoid || profileAnalysisStatus !== "ready") {
+    if (!cleanPromptTest && (!catalogDoorProfileDescription || !catalogDrawerProfileDescription || !catalogDoorProfileMustAvoid || !catalogDrawerProfileMustAvoid || profileAnalysisStatus !== "ready")) {
       status.innerText = "This catalog style needs current door and drawer descriptions. In Catalog Manager, click Generate Door & Drawer Descriptions, save, then reload this page.";
       return;
     }
@@ -2477,9 +2479,9 @@ It should look like the existing doors, drawers, and cabinet faces were professi
           catalogDoorProfileMustAvoid: catalogDoorProfileMustAvoid,
           catalogDrawerProfileMustAvoid: catalogDrawerProfileMustAvoid,
           profileAnalysisStatus: profileAnalysisStatus,
-          requireConstructionTypes: true,
+          requireConstructionTypes: !cleanPromptTest,
           requireDrawerReference: true,
-          requireProfileDescriptions: true,
+          requireProfileDescriptions: !cleanPromptTest,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,
           upperSwatchName: upperFinishName || colorInput.value || null,
