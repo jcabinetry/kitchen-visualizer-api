@@ -1,4 +1,8 @@
 {
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
     "@upstash/redis": "^1.35.3",
     "@vercel/blob": "^0.27.3",
