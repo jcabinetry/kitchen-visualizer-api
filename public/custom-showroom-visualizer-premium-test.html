@@ -931,6 +931,9 @@ document.documentElement.style.setProperty("--kv-card", kvCard);
     logo.style.display = "block";
   }
   let uploadedImageData = "";
+  let cabinetMaskData = "";
+  let cabinetAnalysisPromise = null;
+  let cabinetAnalysisSequence = 0;
   let uploadedMainCustomColorData = "";
   let uploadedIslandCustomColorData = "";
   let extractedMainCustomHex = "";
@@ -1863,6 +1866,9 @@ It should not look like a different kitchen.
       status.innerText = "Please upload a JPG, PNG, or WEBP kitchen photo.";
       photoName.innerText = "";
       uploadedImageData = "";
+      cabinetMaskData = "";
+      cabinetAnalysisPromise = null;
+      cabinetAnalysisSequence += 1;
       return;
     }
     status.innerText = "Preparing kitchen photo...";
@@ -1870,7 +1876,28 @@ It should not look like a different kitchen.
     try {
       const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
       uploadedImageData = await resizeImage(file, cleanPromptTest ? 2048 : 1400, cleanPromptTest ? 0.92 : 0.82);
-      status.innerText = "Kitchen photo ready.";
+      cabinetMaskData = "";
+      const analysisSequence = ++cabinetAnalysisSequence;
+      status.innerText = "Kitchen photo ready. Finding cabinets now...";
+      cabinetAnalysisPromise = fetch("/api/analyze-kitchen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: uploadedImageData })
+      }).then(async function(response) {
+        const data = await response.json().catch(function() { return {}; });
+        if (!response.ok || !data.mask) throw new Error(data.error || "Kitchen analysis failed.");
+        if (analysisSequence === cabinetAnalysisSequence) {
+          cabinetMaskData = data.mask;
+          status.innerText = "Kitchen photo and cabinet map ready.";
+        }
+        return data;
+      }).catch(function(error) {
+        if (analysisSequence === cabinetAnalysisSequence) {
+          cabinetMaskData = "";
+          status.innerText = error.message || "Kitchen analysis failed. Upload the photo again.";
+        }
+        return null;
+      });
     } catch (err) { status.innerText = "Could not read kitchen photo."; }
   }
 
@@ -2358,6 +2385,11 @@ It should not look like a different kitchen.
   }
 
   button.addEventListener("click", async function() {    if (!uploadedImageData) { status.innerText = "Upload a kitchen photo first."; return; }
+    if (!cabinetMaskData && cabinetAnalysisPromise) {
+      status.innerText = "Finishing the cabinet map...";
+      await cabinetAnalysisPromise;
+    }
+    if (!cabinetMaskData) { status.innerText = "The cabinet map is not ready. Upload the kitchen photo again."; return; }
     if (colorInput.value === "custom main color reference" && !uploadedMainCustomColorData) { status.innerText = "Upload a main cabinet finish reference image."; return; }
     if (islandInput.value === "custom base cabinet color reference" && !uploadedIslandCustomColorData) { status.innerText = "Upload an base cabinet finish reference image."; return; }
     if (countertopInput.value === "custom countertop reference" && !uploadedCountertopCustomData) { status.innerText = "Upload a countertop reference image."; return; }
@@ -2431,6 +2463,7 @@ It should not look like a different kitchen.
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: uploadedImageData,
+          cabinetMask: cabinetMaskData,
           imageModel: new URLSearchParams(window.location.search).get("imageModel") === "gpt-image-1" ? "gpt-image-1" : "gpt-image-2",
           prompt: prompt,
           companyKey: KV_COMPANY.companyKey,

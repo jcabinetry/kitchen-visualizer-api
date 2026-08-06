@@ -1,5 +1,5 @@
 export const config = {
-  maxDuration: 300,
+  maxDuration: 60,
   api: {
     bodyParser: {
       sizeLimit: "35mb"
@@ -16,8 +16,8 @@ const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
-const CATALOG_IMAGE_QUALITY = "high";
-const CATALOG_PROMPT_VERSION = "v12-two-stage";
+const CATALOG_IMAGE_QUALITY = "medium";
+const CATALOG_PROMPT_VERSION = "v13-upload-analysis-masked-edit";
 const CLEAN_TEST_COMPANY_KEY = "13333";
 const CLEAN_TEST_PROMPT_VERSION = "v11-clean";
 
@@ -467,6 +467,13 @@ function appendImage(form, dataUrl, fallbackName) {
   return true;
 }
 
+function appendMask(form, dataUrl) {
+  const base64 = stripDataUrl(dataUrl);
+  if (!base64) return false;
+  form.append("mask", new File([Buffer.from(base64, "base64")], "cabinet-edit-mask.png", { type: "image/png" }));
+  return true;
+}
+
 async function resultImageDataUrl(result) {
   const imageBase64 = result?.data?.[0]?.b64_json;
   if (imageBase64) return `data:image/png;base64,${imageBase64}`;
@@ -548,18 +555,18 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
     }
 
+    if (!body.cabinetMask || !stripDataUrl(body.cabinetMask)) {
+      return res.status(400).json({ error: "Kitchen cabinet analysis is not ready. Upload the kitchen photo again and wait for analysis to finish." });
+    }
+
     const imageModel = selectCatalogImageModel(body.imageModel);
     const activePromptVersion = CATALOG_PROMPT_VERSION;
-    const geometryPrompt = buildGeometryPassPrompt(body);
-    const stylingPrompt = buildFinishSurfacePassPrompt(
-      body,
-      !!(baseReference && baseReference !== mainReference),
-      !!countertopReference,
-      !!backsplashReference,
-      !!flooringReference
-    );
+    const prompt = buildCatalogPrompt(body, true, !!(baseReference && baseReference !== mainReference), false, false, false) + `
 
-    const geometryForm = new FormData();
+MASK RULE
+The transparent area of the mask identifies the only cabinet region that may change. Preserve every pixel outside that editable cabinet region. Do not change countertops, backsplash, flooring, appliances, walls, windows, decorations, or room layout. Complete the cabinet door style, drawer-front style, finish, face frames, exposed sides, trim, and toe kicks naturally inside the editable region. Preserve existing hardware and realistic shadows.`;
+
+    const editForm = new FormData();
     const generationId = createGenerationId();
     const generationStartedAt = Date.now();
     const attachedImages = [];
@@ -570,40 +577,46 @@ export default async function handler(req, res) {
     }
     const attachmentStatus = {
       kitchen: false,
+      cabinetMask: false,
       catalogDoor: false,
       catalogDrawer: !drawerReference,
       upperSwatch: false,
       baseSwatch: !baseReference || baseReference === mainReference,
-      countertop: !countertopReference,
-      backsplash: !backsplashReference,
-      flooring: !flooringReference
+      countertop: true,
+      backsplash: true,
+      flooring: true
     };
-    geometryForm.append("model", imageModel);
-    geometryForm.append("prompt", geometryPrompt);
-    geometryForm.append("size", "1536x1024");
-    geometryForm.append("quality", CATALOG_IMAGE_QUALITY);
-    attachmentStatus.kitchen = appendImage(geometryForm, body.image, "kitchen");
+    editForm.append("model", imageModel);
+    editForm.append("prompt", prompt);
+    editForm.append("size", "1536x1024");
+    editForm.append("quality", CATALOG_IMAGE_QUALITY);
+    editForm.append("input_fidelity", "high");
+    attachmentStatus.kitchen = appendImage(editForm, body.image, "kitchen");
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
-    attachmentStatus.catalogDoor = appendImage(geometryForm, doorReference, "selected-catalog-door-exact-reference");
+    attachmentStatus.cabinetMask = appendMask(editForm, body.cabinetMask);
+    attachmentStatus.catalogDoor = appendImage(editForm, doorReference, "selected-catalog-door-exact-reference");
     if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
-    if (drawerReference) attachmentStatus.catalogDrawer = appendImage(geometryForm, drawerReference, "selected-catalog-drawer-front-reference");
+    if (drawerReference) attachmentStatus.catalogDrawer = appendImage(editForm, drawerReference, "selected-catalog-drawer-front-reference");
     if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Approved AI drawer-front master", drawerReference, "selected-catalog-drawer-front-reference");
+    attachmentStatus.upperSwatch = appendImage(editForm, mainReference, "selected-upper-swatch-reference");
+    if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
+    if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(editForm, baseReference, "selected-base-swatch-reference");
+    if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
     if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
+    if (!attachmentStatus.cabinetMask) return res.status(400).json({ error: "Kitchen cabinet mask could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
     if (drawerReference && !attachmentStatus.catalogDrawer) return res.status(400).json({ error: "Catalog drawer front image could not be attached. Select the catalog door style again after the page finishes loading." });
+    if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
 
     const inspectorPayload = {
       model: imageModel,
       size: "1536x1024",
       quality: CATALOG_IMAGE_QUALITY,
       promptVersion: activePromptVersion,
-      prompt: `STAGE 1: GEOMETRY\n\n${geometryPrompt}\n\nSTAGE 2: FINISHES AND SURFACES\n\n${stylingPrompt}`,
-      generationMode: "two-stage",
-      requestCount: 2,
-      passes: [
-        { stage: "geometry", prompt: geometryPrompt },
-        { stage: "finishes-and-surfaces", prompt: stylingPrompt }
-      ],
+      prompt,
+      generationMode: "upload-analysis-masked-edit",
+      requestCount: 1,
+      passes: [{ stage: "masked-cabinet-edit", prompt }],
       attachmentStatus,
       attachments: attachedImages.map(function(image) {
         return {
@@ -636,25 +649,25 @@ export default async function handler(req, res) {
         drawerProfileDescription: cleanPromptTest ? "" : drawerProfileDescription,
         doorProfileMustAvoid: cleanPromptTest ? "" : doorProfileMustAvoid,
         drawerProfileMustAvoid: cleanPromptTest ? "" : drawerProfileMustAvoid,
-        promptMode: "geometry-first-two-stage",
-        requestCount: 2,
+        promptMode: "upload-analysis-masked-edit",
+        requestCount: 1,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
         baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
-        countertop: body.countertop || "",
-        backsplash: body.backsplash || "",
-        flooring: body.flooring || ""
+        countertop: "disabled in masked test",
+        backsplash: "disabled in masked test",
+        flooring: "disabled in masked test"
       },
       prompt: inspectorPayload.prompt,
       payload: inspectorPayload,
       referenceImages: attachedImages,
-      warnings: attachedImages.length ? [] : ["No image attachments were recorded before OpenAI request."]
+      warnings: ["Countertop, backsplash, and flooring edits are disabled in the masked cabinet test."]
     }).catch(function(error) {
       console.warn("Generation inspector logging skipped.", error?.message || error);
     });
 
-    const geometryResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: geometryForm });
-    const geometryResult = await geometryResponse.json();
-    if (!geometryResponse.ok) {
+    const editResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: editForm });
+    const result = await editResponse.json();
+    if (!editResponse.ok) {
       await updateGenerationRecord(generationId, {
         status: "error",
         result: {
@@ -663,72 +676,14 @@ export default async function handler(req, res) {
           imageSize: ""
         },
         error: {
-          status: geometryResponse.status,
-          stage: "geometry",
-          message: geometryResult?.error?.message || geometryResult?.message || "OpenAI geometry edit failed."
+          status: editResponse.status,
+          stage: "masked-cabinet-edit",
+          message: result?.error?.message || result?.message || "OpenAI masked cabinet edit failed."
         }
       }).catch(function(error) {
         console.warn("Generation inspector error logging skipped.", error?.message || error);
       });
-      return res.status(geometryResponse.status).json({ error: geometryResult?.error?.message || geometryResult?.message || "The cabinet geometry stage failed." });
-    }
-
-    const geometryImage = await resultImageDataUrl(geometryResult);
-    if (!geometryImage) {
-      return res.status(500).json({ error: "The cabinet geometry stage finished without a usable image." });
-    }
-
-    const stylingForm = new FormData();
-    stylingForm.append("model", imageModel);
-    stylingForm.append("prompt", stylingPrompt);
-    stylingForm.append("size", "1536x1024");
-    stylingForm.append("quality", CATALOG_IMAGE_QUALITY);
-    if (!appendImage(stylingForm, geometryImage, "approved-geometry-stage")) {
-      return res.status(500).json({ error: "The approved cabinet geometry could not be attached to the styling stage." });
-    }
-    observeImage("Approved geometry-stage kitchen", geometryImage, "approved-geometry-stage");
-    attachmentStatus.upperSwatch = appendImage(stylingForm, mainReference, "selected-upper-swatch-reference");
-    if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
-    if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(stylingForm, baseReference, "selected-base-swatch-reference");
-    if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
-    if (countertopReference) attachmentStatus.countertop = appendImage(stylingForm, countertopReference, "selected-countertop-reference");
-    if (attachmentStatus.countertop && countertopReference) observeImage("Countertop reference", countertopReference, "selected-countertop-reference");
-    if (backsplashReference) attachmentStatus.backsplash = appendImage(stylingForm, backsplashReference, "selected-backsplash-reference");
-    if (attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash reference", backsplashReference, "selected-backsplash-reference");
-    if (flooringReference) attachmentStatus.flooring = appendImage(stylingForm, flooringReference, "selected-flooring-reference");
-    if (attachmentStatus.flooring && flooringReference) observeImage("Flooring reference", flooringReference, "selected-flooring-reference");
-    if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
-
-    await updateGenerationRecord(generationId, {
-      status: "styling-stage",
-      attachmentStatus,
-      payload: {
-        ...inspectorPayload,
-        attachmentStatus,
-        attachments: attachedImages.map(function(image) {
-          return { order: image.order, role: image.role, fileName: image.fileName, mime: image.mime, bytes: image.bytes, dataUrl: image.dataUrl };
-        })
-      },
-      referenceImages: attachedImages
-    }).catch(function(error) {
-      console.warn("Generation inspector styling-stage logging skipped.", error?.message || error);
-    });
-
-    const stylingResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: stylingForm });
-    const result = await stylingResponse.json();
-    if (!stylingResponse.ok) {
-      await updateGenerationRecord(generationId, {
-        status: "error",
-        result: { generationTimeMs: Date.now() - generationStartedAt, image: "", imageSize: "" },
-        error: {
-          status: stylingResponse.status,
-          stage: "finishes-and-surfaces",
-          message: result?.error?.message || result?.message || "OpenAI styling edit failed."
-        }
-      }).catch(function(error) {
-        console.warn("Generation inspector styling error logging skipped.", error?.message || error);
-      });
-      return res.status(stylingResponse.status).json({ error: result?.error?.message || result?.message || "The cabinet geometry stage finished, but the styling stage failed." });
+      return res.status(editResponse.status).json({ error: result?.error?.message || result?.message || "The masked cabinet edit failed." });
     }
 
     const updatedUsed = await redisIncr(usageKey);
