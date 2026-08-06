@@ -11,10 +11,6 @@ import {
   saveGenerationRecord,
   updateGenerationRecord
 } from "./_lib/generationInspectorStore.js";
-import {
-  detectCabinetFaces,
-  renderCabinetOverlays
-} from "./_lib/cabinetOverlayRenderer.js";
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
@@ -552,48 +548,81 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
     }
 
-    if (!drawerReference) {
-      return res.status(400).json({ error: "A separate approved drawer-front reference is required for exact cabinet rendering." });
-    }
+    const imageModel = selectCatalogImageModel(body.imageModel);
+    const activePromptVersion = CATALOG_PROMPT_VERSION;
+    const geometryPrompt = buildGeometryPassPrompt(body);
+    const stylingPrompt = buildFinishSurfacePassPrompt(
+      body,
+      !!(baseReference && baseReference !== mainReference),
+      !!countertopReference,
+      !!backsplashReference,
+      !!flooringReference
+    );
 
+    const geometryForm = new FormData();
     const generationId = createGenerationId();
     const generationStartedAt = Date.now();
-    const faces = await detectCabinetFaces(body.image, { timeoutMs: 20000 });
-    const rendered = await renderCabinetOverlays({
-      image: body.image,
-      doorReference,
-      drawerReference,
-      upperSwatch: mainReference,
-      baseSwatch: baseReference || mainReference,
-      faces
-    });
-    const result = { data: [{ b64_json: stripDataUrl(rendered.image) }] };
+    const attachedImages = [];
+    function observeImage(role, dataUrl, fallbackName) {
+      if (stripDataUrl(dataUrl)) {
+        attachedImages.push(describeImage(role, dataUrl, `${fallbackName}.${getExt(getMimeType(dataUrl, "image/jpeg"))}`, attachedImages.length + 1));
+      }
+    }
     const attachmentStatus = {
-      kitchen: true,
-      catalogDoor: true,
-      catalogDrawer: true,
-      upperSwatch: true,
-      baseSwatch: true,
+      kitchen: false,
+      catalogDoor: false,
+      catalogDrawer: !drawerReference,
+      upperSwatch: false,
+      baseSwatch: !baseReference || baseReference === mainReference,
       countertop: !countertopReference,
       backsplash: !backsplashReference,
       flooring: !flooringReference
     };
-    const attachedImages = [
-      describeImage("Kitchen photo", body.image, "kitchen.jpg", 1),
-      describeImage("Exact cabinet door master", doorReference, "catalog-door.jpg", 2),
-      describeImage("Exact drawer-front master", drawerReference, "catalog-drawer.jpg", 3),
-      describeImage("Upper finish swatch", mainReference, "upper-swatch.jpg", 4)
-    ];
-    if (baseReference && baseReference !== mainReference) {
-      attachedImages.push(describeImage("Base finish swatch", baseReference, "base-swatch.jpg", 5));
-    }
+    geometryForm.append("model", imageModel);
+    geometryForm.append("prompt", geometryPrompt);
+    geometryForm.append("size", "1536x1024");
+    geometryForm.append("quality", CATALOG_IMAGE_QUALITY);
+    attachmentStatus.kitchen = appendImage(geometryForm, body.image, "kitchen");
+    if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
+    attachmentStatus.catalogDoor = appendImage(geometryForm, doorReference, "selected-catalog-door-exact-reference");
+    if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
+    if (drawerReference) attachmentStatus.catalogDrawer = appendImage(geometryForm, drawerReference, "selected-catalog-drawer-front-reference");
+    if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Approved AI drawer-front master", drawerReference, "selected-catalog-drawer-front-reference");
+    if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
+    if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
+    if (drawerReference && !attachmentStatus.catalogDrawer) return res.status(400).json({ error: "Catalog drawer front image could not be attached. Select the catalog door style again after the page finishes loading." });
+
+    const inspectorPayload = {
+      model: imageModel,
+      size: "1536x1024",
+      quality: CATALOG_IMAGE_QUALITY,
+      promptVersion: activePromptVersion,
+      prompt: `STAGE 1: GEOMETRY\n\n${geometryPrompt}\n\nSTAGE 2: FINISHES AND SURFACES\n\n${stylingPrompt}`,
+      generationMode: "two-stage",
+      requestCount: 2,
+      passes: [
+        { stage: "geometry", prompt: geometryPrompt },
+        { stage: "finishes-and-surfaces", prompt: stylingPrompt }
+      ],
+      attachmentStatus,
+      attachments: attachedImages.map(function(image) {
+        return {
+          order: image.order,
+          role: image.role,
+          fileName: image.fileName,
+          mime: image.mime,
+          bytes: image.bytes,
+          dataUrl: image.dataUrl
+        };
+      })
+    };
     await saveGenerationRecord({
       generationId,
       timestamp: new Date(generationStartedAt).toISOString(),
-      status: "rendered",
-      model: process.env.CABINET_DETECTION_MODEL || "gpt-4.1-mini",
-      promptVersion: "deterministic-overlay-v1",
-      quality: "exact-template",
+      status: "sent",
+      model: imageModel,
+      promptVersion: activePromptVersion,
+      quality: CATALOG_IMAGE_QUALITY,
       attachmentStatus,
       summary: {
         companyKey: safeCompanyKey,
@@ -601,25 +630,106 @@ export default async function handler(req, res) {
         cabinetLine: body.cabinetLine || "",
         doorStyle: body.catalogDoorName || body.selectedDoorStyle || body.style || "",
         drawerFront: body.catalogDrawerName || "",
-        promptMode: "deterministic-overlay",
-        requestCount: 1,
-        detectedFaces: rendered.faceCount,
+        doorConstructionType: cleanPromptTest ? "" : doorConstructionType,
+        drawerConstructionType: cleanPromptTest ? "" : drawerConstructionType,
+        doorProfileDescription: cleanPromptTest ? "" : doorProfileDescription,
+        drawerProfileDescription: cleanPromptTest ? "" : drawerProfileDescription,
+        doorProfileMustAvoid: cleanPromptTest ? "" : doorProfileMustAvoid,
+        drawerProfileMustAvoid: cleanPromptTest ? "" : drawerProfileMustAvoid,
+        promptMode: "geometry-first-two-stage",
+        requestCount: 2,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
-        baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || ""
+        baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
+        countertop: body.countertop || "",
+        backsplash: body.backsplash || "",
+        flooring: body.flooring || ""
       },
-      prompt: "Detect cabinet faces, then perspective-map the exact approved catalog masters onto every detected door and drawer.",
-      payload: {
-        generationMode: "deterministic-overlay",
-        requestCount: 1,
-        faceCount: rendered.faceCount,
-        faces,
-        attachmentStatus
-      },
+      prompt: inspectorPayload.prompt,
+      payload: inspectorPayload,
       referenceImages: attachedImages,
-      warnings: ["Countertop, backsplash, and flooring edits are disabled in the exact-render preview."]
+      warnings: attachedImages.length ? [] : ["No image attachments were recorded before OpenAI request."]
     }).catch(function(error) {
       console.warn("Generation inspector logging skipped.", error?.message || error);
     });
+
+    const geometryResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: geometryForm });
+    const geometryResult = await geometryResponse.json();
+    if (!geometryResponse.ok) {
+      await updateGenerationRecord(generationId, {
+        status: "error",
+        result: {
+          generationTimeMs: Date.now() - generationStartedAt,
+          image: "",
+          imageSize: ""
+        },
+        error: {
+          status: geometryResponse.status,
+          stage: "geometry",
+          message: geometryResult?.error?.message || geometryResult?.message || "OpenAI geometry edit failed."
+        }
+      }).catch(function(error) {
+        console.warn("Generation inspector error logging skipped.", error?.message || error);
+      });
+      return res.status(geometryResponse.status).json({ error: geometryResult?.error?.message || geometryResult?.message || "The cabinet geometry stage failed." });
+    }
+
+    const geometryImage = await resultImageDataUrl(geometryResult);
+    if (!geometryImage) {
+      return res.status(500).json({ error: "The cabinet geometry stage finished without a usable image." });
+    }
+
+    const stylingForm = new FormData();
+    stylingForm.append("model", imageModel);
+    stylingForm.append("prompt", stylingPrompt);
+    stylingForm.append("size", "1536x1024");
+    stylingForm.append("quality", CATALOG_IMAGE_QUALITY);
+    if (!appendImage(stylingForm, geometryImage, "approved-geometry-stage")) {
+      return res.status(500).json({ error: "The approved cabinet geometry could not be attached to the styling stage." });
+    }
+    observeImage("Approved geometry-stage kitchen", geometryImage, "approved-geometry-stage");
+    attachmentStatus.upperSwatch = appendImage(stylingForm, mainReference, "selected-upper-swatch-reference");
+    if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
+    if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(stylingForm, baseReference, "selected-base-swatch-reference");
+    if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
+    if (countertopReference) attachmentStatus.countertop = appendImage(stylingForm, countertopReference, "selected-countertop-reference");
+    if (attachmentStatus.countertop && countertopReference) observeImage("Countertop reference", countertopReference, "selected-countertop-reference");
+    if (backsplashReference) attachmentStatus.backsplash = appendImage(stylingForm, backsplashReference, "selected-backsplash-reference");
+    if (attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash reference", backsplashReference, "selected-backsplash-reference");
+    if (flooringReference) attachmentStatus.flooring = appendImage(stylingForm, flooringReference, "selected-flooring-reference");
+    if (attachmentStatus.flooring && flooringReference) observeImage("Flooring reference", flooringReference, "selected-flooring-reference");
+    if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
+
+    await updateGenerationRecord(generationId, {
+      status: "styling-stage",
+      attachmentStatus,
+      payload: {
+        ...inspectorPayload,
+        attachmentStatus,
+        attachments: attachedImages.map(function(image) {
+          return { order: image.order, role: image.role, fileName: image.fileName, mime: image.mime, bytes: image.bytes, dataUrl: image.dataUrl };
+        })
+      },
+      referenceImages: attachedImages
+    }).catch(function(error) {
+      console.warn("Generation inspector styling-stage logging skipped.", error?.message || error);
+    });
+
+    const stylingResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: stylingForm });
+    const result = await stylingResponse.json();
+    if (!stylingResponse.ok) {
+      await updateGenerationRecord(generationId, {
+        status: "error",
+        result: { generationTimeMs: Date.now() - generationStartedAt, image: "", imageSize: "" },
+        error: {
+          status: stylingResponse.status,
+          stage: "finishes-and-surfaces",
+          message: result?.error?.message || result?.message || "OpenAI styling edit failed."
+        }
+      }).catch(function(error) {
+        console.warn("Generation inspector styling error logging skipped.", error?.message || error);
+      });
+      return res.status(stylingResponse.status).json({ error: result?.error?.message || result?.message || "The cabinet geometry stage finished, but the styling stage failed." });
+    }
 
     const updatedUsed = await redisIncr(usageKey);
     if (updatedUsed >= safeMonthlyLimit) await sendLimitEmail({ companyKey: safeCompanyKey, companyName: safeCompanyName, used: updatedUsed, limit: safeMonthlyLimit, customerName: body.customerName, customerEmail: body.customerEmail, customerPhone: body.customerPhone });
