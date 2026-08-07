@@ -11,20 +11,34 @@ import {
   saveGenerationRecord,
   updateGenerationRecord
 } from "./_lib/generationInspectorStore.js";
+import sharp from "sharp";
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
-const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
+const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2-2026-04-21";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const CATALOG_IMAGE_QUALITY = "medium";
-const CATALOG_PROMPT_VERSION = "v13-upload-analysis-masked-edit";
-const CLEAN_TEST_COMPANY_KEY = "13333";
-const CLEAN_TEST_PROMPT_VERSION = "v11-clean";
+const CATALOG_PROMPT_VERSION = "v14-strict-geometry-aspect-locked";
 
 function selectCatalogImageModel(value) {
   return String(value || "").trim().toLowerCase() === TEST_CATALOG_IMAGE_MODEL
     ? TEST_CATALOG_IMAGE_MODEL
     : DEFAULT_CATALOG_IMAGE_MODEL;
+}
+
+async function selectOutputSize(image, model) {
+  if (model !== DEFAULT_CATALOG_IMAGE_MODEL) return "1536x1024";
+  const input = Buffer.from(stripDataUrl(image), "base64");
+  const metadata = await sharp(input).rotate().metadata();
+  let width = metadata.width || 1536;
+  let height = metadata.height || 1024;
+  const pixels = width * height;
+  const minimumScale = pixels < 655360 ? Math.sqrt(655360 / pixels) : 1;
+  const maximumScale = Math.min(2048 / Math.max(width, height), Math.sqrt(8294400 / pixels));
+  const scale = Math.min(minimumScale, maximumScale);
+  width = Math.max(16, Math.round(width * scale / 16) * 16);
+  height = Math.max(16, Math.round(height * scale / 16) * 16);
+  return `${width}x${height}`;
 }
 
 function cleanEnvValue(value) {
@@ -306,11 +320,7 @@ function buildCatalogPromptV9(body, hasMainReference, hasBaseReference, hasCount
   if (hasCountertopReference) attachments.push(`${order++}. COUNTERTOP REFERENCE: countertop material only.`);
   if (hasBacksplashReference) attachments.push(`${order++}. BACKSPLASH REFERENCE: backsplash material only.`);
   if (hasFlooringReference) attachments.push(`${order++}. FLOORING REFERENCE: flooring material only.`);
-  const surfaces = [
-    details.countertop ? `Countertop: change to ${details.countertop}; preserve exact shape, edge, openings, and position.` : "Countertop: keep unchanged.",
-    details.backsplash ? `Backsplash: change to ${details.backsplash}; preserve exact area, outlets, windows, and trim.` : "Backsplash: keep unchanged.",
-    details.flooring ? `Flooring: change to ${details.flooring}; preserve perspective, scale, shadows, and room layout.` : "Flooring: keep unchanged."
-  ].join("\n");
+  const surfaces = "Countertop: keep unchanged.\nBacksplash: keep unchanged.\nFlooring: keep unchanged.";
   return `Create one photorealistic cabinet-refacing edit of image 1. This is one generation request, not a staged redesign.
 
 ATTACHMENT ORDER AND AUTHORITY
@@ -502,7 +512,6 @@ export default async function handler(req, res) {
 
     const safeCompanyKey = cleanKey(body.companyKey);
     const safeCompanyName = body.companyName || safeCompanyKey;
-    const cleanPromptTest = safeCompanyKey === CLEAN_TEST_COMPANY_KEY;
     const safeMonthlyLimit = Math.max(1, parseInt(body.monthlyLimit ?? DEFAULT_MONTHLY_LIMIT, 10) || DEFAULT_MONTHLY_LIMIT);
     const customerRecord = (await redisGet(`visualizer:customer:${safeCompanyKey}`)) || (await redisGet(`customer:${safeCompanyKey}`));
     if (customerRecord) {
@@ -542,13 +551,13 @@ export default async function handler(req, res) {
     if (requireDrawerReference && !drawerReference) {
       return res.status(400).json({ error: "Catalog drawer image was not sent. Add and generate the separate AI drawer reference in Catalog Manager before creating this premium custom preview." });
     }
-    if (!cleanPromptTest && requireConstructionTypes && !doorConstructionType) {
+    if (requireConstructionTypes && !doorConstructionType) {
       return res.status(400).json({ error: "Catalog door construction type was not sent. Edit this door in Catalog Manager and select Inset, Raised panel, or Slab." });
     }
-    if (!cleanPromptTest && requireConstructionTypes && !drawerConstructionType) {
+    if (requireConstructionTypes && !drawerConstructionType) {
       return res.status(400).json({ error: "Catalog drawer-front construction type was not sent. Edit this door in Catalog Manager and select Inset, Raised panel, or Slab for its drawer front." });
     }
-    if (!cleanPromptTest && requireProfileDescriptions && (!doorProfileDescription || !drawerProfileDescription || !doorProfileMustAvoid || !drawerProfileMustAvoid || body.profileAnalysisStatus !== "ready")) {
+    if (requireProfileDescriptions && (!doorProfileDescription || !drawerProfileDescription || !doorProfileMustAvoid || !drawerProfileMustAvoid || body.profileAnalysisStatus !== "ready")) {
       return res.status(400).json({ error: "This style needs current door and drawer geometry descriptions. Generate them in Catalog Manager, save the catalog, and reload the visualizer." });
     }
     if (!mainReference) {
@@ -560,6 +569,7 @@ export default async function handler(req, res) {
     }
 
     const imageModel = selectCatalogImageModel(body.imageModel);
+    const outputSize = await selectOutputSize(body.image, imageModel);
     const activePromptVersion = CATALOG_PROMPT_VERSION;
     const prompt = buildCatalogPrompt(body, true, !!(baseReference && baseReference !== mainReference), false, false, false) + `
 
@@ -588,7 +598,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
     };
     editForm.append("model", imageModel);
     editForm.append("prompt", prompt);
-    editForm.append("size", "1536x1024");
+    editForm.append("size", outputSize);
     editForm.append("quality", CATALOG_IMAGE_QUALITY);
     attachmentStatus.kitchen = appendImage(editForm, body.image, "kitchen");
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
@@ -601,6 +611,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
     if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(editForm, baseReference, "selected-base-swatch-reference");
     if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
+    if (attachmentStatus.cabinetMask) observeImage("Diagnostic cabinet edit mask, not a numbered reference image", body.cabinetMask, "diagnostic-cabinet-edit-mask");
     if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.cabinetMask) return res.status(400).json({ error: "Kitchen cabinet mask could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
@@ -609,7 +620,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
 
     const inspectorPayload = {
       model: imageModel,
-      size: "1536x1024",
+      size: outputSize,
       quality: CATALOG_IMAGE_QUALITY,
       promptVersion: activePromptVersion,
       prompt,
@@ -642,12 +653,12 @@ The transparent area of the mask identifies the only cabinet region that may cha
         cabinetLine: body.cabinetLine || "",
         doorStyle: body.catalogDoorName || body.selectedDoorStyle || body.style || "",
         drawerFront: body.catalogDrawerName || "",
-        doorConstructionType: cleanPromptTest ? "" : doorConstructionType,
-        drawerConstructionType: cleanPromptTest ? "" : drawerConstructionType,
-        doorProfileDescription: cleanPromptTest ? "" : doorProfileDescription,
-        drawerProfileDescription: cleanPromptTest ? "" : drawerProfileDescription,
-        doorProfileMustAvoid: cleanPromptTest ? "" : doorProfileMustAvoid,
-        drawerProfileMustAvoid: cleanPromptTest ? "" : drawerProfileMustAvoid,
+        doorConstructionType,
+        drawerConstructionType,
+        doorProfileDescription,
+        drawerProfileDescription,
+        doorProfileMustAvoid,
+        drawerProfileMustAvoid,
         promptMode: "upload-analysis-masked-edit",
         requestCount: 1,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",

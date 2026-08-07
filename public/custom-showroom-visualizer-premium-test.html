@@ -2415,12 +2415,11 @@ It should not look like a different kitchen.
       status.innerText = "This catalog style is missing its separate AI drawer reference. Upload the matching drawer front and generate its AI reference in Catalog Manager, then reload this page.";
       return;
     }
-    const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
-    if (!cleanPromptTest && (!catalogDoorConstructionType || !catalogDrawerConstructionType)) {
+    if (!catalogDoorConstructionType || !catalogDrawerConstructionType) {
       status.innerText = "This catalog style is missing its door or drawer construction type. Edit it in Catalog Manager, choose Inset, Raised panel, or Slab for both, save, then reload this page.";
       return;
     }
-    if (!cleanPromptTest && (!catalogDoorProfileDescription || !catalogDrawerProfileDescription || !catalogDoorProfileMustAvoid || !catalogDrawerProfileMustAvoid || profileAnalysisStatus !== "ready")) {
+    if (!catalogDoorProfileDescription || !catalogDrawerProfileDescription || !catalogDoorProfileMustAvoid || !catalogDrawerProfileMustAvoid || profileAnalysisStatus !== "ready") {
       status.innerText = "This catalog style needs current door and drawer descriptions. In Catalog Manager, click Generate Door & Drawer Descriptions, save, then reload this page.";
       return;
     }
@@ -2486,9 +2485,9 @@ It should not look like a different kitchen.
           catalogDoorProfileMustAvoid: catalogDoorProfileMustAvoid,
           catalogDrawerProfileMustAvoid: catalogDrawerProfileMustAvoid,
           profileAnalysisStatus: profileAnalysisStatus,
-          requireConstructionTypes: !cleanPromptTest,
+          requireConstructionTypes: true,
           requireDrawerReference: true,
-          requireProfileDescriptions: !cleanPromptTest,
+          requireProfileDescriptions: true,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,
           upperSwatchName: upperFinishName || colorInput.value || null,
