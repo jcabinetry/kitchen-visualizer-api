@@ -932,8 +932,6 @@ document.documentElement.style.setProperty("--kv-card", kvCard);
   }
   let uploadedImageData = "";
   let cabinetMaskData = "";
-  let upperCabinetMaskData = "";
-  let baseCabinetMaskData = "";
   let cabinetAnalysisPromise = null;
   let cabinetAnalysisSequence = 0;
   let uploadedMainCustomColorData = "";
@@ -1869,8 +1867,6 @@ It should not look like a different kitchen.
       photoName.innerText = "";
       uploadedImageData = "";
       cabinetMaskData = "";
-      upperCabinetMaskData = "";
-      baseCabinetMaskData = "";
       cabinetAnalysisPromise = null;
       cabinetAnalysisSequence += 1;
       return;
@@ -1881,8 +1877,6 @@ It should not look like a different kitchen.
       const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
       uploadedImageData = await resizeImage(file, cleanPromptTest ? 2048 : 1400, cleanPromptTest ? 0.92 : 0.82);
       cabinetMaskData = "";
-      upperCabinetMaskData = "";
-      baseCabinetMaskData = "";
       const analysisSequence = ++cabinetAnalysisSequence;
       status.innerText = "Kitchen photo ready. Finding cabinets now...";
       cabinetAnalysisPromise = fetch("/api/analyze-kitchen", {
@@ -1894,16 +1888,12 @@ It should not look like a different kitchen.
         if (!response.ok || !data.mask) throw new Error(data.error || "Kitchen analysis failed.");
         if (analysisSequence === cabinetAnalysisSequence) {
           cabinetMaskData = data.mask;
-          upperCabinetMaskData = data.upperMask || "";
-          baseCabinetMaskData = data.baseMask || "";
           status.innerText = "Kitchen photo and cabinet map ready.";
         }
         return data;
       }).catch(function(error) {
         if (analysisSequence === cabinetAnalysisSequence) {
           cabinetMaskData = "";
-          upperCabinetMaskData = "";
-          baseCabinetMaskData = "";
           status.innerText = error.message || "Kitchen analysis failed. Upload the photo again.";
         }
         return null;
@@ -2410,8 +2400,6 @@ It should not look like a different kitchen.
     const prompt = buildPrompt();
     const catalogDoorImage = activeDoorImage();
     const catalogDrawerImage = activeDrawerImage();
-    const catalogDoorSourceImage = activeDoorSourceImage();
-    const catalogDrawerSourceImage = activeDrawerSourceImage();
     const catalogDoorConstructionType = activeDoorConstructionType();
     const catalogDrawerConstructionType = activeDrawerConstructionType();
     const catalogDoorProfileDescription = activeProfileField("doorProfileDescription");
@@ -2419,15 +2407,20 @@ It should not look like a different kitchen.
     const catalogDoorProfileMustAvoid = activeProfileField("doorProfileMustAvoid");
     const catalogDrawerProfileMustAvoid = activeProfileField("drawerProfileMustAvoid");
     const profileAnalysisStatus = activeProfileField("profileAnalysisStatus");
-    if (!catalogDoorSourceImage || !catalogDrawerSourceImage) {
-      status.innerText = "This catalog style is missing its original door or drawer image. Add both source images in Catalog Manager, save, then reload this page.";
+    if (!catalogDoorImage) {
+      status.innerText = "This catalog style is missing its AI door reference. Generate and save the AI door reference in Catalog Manager, then reload this page.";
       return;
     }
-    if (!catalogDoorConstructionType || !catalogDrawerConstructionType) {
+    if (!catalogDrawerImage) {
+      status.innerText = "This catalog style is missing its separate AI drawer reference. Upload the matching drawer front and generate its AI reference in Catalog Manager, then reload this page.";
+      return;
+    }
+    const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
+    if (!cleanPromptTest && (!catalogDoorConstructionType || !catalogDrawerConstructionType)) {
       status.innerText = "This catalog style is missing its door or drawer construction type. Edit it in Catalog Manager, choose Inset, Raised panel, or Slab for both, save, then reload this page.";
       return;
     }
-    if (!catalogDoorProfileDescription || !catalogDrawerProfileDescription || !catalogDoorProfileMustAvoid || !catalogDrawerProfileMustAvoid || profileAnalysisStatus !== "ready") {
+    if (!cleanPromptTest && (!catalogDoorProfileDescription || !catalogDrawerProfileDescription || !catalogDoorProfileMustAvoid || !catalogDrawerProfileMustAvoid || profileAnalysisStatus !== "ready")) {
       status.innerText = "This catalog style needs current door and drawer descriptions. In Catalog Manager, click Generate Door & Drawer Descriptions, save, then reload this page.";
       return;
     }
@@ -2471,10 +2464,7 @@ It should not look like a different kitchen.
         body: JSON.stringify({
           image: uploadedImageData,
           cabinetMask: cabinetMaskData,
-          upperCabinetMask: upperCabinetMaskData,
-          baseCabinetMask: baseCabinetMaskData,
-          imageModel: ["gpt-image-2", "gpt-image-1.5"].includes(new URLSearchParams(window.location.search).get("imageModel")) ? new URLSearchParams(window.location.search).get("imageModel") : "gpt-image-2",
-          imageQuality: new URLSearchParams(window.location.search).get("imageQuality") === "high" ? "high" : "medium",
+          imageModel: new URLSearchParams(window.location.search).get("imageModel") === "gpt-image-1" ? "gpt-image-1" : "gpt-image-2",
           prompt: prompt,
           companyKey: KV_COMPANY.companyKey,
           companyName: KV_COMPANY.companyName,
@@ -2487,8 +2477,6 @@ It should not look like a different kitchen.
           selectedBaseFinishColor: baseFinishName || baseFinishValue || null,
           catalogDoorReference: catalogDoorImage || null,
           catalogDrawerReference: catalogDrawerImage || null,
-          catalogDoorSourceReference: catalogDoorSourceImage || null,
-          catalogDrawerSourceReference: catalogDrawerSourceImage || null,
           catalogDoorName: doorStyleName || styleInput.value || null,
           catalogDrawerName: doorStyleName || styleInput.value || null,
           catalogDoorConstructionType: catalogDoorConstructionType,
@@ -2498,9 +2486,9 @@ It should not look like a different kitchen.
           catalogDoorProfileMustAvoid: catalogDoorProfileMustAvoid,
           catalogDrawerProfileMustAvoid: catalogDrawerProfileMustAvoid,
           profileAnalysisStatus: profileAnalysisStatus,
-          requireConstructionTypes: true,
-          requireDrawerReference: false,
-          requireProfileDescriptions: true,
+          requireConstructionTypes: !cleanPromptTest,
+          requireDrawerReference: true,
+          requireProfileDescriptions: !cleanPromptTest,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,
           upperSwatchName: upperFinishName || colorInput.value || null,
