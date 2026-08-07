@@ -137,3 +137,23 @@ export async function createPrecoloredKitchen(image, upperMask, baseMask, upperS
   const output = await sharp(input).rotate().composite(layers).jpeg({ quality: 94, chromaSubsampling: "4:4:4" }).toBuffer();
   return `data:image/jpeg;base64,${output.toString("base64")}`;
 }
+
+export async function restoreOriginalOutsideCabinets(originalImage, generatedImage, cabinetMask) {
+  const original = Buffer.from(stripDataUrl(originalImage), "base64");
+  const generated = Buffer.from(stripDataUrl(generatedImage), "base64");
+  const mask = Buffer.from(stripDataUrl(cabinetMask), "base64");
+  if (!original.length || !generated.length || !mask.length) throw new Error("Could not restore the locked kitchen layout.");
+  const metadata = await sharp(original).rotate().metadata();
+  const width = metadata.width;
+  const height = metadata.height;
+  if (!width || !height) throw new Error("Original kitchen dimensions could not be read.");
+
+  const alpha = await sharp(mask).resize(width, height, { fit: "fill", kernel: "nearest" }).ensureAlpha().extractChannel(3).png().toBuffer();
+  const originalRgb = await sharp(original).rotate().resize(width, height, { fit: "fill" }).removeAlpha().png().toBuffer();
+  const lockedOriginal = await sharp(originalRgb).joinChannel(alpha).png().toBuffer();
+  const restored = await sharp(generated).resize(width, height, { fit: "fill" })
+    .composite([{ input: lockedOriginal, blend: "over" }])
+    .png()
+    .toBuffer();
+  return `data:image/png;base64,${restored.toString("base64")}`;
+}

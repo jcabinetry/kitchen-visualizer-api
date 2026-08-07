@@ -2419,14 +2419,6 @@ It should not look like a different kitchen.
     const catalogDoorProfileMustAvoid = activeProfileField("doorProfileMustAvoid");
     const catalogDrawerProfileMustAvoid = activeProfileField("drawerProfileMustAvoid");
     const profileAnalysisStatus = activeProfileField("profileAnalysisStatus");
-    if (!catalogDoorImage) {
-      status.innerText = "This catalog style is missing its AI door reference. Generate and save the AI door reference in Catalog Manager, then reload this page.";
-      return;
-    }
-    if (!catalogDrawerImage) {
-      status.innerText = "This catalog style is missing its separate AI drawer reference. Upload the matching drawer front and generate its AI reference in Catalog Manager, then reload this page.";
-      return;
-    }
     if (!catalogDoorSourceImage || !catalogDrawerSourceImage) {
       status.innerText = "This catalog style is missing its original door or drawer image. Add both source images in Catalog Manager, save, then reload this page.";
       return;
@@ -2507,7 +2499,7 @@ It should not look like a different kitchen.
           catalogDrawerProfileMustAvoid: catalogDrawerProfileMustAvoid,
           profileAnalysisStatus: profileAnalysisStatus,
           requireConstructionTypes: true,
-          requireDrawerReference: true,
+          requireDrawerReference: false,
           requireProfileDescriptions: true,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,

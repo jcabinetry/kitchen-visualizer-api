@@ -12,7 +12,7 @@ import {
   updateGenerationRecord
 } from "./_lib/generationInspectorStore.js";
 import sharp from "sharp";
-import { createPrecoloredKitchen } from "./_lib/cabinetMask.js";
+import { createPrecoloredKitchen, restoreOriginalOutsideCabinets } from "./_lib/cabinetMask.js";
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
@@ -43,6 +43,19 @@ async function outputSizeFor(image, model) {
   return `${width}x${height}`;
 }
 
+async function prepareCatalogSource(dataUrl, kind) {
+  const input = Buffer.from(stripDataUrl(dataUrl), "base64");
+  if (!input.length) throw new Error(`Invalid original catalog ${kind} image.`);
+  const output = await sharp(input)
+    .rotate()
+    .flatten({ background: "white" })
+    .resize({ width: kind === "door" ? 900 : 1200, height: kind === "door" ? 1200 : 600, fit: "inside", withoutEnlargement: false })
+    .sharpen({ sigma: 0.8 })
+    .png()
+    .toBuffer();
+  return `data:image/png;base64,${output.toString("base64")}`;
+}
+
 function buildFocusedCabinetPrompt(body, hasSeparateBase) {
   const details = selectedDetails(body);
   return `Edit only the transparent cabinet area in the mask.
@@ -51,8 +64,7 @@ REFERENCE PRIORITY
 Image 1 is the prepared kitchen and controls the scene, layout, perspective, lighting, cabinet locations, hardware, and prepared upper and base colors.
 Image 2 is the original catalog door photo and is the authoritative door geometry.
 Image 3 is the original catalog drawer front photo and is the authoritative drawer geometry.
-Images 4 and 5 are clean supporting views of those same catalog designs. They may clarify the profile but may not replace or simplify the original designs.
-Image 6 is the upper finish swatch.${hasSeparateBase ? " Image 7 is the base finish swatch." : " Use the same finish for upper and base cabinets."}
+Image 4 is the upper finish swatch.${hasSeparateBase ? " Image 5 is the base finish swatch." : " Use the same finish for upper and base cabinets."}
 
 CATALOG GEOMETRY
 Door style: ${details.doorName}.
@@ -579,9 +591,6 @@ export default async function handler(req, res) {
     const backsplashReference = body.backsplashCustomReference || null;
     const flooringReference = body.flooringCustomReference || null;
 
-    if (!doorReference) {
-      return res.status(400).json({ error: "Catalog door image was not sent. Select a catalog door again and generate after the page finishes loading." });
-    }
     if (!doorSourceReference || !drawerSourceReference) {
       return res.status(400).json({ error: "The original catalog door or drawer image was not sent. Add both source images in Catalog Manager, save, and reload the visualizer." });
     }
@@ -614,6 +623,8 @@ export default async function handler(req, res) {
     const activePromptVersion = CATALOG_PROMPT_VERSION;
     const hasSeparateBase = !!(baseReference && baseReference !== mainReference);
     const preparedKitchen = await createPrecoloredKitchen(body.image, body.upperCabinetMask, body.baseCabinetMask, mainReference, baseReference || mainReference);
+    const preparedDoorSource = await prepareCatalogSource(doorSourceReference, "door");
+    const preparedDrawerSource = await prepareCatalogSource(drawerSourceReference, "drawer");
     const outputSize = await outputSizeFor(preparedKitchen, imageModel);
     const prompt = buildFocusedCabinetPrompt(body, hasSeparateBase);
 
@@ -631,8 +642,6 @@ export default async function handler(req, res) {
       cabinetMask: false,
       catalogDoorSource: false,
       catalogDrawerSource: false,
-      catalogDoor: false,
-      catalogDrawer: !drawerReference,
       upperSwatch: false,
       baseSwatch: !baseReference || baseReference === mainReference,
       countertop: true,
@@ -650,23 +659,17 @@ export default async function handler(req, res) {
     observeImage("Combined cabinet edit mask", body.cabinetMask, "combined-cabinet-mask");
     observeImage("Upper cabinet map", body.upperCabinetMask, "upper-cabinet-map");
     observeImage("Base cabinet map", body.baseCabinetMask, "base-cabinet-map");
-    attachmentStatus.catalogDoorSource = appendImage(editForm, doorSourceReference, "original-catalog-door-source");
-    if (attachmentStatus.catalogDoorSource) observeImage("Authoritative original catalog door", doorSourceReference, "original-catalog-door-source");
-    attachmentStatus.catalogDrawerSource = appendImage(editForm, drawerSourceReference, "original-catalog-drawer-source");
-    if (attachmentStatus.catalogDrawerSource) observeImage("Authoritative original catalog drawer front", drawerSourceReference, "original-catalog-drawer-source");
-    attachmentStatus.catalogDoor = appendImage(editForm, doorReference, "selected-catalog-door-exact-reference");
-    if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
-    if (drawerReference) attachmentStatus.catalogDrawer = appendImage(editForm, drawerReference, "selected-catalog-drawer-front-reference");
-    if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Approved AI drawer-front master", drawerReference, "selected-catalog-drawer-front-reference");
+    attachmentStatus.catalogDoorSource = appendImage(editForm, preparedDoorSource, "original-catalog-door-source");
+    if (attachmentStatus.catalogDoorSource) observeImage("Authoritative original catalog door", preparedDoorSource, "original-catalog-door-source");
+    attachmentStatus.catalogDrawerSource = appendImage(editForm, preparedDrawerSource, "original-catalog-drawer-source");
+    if (attachmentStatus.catalogDrawerSource) observeImage("Authoritative original catalog drawer front", preparedDrawerSource, "original-catalog-drawer-source");
     attachmentStatus.upperSwatch = appendImage(editForm, mainReference, "selected-upper-swatch-reference");
     if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
     if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(editForm, baseReference, "selected-base-swatch-reference");
     if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
     if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.cabinetMask) return res.status(400).json({ error: "Kitchen cabinet mask could not be attached. Upload the kitchen photo again and retry." });
-    if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
     if (!attachmentStatus.catalogDoorSource || !attachmentStatus.catalogDrawerSource) return res.status(400).json({ error: "Original catalog door or drawer source could not be attached. Save both images in Catalog Manager and reload." });
-    if (drawerReference && !attachmentStatus.catalogDrawer) return res.status(400).json({ error: "Catalog drawer front image could not be attached. Select the catalog door style again after the page finishes loading." });
     if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
 
     const inspectorPayload = {
@@ -750,9 +753,13 @@ export default async function handler(req, res) {
     const updatedUsed = await redisIncr(usageKey);
     if (updatedUsed >= safeMonthlyLimit) await sendLimitEmail({ companyKey: safeCompanyKey, companyName: safeCompanyName, used: updatedUsed, limit: safeMonthlyLimit, customerName: body.customerName, customerEmail: body.customerEmail, customerPhone: body.customerPhone });
 
-    const imageBase64 = result?.data?.[0]?.b64_json;
-    const imageUrl = result?.data?.[0]?.url;
-    const generatedImage = imageBase64 ? `data:image/png;base64,${imageBase64}` : imageUrl || "";
+    const rawGeneratedImage = await resultImageDataUrl(result);
+    const layoutLockedImage = rawGeneratedImage
+      ? await restoreOriginalOutsideCabinets(body.image, rawGeneratedImage, body.cabinetMask)
+      : "";
+    const generatedImage = layoutLockedImage
+      ? await createPrecoloredKitchen(layoutLockedImage, body.upperCabinetMask, body.baseCabinetMask, mainReference, baseReference || mainReference)
+      : "";
     if (generatedImage) {
       await updateGenerationRecord(generationId, {
         status: "complete",
@@ -765,8 +772,7 @@ export default async function handler(req, res) {
         console.warn("Generation inspector result logging skipped.", error?.message || error);
       });
     }
-    if (imageBase64) return res.status(200).json({ image: `data:image/png;base64,${imageBase64}`, used: updatedUsed, limit: safeMonthlyLimit });
-    if (imageUrl) return res.status(200).json({ image: imageUrl, used: updatedUsed, limit: safeMonthlyLimit });
+    if (generatedImage) return res.status(200).json({ image: generatedImage, used: updatedUsed, limit: safeMonthlyLimit });
     await updateGenerationRecord(generationId, {
       status: "error",
       result: {
