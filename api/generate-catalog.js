@@ -11,7 +11,6 @@ import {
   saveGenerationRecord,
   updateGenerationRecord
 } from "./_lib/generationInspectorStore.js";
-import sharp from "sharp";
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
@@ -487,35 +486,6 @@ async function resultImageDataUrl(result) {
   return `data:${mime};base64,${bytes.toString("base64")}`;
 }
 
-async function compositeCabinetGroups(originalImage, upperImage, baseImage, upperMask, baseMask) {
-  const original = Buffer.from(stripDataUrl(originalImage), "base64");
-  const metadata = await sharp(original).rotate().metadata();
-  const width = metadata.width;
-  const height = metadata.height;
-  if (!width || !height) throw new Error("Kitchen image dimensions could not be read for final compositing.");
-
-  async function maskedLayer(image, mask) {
-    const imageBuffer = Buffer.from(stripDataUrl(image), "base64");
-    const maskBuffer = Buffer.from(stripDataUrl(mask), "base64");
-    const alpha = await sharp(maskBuffer).resize(width, height).extractChannel(3).negate().raw().toBuffer();
-    const rgb = await sharp(imageBuffer).resize(width, height, { fit: "fill" }).removeAlpha().raw().toBuffer();
-    return sharp(rgb, { raw: { width, height, channels: 3 } })
-      .joinChannel(alpha, { raw: { width, height, channels: 1 } })
-      .png()
-      .toBuffer();
-  }
-
-  const [upperLayer, baseLayer] = await Promise.all([
-    maskedLayer(upperImage, upperMask),
-    maskedLayer(baseImage, baseMask)
-  ]);
-  const output = await sharp(original).rotate().resize(width, height, { fit: "fill" })
-    .composite([{ input: upperLayer, blend: "over" }, { input: baseLayer, blend: "over" }])
-    .png()
-    .toBuffer();
-  return `data:image/png;base64,${output.toString("base64")}`;
-}
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -585,7 +555,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
     }
 
-    if (!body.cabinetMask || !stripDataUrl(body.cabinetMask) || !stripDataUrl(body.upperCabinetMask) || !stripDataUrl(body.baseCabinetMask)) {
+    if (!body.cabinetMask || !stripDataUrl(body.cabinetMask)) {
       return res.status(400).json({ error: "Kitchen cabinet analysis is not ready. Upload the kitchen photo again and wait for analysis to finish." });
     }
 
@@ -596,6 +566,7 @@ export default async function handler(req, res) {
 MASK RULE
 The transparent area of the mask identifies the only cabinet region that may change. Preserve every pixel outside that editable cabinet region. Do not change countertops, backsplash, flooring, appliances, walls, windows, decorations, or room layout. Complete the cabinet door style, drawer-front style, finish, face frames, exposed sides, trim, and toe kicks naturally inside the editable region. Preserve existing hardware and realistic shadows.`;
 
+    const editForm = new FormData();
     const generationId = createGenerationId();
     const generationStartedAt = Date.now();
     const attachedImages = [];
@@ -615,31 +586,20 @@ The transparent area of the mask identifies the only cabinet region that may cha
       backsplash: true,
       flooring: true
     };
-    function createGroupEditForm(mask, groupPrompt) {
-      const form = new FormData();
-      form.append("model", imageModel);
-      form.append("prompt", groupPrompt);
-      form.append("size", "1536x1024");
-      form.append("quality", CATALOG_IMAGE_QUALITY);
-      const status = {
-        kitchen: appendImage(form, body.image, "kitchen"),
-        cabinetMask: appendMask(form, mask),
-        catalogDoor: appendImage(form, doorReference, "selected-catalog-door-exact-reference"),
-        catalogDrawer: drawerReference ? appendImage(form, drawerReference, "selected-catalog-drawer-front-reference") : true,
-        upperSwatch: appendImage(form, mainReference, "selected-upper-swatch-reference"),
-        baseSwatch: baseReference && baseReference !== mainReference ? appendImage(form, baseReference, "selected-base-swatch-reference") : true
-      };
-      return { form, status };
-    }
-    const upperPrompt = `${prompt}\n\nGROUP LOCK: This request edits UPPER WALL CABINETS ONLY. Apply only the upper finish ${body.upperSwatchName || body.selectedFinishColor || body.color || "shown in the upper swatch"}. Do not use the base finish in the editable upper region.`;
-    const basePrompt = `${prompt}\n\nGROUP LOCK: This request edits BASE, ISLAND, PENINSULA, AND TALL CABINETS ONLY. Apply only the base finish ${body.baseSwatchName || body.selectedBaseFinishColor || body.island || "shown in the base swatch"}. Do not use the upper finish in the editable base region.`;
-    const upperEdit = createGroupEditForm(body.upperCabinetMask, upperPrompt);
-    const baseEdit = createGroupEditForm(body.baseCabinetMask, basePrompt);
-    Object.keys(upperEdit.status).forEach(key => { attachmentStatus[key] = upperEdit.status[key] && baseEdit.status[key]; });
+    editForm.append("model", imageModel);
+    editForm.append("prompt", prompt);
+    editForm.append("size", "1536x1024");
+    editForm.append("quality", CATALOG_IMAGE_QUALITY);
+    attachmentStatus.kitchen = appendImage(editForm, body.image, "kitchen");
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
+    attachmentStatus.cabinetMask = appendMask(editForm, body.cabinetMask);
+    attachmentStatus.catalogDoor = appendImage(editForm, doorReference, "selected-catalog-door-exact-reference");
     if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
+    if (drawerReference) attachmentStatus.catalogDrawer = appendImage(editForm, drawerReference, "selected-catalog-drawer-front-reference");
     if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Approved AI drawer-front master", drawerReference, "selected-catalog-drawer-front-reference");
+    attachmentStatus.upperSwatch = appendImage(editForm, mainReference, "selected-upper-swatch-reference");
     if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
+    if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(editForm, baseReference, "selected-base-swatch-reference");
     if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
     if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.cabinetMask) return res.status(400).json({ error: "Kitchen cabinet mask could not be attached. Upload the kitchen photo again and retry." });
@@ -654,8 +614,8 @@ The transparent area of the mask identifies the only cabinet region that may cha
       promptVersion: activePromptVersion,
       prompt,
       generationMode: "upload-analysis-masked-edit",
-      requestCount: 2,
-      passes: [{ stage: "upper-masked-edit", prompt: upperPrompt }, { stage: "base-masked-edit", prompt: basePrompt }],
+      requestCount: 1,
+      passes: [{ stage: "masked-cabinet-edit", prompt }],
       attachmentStatus,
       attachments: attachedImages.map(function(image) {
         return {
@@ -689,7 +649,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
         doorProfileMustAvoid: cleanPromptTest ? "" : doorProfileMustAvoid,
         drawerProfileMustAvoid: cleanPromptTest ? "" : drawerProfileMustAvoid,
         promptMode: "upload-analysis-masked-edit",
-        requestCount: 2,
+        requestCount: 1,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
         baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
         countertop: "disabled in masked test",
@@ -704,14 +664,9 @@ The transparent area of the mask identifies the only cabinet region that may cha
       console.warn("Generation inspector logging skipped.", error?.message || error);
     });
 
-    const [upperResponse, baseResponse] = await Promise.all([
-      fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: upperEdit.form }),
-      fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: baseEdit.form })
-    ]);
-    const [upperResult, baseResult] = await Promise.all([upperResponse.json(), baseResponse.json()]);
-    if (!upperResponse.ok || !baseResponse.ok) {
-      const failedResponse = !upperResponse.ok ? upperResponse : baseResponse;
-      const failedResult = !upperResponse.ok ? upperResult : baseResult;
+    const editResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: editForm });
+    const result = await editResponse.json();
+    if (!editResponse.ok) {
       await updateGenerationRecord(generationId, {
         status: "error",
         result: {
@@ -720,23 +675,22 @@ The transparent area of the mask identifies the only cabinet region that may cha
           imageSize: ""
         },
         error: {
-          status: failedResponse.status,
-          stage: !upperResponse.ok ? "upper-masked-edit" : "base-masked-edit",
-          message: failedResult?.error?.message || failedResult?.message || "OpenAI grouped cabinet edit failed."
+          status: editResponse.status,
+          stage: "masked-cabinet-edit",
+          message: result?.error?.message || result?.message || "OpenAI masked cabinet edit failed."
         }
       }).catch(function(error) {
         console.warn("Generation inspector error logging skipped.", error?.message || error);
       });
-      return res.status(failedResponse.status).json({ error: failedResult?.error?.message || failedResult?.message || "The grouped cabinet edit failed." });
+      return res.status(editResponse.status).json({ error: result?.error?.message || result?.message || "The masked cabinet edit failed." });
     }
-
-    const [upperImage, baseImage] = await Promise.all([resultImageDataUrl(upperResult), resultImageDataUrl(baseResult)]);
-    if (!upperImage || !baseImage) return res.status(500).json({ error: "One cabinet group finished without a usable image." });
-    const generatedImage = await compositeCabinetGroups(body.image, upperImage, baseImage, body.upperCabinetMask, body.baseCabinetMask);
 
     const updatedUsed = await redisIncr(usageKey);
     if (updatedUsed >= safeMonthlyLimit) await sendLimitEmail({ companyKey: safeCompanyKey, companyName: safeCompanyName, used: updatedUsed, limit: safeMonthlyLimit, customerName: body.customerName, customerEmail: body.customerEmail, customerPhone: body.customerPhone });
 
+    const imageBase64 = result?.data?.[0]?.b64_json;
+    const imageUrl = result?.data?.[0]?.url;
+    const generatedImage = imageBase64 ? `data:image/png;base64,${imageBase64}` : imageUrl || "";
     if (generatedImage) {
       await updateGenerationRecord(generationId, {
         status: "complete",
@@ -749,7 +703,8 @@ The transparent area of the mask identifies the only cabinet region that may cha
         console.warn("Generation inspector result logging skipped.", error?.message || error);
       });
     }
-    if (generatedImage) return res.status(200).json({ image: generatedImage, used: updatedUsed, limit: safeMonthlyLimit });
+    if (imageBase64) return res.status(200).json({ image: `data:image/png;base64,${imageBase64}`, used: updatedUsed, limit: safeMonthlyLimit });
+    if (imageUrl) return res.status(200).json({ image: imageUrl, used: updatedUsed, limit: safeMonthlyLimit });
     await updateGenerationRecord(generationId, {
       status: "error",
       result: {
