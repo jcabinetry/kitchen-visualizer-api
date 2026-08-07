@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     if (!image) return res.status(400).json({ error: "Missing kitchen image." });
     const analysis = await analyzeCabinetRegions(image);
     const mask = await createCabinetEditMask(image, analysis.regions);
-    return res.status(200).json({ mask, regions: analysis.regions, faceCount: analysis.faceCount });
+    return res.status(200).json({ mask, regions: analysis.regions, faces: analysis.faces || [], faceCount: analysis.faceCount });
   } catch (error) {
     const message = error?.name === "AbortError" ? "Kitchen analysis timed out. Upload the photo again." : (error?.message || "Kitchen analysis failed.");
     return res.status(500).json({ error: message });

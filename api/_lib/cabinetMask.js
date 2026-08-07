@@ -30,6 +30,14 @@ function normalizePolygon(value) {
   return points.some(point => !Number.isFinite(point[0]) || !Number.isFinite(point[1])) ? null : points;
 }
 
+function normalizeFace(value) {
+  const polygon = normalizePolygon(value?.polygon);
+  if (!polygon || polygon.length !== 4) return null;
+  const type = String(value?.type || "").toLowerCase() === "drawer" ? "drawer" : "door";
+  const group = String(value?.group || "").toLowerCase() === "upper" ? "upper" : "base";
+  return { type, group, polygon };
+}
+
 function escapeXml(value) {
   return String(value).replace(/[&<>\"]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[character]));
 }
@@ -41,9 +49,17 @@ export async function analyzeCabinetRegions(image, { timeoutMs = 22000 } = {}) {
   const prompt = `Find all visible cabinetry in this kitchen photograph so an image editor can refinish it.
 
 Return JSON only in this exact shape:
-{"regions":[{"group":"upper|base","polygon":[[x,y],[x,y],[x,y]]}],"faceCount":0}
+{"regions":[{"group":"upper|base","polygon":[[x,y],[x,y],[x,y]]}],"faces":[{"type":"door|drawer","group":"upper|base","polygon":[[topLeftX,topLeftY],[topRightX,topRightY],[bottomRightX,bottomRightY],[bottomLeftX,bottomLeftY]]}],"faceCount":0}
 
-Coordinates use a 0 to 1000 scale relative to the full photograph. Draw tight polygons around connected visible cabinet assemblies. Include doors, drawer fronts, face frames, exposed cabinet sides, end panels, fillers, trim, toe kicks, island panels, and peninsula panels. Upper means wall cabinets above countertops. Base means lower cabinets, islands, peninsulas, and tall pantry cabinets. Exclude countertops, backsplash, walls, floors, appliances, open shelves, cabinet interiors, windows, decorations, people, and loose objects. Use enough polygon points to follow the actual cabinet boundaries. Do not return rectangles unless the visible cabinet assembly is truly rectangular. Return no explanation.`;
+Coordinates use a 0 to 1000 scale relative to the full photograph.
+
+REGIONS
+Draw tight polygons around connected visible cabinet assemblies. Include doors, drawer fronts, face frames, exposed cabinet sides, end panels, fillers, trim, toe kicks, island panels, and peninsula panels.
+
+FACES
+Return one separate four corner polygon for every visible cabinet door and drawer front. Points must be ordered clockwise as top left, top right, bottom right, bottom left. Follow the outer visible edge of each actual door or drawer front, including perspective. Do not combine adjacent faces. Do not include face frames, open shelves, cabinet interiors, exposed cabinet sides, fillers, trim, toe kicks, false openings, appliances, or decorations as faces.
+
+Upper means wall cabinets above countertops. Base means lower cabinets, islands, peninsulas, and tall pantry cabinets. Exclude countertops, backsplash, walls, floors, appliances, open shelves, cabinet interiors, windows, decorations, people, and loose objects. Use enough polygon points for assembly regions, but exactly four points for every face. Return no explanation.`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/responses", {
@@ -69,7 +85,10 @@ Coordinates use a 0 to 1000 scale relative to the full photograph. Draw tight po
       }))
       .filter(region => region.polygon);
     if (!regions.length) throw new Error("No cabinet regions were detected.");
-    return { regions, faceCount: Math.max(0, Number(parsed.faceCount || 0)) };
+    const faces = (Array.isArray(parsed.faces) ? parsed.faces : [])
+      .map(normalizeFace)
+      .filter(Boolean);
+    return { regions, faces, faceCount: faces.length || Math.max(0, Number(parsed.faceCount || 0)) };
   } finally {
     clearTimeout(timer);
   }
