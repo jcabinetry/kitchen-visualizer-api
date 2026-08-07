@@ -18,7 +18,7 @@ const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2-2026-04-21";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const CATALOG_IMAGE_QUALITY = "medium";
-const CATALOG_PROMPT_VERSION = "v15-measured-master-scale";
+const CATALOG_PROMPT_VERSION = "v15-baseline-plus-master-scale";
 
 function selectCatalogImageModel(value) {
   return String(value || "").trim().toLowerCase() === TEST_CATALOG_IMAGE_MODEL
@@ -365,10 +365,9 @@ ATTACHMENT ORDER
 1. ORIGINAL KITCHEN PHOTO: preserve its layout, objects, lighting, perspective, and composition.
 2. APPROVED AI CABINET DOOR MASTER (${details.doorName}): exact geometry for cabinet doors only.
 3. APPROVED AI DRAWER-FRONT MASTER (${details.drawerName}): exact geometry for drawer fronts only.
-4. CABINET DOOR PROFILE CLOSEUP: enlarged supporting view of image 2 showing the exact molding, bevel, reveal, and depth sequence. Use it only to reproduce door profile details.
 
 CHANGE ONLY CABINET DOORS AND DRAWER FRONTS
-Replace every existing cabinet door with the exact visible design from image 2. Replace every drawer front with the exact visible design from image 3. Copy the panel outline, outer contour, rail and stile proportions, profile steps, bevels, reveals, molding, edge treatment, corners, and depth direction. Use image 4 to preserve thin or shallow molding details when the door is scaled onto the kitchen. Image 4 is a magnified inspection view only and does not authorize larger molding. Scale the complete profile down proportionally for each cabinet face. Do not widen rails, stiles, bevels, reveals, or molding. Keep the center-panel opening and surrounding frame proportions exactly consistent with image 2. Fit the same designs naturally to narrow, wide, short, tall, double, upper, base, island, and peninsula faces without simplifying them.
+Replace every existing cabinet door with the exact visible design from image 2. Replace every drawer front with the exact visible design from image 3. Copy the panel outline, outer contour, rail and stile proportions, profile steps, bevels, reveals, molding, edge treatment, corners, and depth direction. Fit the same designs naturally to narrow, wide, short, tall, double, upper, base, island, and peninsula faces without simplifying them.
 
 Door construction classification: ${details.doorConstructionType}.
 Door geometry specification: ${doorDescription}
@@ -378,9 +377,9 @@ Drawer-front construction classification: ${details.drawerConstructionType}.
 Drawer-front geometry specification: ${drawerDescription}
 Drawer front must avoid: ${drawerMustAvoid}
 
-MASTER SCALE AND MEASURED PROPORTIONS
+MASTER SCALE
 ${masterMeasurements}
-These measurements are mandatory scaling constraints. When a cabinet face is larger or smaller than the master, keep the profile widths visually proportional to the master and never exaggerate rails, stiles, molding, bevels, or reveals.
+Use these measurements only to preserve the master proportions. Do not enlarge rails, stiles, molding, bevels, or reveals when fitting the style to the kitchen.
 
 The door and drawer masters are separate exact templates. Never stretch the door master into drawer areas, blend the two designs, keep the kitchen's old door profile, substitute a generic cabinet style, reverse raised versus recessed depth, or invent details absent from the correct master.
 
@@ -507,9 +506,7 @@ async function measureMasterGeometry(dataUrl, physicalWidth, physicalHeight, lab
     function verticalGradient(x) {
       let sum = 0;
       let count = 0;
-      const start = Math.floor(height * 0.28);
-      const end = Math.floor(height * 0.72);
-      for (let y = start; y < end; y++) {
+      for (let y = Math.floor(height * 0.28); y < Math.floor(height * 0.72); y++) {
         sum += Math.abs(pixels[y * width + x] - pixels[y * width + x - 1]);
         count++;
       }
@@ -519,9 +516,7 @@ async function measureMasterGeometry(dataUrl, physicalWidth, physicalHeight, lab
     function horizontalGradient(y) {
       let sum = 0;
       let count = 0;
-      const start = Math.floor(width * 0.28);
-      const end = Math.floor(width * 0.72);
-      for (let x = start; x < end; x++) {
+      for (let x = Math.floor(width * 0.28); x < Math.floor(width * 0.72); x++) {
         sum += Math.abs(pixels[y * width + x] - pixels[(y - 1) * width + x]);
         count++;
       }
@@ -529,11 +524,9 @@ async function measureMasterGeometry(dataUrl, physicalWidth, physicalHeight, lab
     }
 
     function innerBoundary(length, gradient, reverse) {
-      const start = Math.floor(length * 0.035);
-      const end = Math.floor(length * 0.40);
       const values = [];
       let maximum = 0;
-      for (let offset = start; offset <= end; offset++) {
+      for (let offset = Math.floor(length * 0.035); offset <= Math.floor(length * 0.40); offset++) {
         const position = reverse ? length - 1 - offset : offset;
         const value = gradient(position);
         values.push({ offset, value });
@@ -556,35 +549,15 @@ async function measureMasterGeometry(dataUrl, physicalWidth, physicalHeight, lab
     const panelHeightPct = Math.max(1, 100 - topPct - bottomPct);
 
     return `${label} master represents exactly ${physicalWidth} inches wide by ${physicalHeight} inches tall.
-Measured visible profile boundaries from the master:
-left profile approximately ${leftPct.toFixed(1)} percent or ${(physicalWidth * leftPct / 100).toFixed(2)} inches;
-right profile approximately ${rightPct.toFixed(1)} percent or ${(physicalWidth * rightPct / 100).toFixed(2)} inches;
-top profile approximately ${topPct.toFixed(1)} percent or ${(physicalHeight * topPct / 100).toFixed(2)} inches;
-bottom profile approximately ${bottomPct.toFixed(1)} percent or ${(physicalHeight * bottomPct / 100).toFixed(2)} inches;
-center panel opening approximately ${panelWidthPct.toFixed(1)} percent of width by ${panelHeightPct.toFixed(1)} percent of height.
-Keep those physical profile dimensions and panel proportions. Do not replace them with standard cabinet proportions.`;
+Left profile: ${leftPct.toFixed(1)} percent or ${(physicalWidth * leftPct / 100).toFixed(2)} inches.
+Right profile: ${rightPct.toFixed(1)} percent or ${(physicalWidth * rightPct / 100).toFixed(2)} inches.
+Top profile: ${topPct.toFixed(1)} percent or ${(physicalHeight * topPct / 100).toFixed(2)} inches.
+Bottom profile: ${bottomPct.toFixed(1)} percent or ${(physicalHeight * bottomPct / 100).toFixed(2)} inches.
+Center panel opening: approximately ${panelWidthPct.toFixed(1)} percent of width by ${panelHeightPct.toFixed(1)} percent of height.
+Keep these profile dimensions and proportions. Do not widen them into a generic cabinet frame.`;
   } catch (_error) {
-    return `${label} master represents exactly ${physicalWidth} inches wide by ${physicalHeight} inches tall. Preserve its visible profile proportions exactly.`;
+    return `${label} master represents exactly ${physicalWidth} inches wide by ${physicalHeight} inches tall. Preserve its visible proportions.`;
   }
-}
-
-async function prepareDoorReference(dataUrl) {
-  const base64 = stripDataUrl(dataUrl);
-  if (!base64) return { master: dataUrl, detail: "" };
-  const source = Buffer.from(base64, "base64");
-  const trimmed = await sharp(source).rotate().trim({ threshold: 18 }).png().toBuffer({ resolveWithObject: true });
-  const width = trimmed.info.width || 1;
-  const height = trimmed.info.height || 1;
-  const masterBuffer = await sharp(trimmed.data).resize(1024, 1536, { fit: "contain", position: "centre", background: { r: 31, g: 41, b: 55, alpha: 1 } }).sharpen({ sigma: 0.8 }).png().toBuffer();
-  const detailLeft = Math.max(0, Math.floor(width * 0.06));
-  const detailTop = Math.max(0, Math.floor(height * 0.18));
-  const detailWidth = Math.max(1, Math.min(width - detailLeft, Math.floor(width * 0.48)));
-  const detailHeight = Math.max(1, Math.min(height - detailTop, Math.floor(height * 0.64)));
-  const detailBuffer = await sharp(trimmed.data).extract({ left: detailLeft, top: detailTop, width: detailWidth, height: detailHeight }).resize(1024, 1024, { fit: "contain", position: "centre", background: { r: 31, g: 41, b: 55, alpha: 1 } }).sharpen({ sigma: 1.1 }).png().toBuffer();
-  return {
-    master: `data:image/png;base64,${masterBuffer.toString("base64")}`,
-    detail: `data:image/png;base64,${detailBuffer.toString("base64")}`
-  };
 }
 
 function appendImage(form, dataUrl, fallbackName) {
@@ -739,13 +712,10 @@ The transparent area of the mask identifies the only cabinet region that may cha
     attachmentStatus.kitchen = appendImage(editForm, body.image, "kitchen");
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
     attachmentStatus.cabinetMask = appendMask(editForm, body.cabinetMask);
-    const preparedDoor = await prepareDoorReference(doorReference);
-    attachmentStatus.catalogDoor = appendImage(editForm, preparedDoor.master, "selected-catalog-door-tight-reference");
-    if (attachmentStatus.catalogDoor) observeImage("Tightly cropped approved cabinet door master", preparedDoor.master, "selected-catalog-door-tight-reference");
+    attachmentStatus.catalogDoor = appendImage(editForm, doorReference, "selected-catalog-door-exact-reference");
+    if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
     if (drawerReference) attachmentStatus.catalogDrawer = appendImage(editForm, drawerReference, "selected-catalog-drawer-front-reference");
     if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Approved AI drawer-front master", drawerReference, "selected-catalog-drawer-front-reference");
-    attachmentStatus.catalogDoorDetail = appendImage(editForm, preparedDoor.detail, "selected-catalog-door-profile-closeup");
-    if (attachmentStatus.catalogDoorDetail) observeImage("Approved cabinet door profile closeup", preparedDoor.detail, "selected-catalog-door-profile-closeup");
     // Finish swatches are intentionally withheld from the geometry pass.
     // They are attached only to the second pass so the first model call can focus on door and drawer shape.
     attachmentStatus.upperSwatch = true;

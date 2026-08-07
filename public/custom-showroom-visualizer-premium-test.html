@@ -932,7 +932,6 @@ document.documentElement.style.setProperty("--kv-card", kvCard);
   }
   let uploadedImageData = "";
   let cabinetMaskData = "";
-  let cabinetFacesData = [];
   let cabinetAnalysisPromise = null;
   let cabinetAnalysisSequence = 0;
   let uploadedMainCustomColorData = "";
@@ -1868,7 +1867,6 @@ It should not look like a different kitchen.
       photoName.innerText = "";
       uploadedImageData = "";
       cabinetMaskData = "";
-      cabinetFacesData = [];
       cabinetAnalysisPromise = null;
       cabinetAnalysisSequence += 1;
       return;
@@ -1879,7 +1877,6 @@ It should not look like a different kitchen.
       const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
       uploadedImageData = await resizeImage(file, cleanPromptTest ? 2048 : 1400, cleanPromptTest ? 0.92 : 0.82);
       cabinetMaskData = "";
-      cabinetFacesData = [];
       const analysisSequence = ++cabinetAnalysisSequence;
       status.innerText = "Kitchen photo ready. Finding cabinets now...";
       cabinetAnalysisPromise = fetch("/api/analyze-kitchen", {
@@ -1891,16 +1888,12 @@ It should not look like a different kitchen.
         if (!response.ok || !data.mask) throw new Error(data.error || "Kitchen analysis failed.");
         if (analysisSequence === cabinetAnalysisSequence) {
           cabinetMaskData = data.mask;
-          cabinetFacesData = Array.isArray(data.faces) ? data.faces : [];
-          status.innerText = cabinetFacesData.length
-            ? "Kitchen photo ready. Found " + cabinetFacesData.length + " individual cabinet faces."
-            : "Kitchen photo and cabinet map ready.";
+          status.innerText = "Kitchen photo and cabinet map ready.";
         }
         return data;
       }).catch(function(error) {
         if (analysisSequence === cabinetAnalysisSequence) {
           cabinetMaskData = "";
-          cabinetFacesData = [];
           status.innerText = error.message || "Kitchen analysis failed. Upload the photo again.";
         }
         return null;
@@ -2464,18 +2457,12 @@ It should not look like a different kitchen.
     startAIProgress();
 
     try {
-      const hybridMode = new URLSearchParams(window.location.search).get("hybrid") === "1";
-      if (hybridMode && !cabinetFacesData.length) {
-        throw new Error("No individual cabinet faces were detected. Upload the kitchen again and wait for analysis.");
-      }
-      const generationEndpoint = hybridMode ? "/api/generate-hybrid" : "/api/generate-catalog";
-      const response = await fetch(generationEndpoint, {
+      const response = await fetch("/api/generate-catalog", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: uploadedImageData,
           cabinetMask: cabinetMaskData,
-          cabinetFaces: cabinetFacesData,
           imageModel: new URLSearchParams(window.location.search).get("imageModel") === "gpt-image-1" ? "gpt-image-1" : "gpt-image-2",
           prompt: prompt,
           companyKey: KV_COMPANY.companyKey,
@@ -2562,9 +2549,7 @@ It should not look like a different kitchen.
       updateCompareSlider(50);
       finishAIProgress();
       setTimeout(function(){ successBox.classList.add("active"); }, 650);
-      status.innerText = data.mode === "hybrid-face-render"
-        ? "Experimental hybrid preview generated using " + (data.faceCount || 0) + " detected cabinet faces."
-        : "Preview generated.";
+      status.innerText = "Preview generated.";
       updateMonthlyCounterFromServer(data);
       setTimeout(function(){ resultWrap.scrollIntoView({ behavior: "smooth", block: "start" }); }, 800);
 
