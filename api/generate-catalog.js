@@ -498,6 +498,19 @@ function appendMask(form, dataUrl) {
   return true;
 }
 
+async function resizeMaskToMatchImage(maskDataUrl, imageDataUrl) {
+  const maskBase64 = stripDataUrl(maskDataUrl);
+  const imageBase64 = stripDataUrl(imageDataUrl);
+  if (!maskBase64 || !imageBase64) return "";
+  const imageMetadata = await sharp(Buffer.from(imageBase64, "base64")).metadata();
+  if (!imageMetadata.width || !imageMetadata.height) return "";
+  const resizedMask = await sharp(Buffer.from(maskBase64, "base64"))
+    .resize(imageMetadata.width, imageMetadata.height, { fit: "fill", kernel: "nearest" })
+    .png()
+    .toBuffer();
+  return `data:image/png;base64,${resizedMask.toString("base64")}`;
+}
+
 async function resultImageDataUrl(result) {
   const imageBase64 = result?.data?.[0]?.b64_json;
   if (imageBase64) return `data:image/png;base64,${imageBase64}`;
@@ -715,8 +728,9 @@ The transparent area of the mask identifies the only cabinet region that may cha
     if (!appendImage(colorForm, geometryImage, "geometry-corrected-kitchen")) {
       return res.status(500).json({ error: "The corrected kitchen could not be prepared for the finish pass." });
     }
-    if (!appendMask(colorForm, body.cabinetMask)) {
-      return res.status(500).json({ error: "The cabinet mask could not be prepared for the finish pass." });
+    const colorMask = await resizeMaskToMatchImage(body.cabinetMask, geometryImage);
+    if (!appendMask(colorForm, colorMask)) {
+      return res.status(500).json({ error: "The cabinet mask could not be resized for the finish pass." });
     }
     if (!appendImage(colorForm, mainReference, "selected-upper-swatch-reference")) {
       return res.status(400).json({ error: "The upper finish swatch could not be attached." });
