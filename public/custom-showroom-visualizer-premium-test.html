@@ -932,6 +932,8 @@ document.documentElement.style.setProperty("--kv-card", kvCard);
   }
   let uploadedImageData = "";
   let cabinetMaskData = "";
+  let upperCabinetMaskData = "";
+  let baseCabinetMaskData = "";
   let cabinetAnalysisPromise = null;
   let cabinetAnalysisSequence = 0;
   let uploadedMainCustomColorData = "";
@@ -1867,6 +1869,8 @@ It should not look like a different kitchen.
       photoName.innerText = "";
       uploadedImageData = "";
       cabinetMaskData = "";
+      upperCabinetMaskData = "";
+      baseCabinetMaskData = "";
       cabinetAnalysisPromise = null;
       cabinetAnalysisSequence += 1;
       return;
@@ -1877,6 +1881,8 @@ It should not look like a different kitchen.
       const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
       uploadedImageData = await resizeImage(file, cleanPromptTest ? 2048 : 1400, cleanPromptTest ? 0.92 : 0.82);
       cabinetMaskData = "";
+      upperCabinetMaskData = "";
+      baseCabinetMaskData = "";
       const analysisSequence = ++cabinetAnalysisSequence;
       status.innerText = "Kitchen photo ready. Finding cabinets now...";
       cabinetAnalysisPromise = fetch("/api/analyze-kitchen", {
@@ -1885,15 +1891,19 @@ It should not look like a different kitchen.
         body: JSON.stringify({ image: uploadedImageData })
       }).then(async function(response) {
         const data = await response.json().catch(function() { return {}; });
-        if (!response.ok || !data.mask) throw new Error(data.error || "Kitchen analysis failed.");
+        if (!response.ok || !data.mask || !data.upperMask || !data.baseMask) throw new Error(data.error || "Kitchen analysis failed.");
         if (analysisSequence === cabinetAnalysisSequence) {
           cabinetMaskData = data.mask;
+          upperCabinetMaskData = data.upperMask;
+          baseCabinetMaskData = data.baseMask;
           status.innerText = "Kitchen photo and cabinet map ready.";
         }
         return data;
       }).catch(function(error) {
         if (analysisSequence === cabinetAnalysisSequence) {
           cabinetMaskData = "";
+          upperCabinetMaskData = "";
+          baseCabinetMaskData = "";
           status.innerText = error.message || "Kitchen analysis failed. Upload the photo again.";
         }
         return null;
@@ -2389,7 +2399,7 @@ It should not look like a different kitchen.
       status.innerText = "Finishing the cabinet map...";
       await cabinetAnalysisPromise;
     }
-    if (!cabinetMaskData) { status.innerText = "The cabinet map is not ready. Upload the kitchen photo again."; return; }
+    if (!cabinetMaskData || !upperCabinetMaskData || !baseCabinetMaskData) { status.innerText = "The cabinet map is not ready. Upload the kitchen photo again."; return; }
     if (colorInput.value === "custom main color reference" && !uploadedMainCustomColorData) { status.innerText = "Upload a main cabinet finish reference image."; return; }
     if (islandInput.value === "custom base cabinet color reference" && !uploadedIslandCustomColorData) { status.innerText = "Upload an base cabinet finish reference image."; return; }
     if (countertopInput.value === "custom countertop reference" && !uploadedCountertopCustomData) { status.innerText = "Upload a countertop reference image."; return; }
@@ -2464,6 +2474,8 @@ It should not look like a different kitchen.
         body: JSON.stringify({
           image: uploadedImageData,
           cabinetMask: cabinetMaskData,
+          upperCabinetMask: upperCabinetMaskData,
+          baseCabinetMask: baseCabinetMaskData,
           imageModel: new URLSearchParams(window.location.search).get("imageModel") === "gpt-image-1" ? "gpt-image-1" : "gpt-image-2",
           prompt: prompt,
           companyKey: KV_COMPANY.companyKey,

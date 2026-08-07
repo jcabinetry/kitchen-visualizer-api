@@ -17,8 +17,12 @@ export default async function handler(req, res) {
     const image = req.body?.image;
     if (!image) return res.status(400).json({ error: "Missing kitchen image." });
     const analysis = await analyzeCabinetRegions(image);
-    const mask = await createCabinetEditMask(image, analysis.regions);
-    return res.status(200).json({ mask, regions: analysis.regions, faceCount: analysis.faceCount });
+    const [mask, upperMask, baseMask] = await Promise.all([
+      createCabinetEditMask(image, analysis.regions),
+      createCabinetEditMask(image, analysis.regions.filter(region => region.group === "upper")),
+      createCabinetEditMask(image, analysis.regions.filter(region => region.group === "base"))
+    ]);
+    return res.status(200).json({ mask, upperMask, baseMask, regions: analysis.regions, faceCount: analysis.faceCount });
   } catch (error) {
     const message = error?.name === "AbortError" ? "Kitchen analysis timed out. Upload the photo again." : (error?.message || "Kitchen analysis failed.");
     return res.status(500).json({ error: message });
