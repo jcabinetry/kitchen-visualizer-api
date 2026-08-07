@@ -18,7 +18,7 @@ const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2-2026-04-21";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const CATALOG_IMAGE_QUALITY = "medium";
-const CATALOG_PROMPT_VERSION = "v14-strict-geometry-aspect-locked";
+const CATALOG_PROMPT_VERSION = "v15-measured-master-scale";
 
 function selectCatalogImageModel(value) {
   return String(value || "").trim().toLowerCase() === TEST_CATALOG_IMAGE_MODEL
@@ -357,6 +357,7 @@ function buildGeometryPassPrompt(body) {
   const drawerDescription = String(body.catalogDrawerProfileDescription || "").trim();
   const doorMustAvoid = String(body.catalogDoorProfileMustAvoid || "").trim();
   const drawerMustAvoid = String(body.catalogDrawerProfileMustAvoid || "").trim();
+  const masterMeasurements = String(body.masterMeasurements || "").trim();
 
   return `Create the first stage of a cabinet-refacing visualization.
 
@@ -376,6 +377,10 @@ Door must avoid: ${doorMustAvoid}
 Drawer-front construction classification: ${details.drawerConstructionType}.
 Drawer-front geometry specification: ${drawerDescription}
 Drawer front must avoid: ${drawerMustAvoid}
+
+MASTER SCALE AND MEASURED PROPORTIONS
+${masterMeasurements}
+These measurements are mandatory scaling constraints. When a cabinet face is larger or smaller than the master, keep the profile widths visually proportional to the master and never exaggerate rails, stiles, molding, bevels, or reveals.
 
 The door and drawer masters are separate exact templates. Never stretch the door master into drawer areas, blend the two designs, keep the kitchen's old door profile, substitute a generic cabinet style, reverse raised versus recessed depth, or invent details absent from the correct master.
 
@@ -482,6 +487,85 @@ The attached finish swatches control color and material only. Preserve the exact
 
 LOCKED SCENE
 Preserve the cabinet layout, cabinet count, openings, hardware, appliances, countertops, backsplash, flooring, walls, windows, decorations, camera angle, lighting, perspective, and room dimensions. The transparent mask area is the only editable region. Everything outside it must remain unchanged.`;
+}
+
+async function measureMasterGeometry(dataUrl, physicalWidth, physicalHeight, label) {
+  const base64 = stripDataUrl(dataUrl);
+  if (!base64) return "";
+  try {
+    const prepared = await sharp(Buffer.from(base64, "base64"))
+      .rotate()
+      .trim({ threshold: 18 })
+      .resize(600, 800, { fit: "fill" })
+      .greyscale()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const width = prepared.info.width;
+    const height = prepared.info.height;
+    const pixels = prepared.data;
+
+    function verticalGradient(x) {
+      let sum = 0;
+      let count = 0;
+      const start = Math.floor(height * 0.28);
+      const end = Math.floor(height * 0.72);
+      for (let y = start; y < end; y++) {
+        sum += Math.abs(pixels[y * width + x] - pixels[y * width + x - 1]);
+        count++;
+      }
+      return count ? sum / count : 0;
+    }
+
+    function horizontalGradient(y) {
+      let sum = 0;
+      let count = 0;
+      const start = Math.floor(width * 0.28);
+      const end = Math.floor(width * 0.72);
+      for (let x = start; x < end; x++) {
+        sum += Math.abs(pixels[y * width + x] - pixels[(y - 1) * width + x]);
+        count++;
+      }
+      return count ? sum / count : 0;
+    }
+
+    function innerBoundary(length, gradient, reverse) {
+      const start = Math.floor(length * 0.035);
+      const end = Math.floor(length * 0.40);
+      const values = [];
+      let maximum = 0;
+      for (let offset = start; offset <= end; offset++) {
+        const position = reverse ? length - 1 - offset : offset;
+        const value = gradient(position);
+        values.push({ offset, value });
+        maximum = Math.max(maximum, value);
+      }
+      const threshold = Math.max(2.5, maximum * 0.22);
+      const candidates = values.filter(item => item.value >= threshold);
+      return candidates.length ? candidates[candidates.length - 1].offset : Math.round(length * 0.10);
+    }
+
+    const left = innerBoundary(width, verticalGradient, false);
+    const right = innerBoundary(width, verticalGradient, true);
+    const top = innerBoundary(height, horizontalGradient, false);
+    const bottom = innerBoundary(height, horizontalGradient, true);
+    const leftPct = left / width * 100;
+    const rightPct = right / width * 100;
+    const topPct = top / height * 100;
+    const bottomPct = bottom / height * 100;
+    const panelWidthPct = Math.max(1, 100 - leftPct - rightPct);
+    const panelHeightPct = Math.max(1, 100 - topPct - bottomPct);
+
+    return `${label} master represents exactly ${physicalWidth} inches wide by ${physicalHeight} inches tall.
+Measured visible profile boundaries from the master:
+left profile approximately ${leftPct.toFixed(1)} percent or ${(physicalWidth * leftPct / 100).toFixed(2)} inches;
+right profile approximately ${rightPct.toFixed(1)} percent or ${(physicalWidth * rightPct / 100).toFixed(2)} inches;
+top profile approximately ${topPct.toFixed(1)} percent or ${(physicalHeight * topPct / 100).toFixed(2)} inches;
+bottom profile approximately ${bottomPct.toFixed(1)} percent or ${(physicalHeight * bottomPct / 100).toFixed(2)} inches;
+center panel opening approximately ${panelWidthPct.toFixed(1)} percent of width by ${panelHeightPct.toFixed(1)} percent of height.
+Keep those physical profile dimensions and panel proportions. Do not replace them with standard cabinet proportions.`;
+  } catch (_error) {
+    return `${label} master represents exactly ${physicalWidth} inches wide by ${physicalHeight} inches tall. Preserve its visible profile proportions exactly.`;
+  }
 }
 
 async function prepareDoorReference(dataUrl) {
@@ -618,7 +702,12 @@ export default async function handler(req, res) {
     const imageModel = selectCatalogImageModel(body.imageModel);
     const outputSize = await selectOutputSize(body.image, imageModel);
     const activePromptVersion = CATALOG_PROMPT_VERSION;
-    const prompt = buildGeometryPassPrompt(body) + `
+    const doorMasterMeasurements = await measureMasterGeometry(doorReference, 18, 24, "CABINET DOOR");
+    const drawerMasterMeasurements = await measureMasterGeometry(drawerReference || doorReference, 18, 5, "DRAWER FRONT");
+    const prompt = buildGeometryPassPrompt({
+      ...body,
+      masterMeasurements: doorMasterMeasurements + "\n" + drawerMasterMeasurements
+    }) + `
 
 MASK RULE
 The transparent area of the mask identifies the only cabinet region that may change. Preserve every pixel outside that editable cabinet region. Do not change cabinet colors, countertops, backsplash, flooring, appliances, walls, windows, decorations, or room layout. Change only cabinet door and drawer-front geometry inside the editable region. Preserve existing hardware and realistic shadows.`;
