@@ -757,9 +757,7 @@ export default async function handler(req, res) {
     const layoutLockedImage = rawGeneratedImage
       ? await restoreOriginalOutsideCabinets(body.image, rawGeneratedImage, body.cabinetMask)
       : "";
-    const generatedImage = layoutLockedImage
-      ? await createPrecoloredKitchen(layoutLockedImage, body.upperCabinetMask, body.baseCabinetMask, mainReference, baseReference || mainReference)
-      : "";
+    const generatedImage = layoutLockedImage;
     if (generatedImage) {
       await updateGenerationRecord(generationId, {
         status: "complete",
