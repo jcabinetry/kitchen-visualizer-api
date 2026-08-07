@@ -1,5 +1,5 @@
 export const config = {
-  maxDuration: 60,
+  maxDuration: 180,
   api: {
     bodyParser: {
       sizeLimit: "35mb"
@@ -469,6 +469,20 @@ ${surfaceSection}
 Produce one photorealistic image with accurate lighting, perspective, and textures.`;
 }
 
+function buildColorPassPrompt(body) {
+  const details = selectedDetails(body);
+  return `Apply cabinet finishes to this already corrected kitchen image.
+
+CHANGE ONLY CABINET COLOR AND FINISH
+Apply ${details.upperName}${details.upperHex ? ` (${details.upperHex})` : ""} to every visible upper cabinet door, drawer front, face frame, exposed side, filler, and trim above countertop height.
+Apply ${details.baseName}${details.baseHex ? ` (${details.baseHex})` : ""} to every visible base, island, and peninsula cabinet door, drawer front, face frame, exposed side, filler, trim, and toe kick below countertop height.
+
+The attached finish swatches control color and material only. Preserve the exact cabinet door and drawer geometry already present in image 1. Do not redraw, simplify, replace, or reinterpret any door or drawer profile.
+
+LOCKED SCENE
+Preserve the cabinet layout, cabinet count, openings, hardware, appliances, countertops, backsplash, flooring, walls, windows, decorations, camera angle, lighting, perspective, and room dimensions. The transparent mask area is the only editable region. Everything outside it must remain unchanged.`;
+}
+
 function appendImage(form, dataUrl, fallbackName) {
   const base64 = stripDataUrl(dataUrl);
   if (!base64) return false;
@@ -571,10 +585,10 @@ export default async function handler(req, res) {
     const imageModel = selectCatalogImageModel(body.imageModel);
     const outputSize = await selectOutputSize(body.image, imageModel);
     const activePromptVersion = CATALOG_PROMPT_VERSION;
-    const prompt = buildCatalogPrompt(body, true, !!(baseReference && baseReference !== mainReference), false, false, false) + `
+    const prompt = buildGeometryPassPrompt(body) + `
 
 MASK RULE
-The transparent area of the mask identifies the only cabinet region that may change. Preserve every pixel outside that editable cabinet region. Do not change countertops, backsplash, flooring, appliances, walls, windows, decorations, or room layout. Complete the cabinet door style, drawer-front style, finish, face frames, exposed sides, trim, and toe kicks naturally inside the editable region. Preserve existing hardware and realistic shadows.`;
+The transparent area of the mask identifies the only cabinet region that may change. Preserve every pixel outside that editable cabinet region. Do not change cabinet colors, countertops, backsplash, flooring, appliances, walls, windows, decorations, or room layout. Change only cabinet door and drawer-front geometry inside the editable region. Preserve existing hardware and realistic shadows.`;
 
     const editForm = new FormData();
     const generationId = createGenerationId();
@@ -607,10 +621,10 @@ The transparent area of the mask identifies the only cabinet region that may cha
     if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
     if (drawerReference) attachmentStatus.catalogDrawer = appendImage(editForm, drawerReference, "selected-catalog-drawer-front-reference");
     if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Approved AI drawer-front master", drawerReference, "selected-catalog-drawer-front-reference");
-    attachmentStatus.upperSwatch = appendImage(editForm, mainReference, "selected-upper-swatch-reference");
-    if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
-    if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(editForm, baseReference, "selected-base-swatch-reference");
-    if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
+    // Finish swatches are intentionally withheld from the geometry pass.
+    // They are attached only to the second pass so the first model call can focus on door and drawer shape.
+    attachmentStatus.upperSwatch = true;
+    attachmentStatus.baseSwatch = true;
     if (attachmentStatus.cabinetMask) observeImage("Diagnostic cabinet edit mask, not a numbered reference image", body.cabinetMask, "diagnostic-cabinet-edit-mask");
     if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.cabinetMask) return res.status(400).json({ error: "Kitchen cabinet mask could not be attached. Upload the kitchen photo again and retry." });
@@ -624,9 +638,9 @@ The transparent area of the mask identifies the only cabinet region that may cha
       quality: CATALOG_IMAGE_QUALITY,
       promptVersion: activePromptVersion,
       prompt,
-      generationMode: "upload-analysis-masked-edit",
-      requestCount: 1,
-      passes: [{ stage: "masked-cabinet-edit", prompt }],
+      generationMode: "two-pass-geometry-then-color",
+      requestCount: 2,
+      passes: [{ stage: "door-drawer-geometry", prompt }, { stage: "cabinet-finish", prompt: buildColorPassPrompt(body) }],
       attachmentStatus,
       attachments: attachedImages.map(function(image) {
         return {
@@ -659,8 +673,8 @@ The transparent area of the mask identifies the only cabinet region that may cha
         drawerProfileDescription,
         doorProfileMustAvoid,
         drawerProfileMustAvoid,
-        promptMode: "upload-analysis-masked-edit",
-        requestCount: 1,
+        promptMode: "two-pass-geometry-then-color",
+        requestCount: 2,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
         baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
         countertop: "disabled in masked test",
@@ -675,62 +689,73 @@ The transparent area of the mask identifies the only cabinet region that may cha
       console.warn("Generation inspector logging skipped.", error?.message || error);
     });
 
-    const editResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: editForm });
-    const result = await editResponse.json();
-    if (!editResponse.ok) {
+    const geometryResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: editForm });
+    const geometryResult = await geometryResponse.json();
+    if (!geometryResponse.ok) {
       await updateGenerationRecord(generationId, {
         status: "error",
-        result: {
-          generationTimeMs: Date.now() - generationStartedAt,
-          image: "",
-          imageSize: ""
-        },
         error: {
-          status: editResponse.status,
-          stage: "masked-cabinet-edit",
-          message: result?.error?.message || result?.message || "OpenAI masked cabinet edit failed."
+          status: geometryResponse.status,
+          stage: "door-drawer-geometry",
+          message: geometryResult?.error?.message || geometryResult?.message || "OpenAI cabinet geometry edit failed."
         }
-      }).catch(function(error) {
-        console.warn("Generation inspector error logging skipped.", error?.message || error);
-      });
-      return res.status(editResponse.status).json({ error: result?.error?.message || result?.message || "The masked cabinet edit failed." });
+      }).catch(function() {});
+      return res.status(geometryResponse.status).json({ error: geometryResult?.error?.message || geometryResult?.message || "The cabinet geometry edit failed." });
     }
+
+    const geometryImage = await resultImageDataUrl(geometryResult);
+    if (!geometryImage) return res.status(500).json({ error: "The cabinet geometry pass returned no image." });
+
+    const colorPrompt = buildColorPassPrompt(body);
+    const colorForm = new FormData();
+    colorForm.append("model", imageModel);
+    colorForm.append("prompt", colorPrompt);
+    colorForm.append("size", outputSize);
+    colorForm.append("quality", CATALOG_IMAGE_QUALITY);
+    if (!appendImage(colorForm, geometryImage, "geometry-corrected-kitchen")) {
+      return res.status(500).json({ error: "The corrected kitchen could not be prepared for the finish pass." });
+    }
+    if (!appendMask(colorForm, body.cabinetMask)) {
+      return res.status(500).json({ error: "The cabinet mask could not be prepared for the finish pass." });
+    }
+    if (!appendImage(colorForm, mainReference, "selected-upper-swatch-reference")) {
+      return res.status(400).json({ error: "The upper finish swatch could not be attached." });
+    }
+    if (baseReference && baseReference !== mainReference && !appendImage(colorForm, baseReference, "selected-base-swatch-reference")) {
+      return res.status(400).json({ error: "The base finish swatch could not be attached." });
+    }
+
+    const colorResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: colorForm });
+    const colorResult = await colorResponse.json();
+    if (!colorResponse.ok) {
+      await updateGenerationRecord(generationId, {
+        status: "error",
+        error: {
+          status: colorResponse.status,
+          stage: "cabinet-finish",
+          message: colorResult?.error?.message || colorResult?.message || "OpenAI cabinet finish edit failed."
+        }
+      }).catch(function() {});
+      return res.status(colorResponse.status).json({ error: colorResult?.error?.message || colorResult?.message || "The cabinet finish edit failed." });
+    }
+
+    const generatedImage = await resultImageDataUrl(colorResult);
+    if (!generatedImage) return res.status(500).json({ error: "The cabinet finish pass returned no image." });
 
     const updatedUsed = await redisIncr(usageKey);
     if (updatedUsed >= safeMonthlyLimit) await sendLimitEmail({ companyKey: safeCompanyKey, companyName: safeCompanyName, used: updatedUsed, limit: safeMonthlyLimit, customerName: body.customerName, customerEmail: body.customerEmail, customerPhone: body.customerPhone });
 
-    const imageBase64 = result?.data?.[0]?.b64_json;
-    const imageUrl = result?.data?.[0]?.url;
-    const generatedImage = imageBase64 ? `data:image/png;base64,${imageBase64}` : imageUrl || "";
-    if (generatedImage) {
-      await updateGenerationRecord(generationId, {
-        status: "complete",
-        result: {
-          generationTimeMs: Date.now() - generationStartedAt,
-          image: generatedImage,
-          imageSize: imageSizeLabel(generatedImage)
-        }
-      }).catch(function(error) {
-        console.warn("Generation inspector result logging skipped.", error?.message || error);
-      });
-    }
-    if (imageBase64) return res.status(200).json({ image: `data:image/png;base64,${imageBase64}`, used: updatedUsed, limit: safeMonthlyLimit });
-    if (imageUrl) return res.status(200).json({ image: imageUrl, used: updatedUsed, limit: safeMonthlyLimit });
     await updateGenerationRecord(generationId, {
-      status: "error",
+      status: "complete",
       result: {
         generationTimeMs: Date.now() - generationStartedAt,
-        image: "",
-        imageSize: ""
-      },
-      error: {
-        status: 500,
-        message: "No image returned from OpenAI."
+        image: generatedImage,
+        imageSize: imageSizeLabel(generatedImage)
       }
     }).catch(function(error) {
-      console.warn("Generation inspector empty result logging skipped.", error?.message || error);
+      console.warn("Generation inspector result logging skipped.", error?.message || error);
     });
-    return res.status(500).json({ error: "No image returned from OpenAI." });
+    return res.status(200).json({ image: generatedImage, used: updatedUsed, limit: safeMonthlyLimit });
   } catch (error) {
     return res.status(500).json({ error: error?.message || "Server error." });
   }
