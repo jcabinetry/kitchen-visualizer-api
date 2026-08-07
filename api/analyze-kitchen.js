@@ -1,4 +1,4 @@
-import { analyzeCabinetRegions, createCabinetEditMask } from "./_lib/cabinetMask.js";
+import { analyzeCabinetRegions, createCabinetEditMask, createCabinetGroupMask } from "./_lib/cabinetMask.js";
 
 export const config = {
   maxDuration: 30,
@@ -18,7 +18,9 @@ export default async function handler(req, res) {
     if (!image) return res.status(400).json({ error: "Missing kitchen image." });
     const analysis = await analyzeCabinetRegions(image);
     const mask = await createCabinetEditMask(image, analysis.regions);
-    return res.status(200).json({ mask, regions: analysis.regions, faceCount: analysis.faceCount });
+    const upperMask = await createCabinetGroupMask(image, analysis.regions, "upper");
+    const baseMask = await createCabinetGroupMask(image, analysis.regions, "base");
+    return res.status(200).json({ mask, upperMask, baseMask, regions: analysis.regions, faceCount: analysis.faceCount });
   } catch (error) {
     const message = error?.name === "AbortError" ? "Kitchen analysis timed out. Upload the photo again." : (error?.message || "Kitchen analysis failed.");
     return res.status(500).json({ error: message });

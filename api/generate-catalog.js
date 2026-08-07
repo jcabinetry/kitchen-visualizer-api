@@ -1,5 +1,5 @@
 export const config = {
-  maxDuration: 60,
+  maxDuration: 180,
   api: {
     bodyParser: {
       sizeLimit: "35mb"
@@ -11,20 +11,62 @@ import {
   saveGenerationRecord,
   updateGenerationRecord
 } from "./_lib/generationInspectorStore.js";
+import sharp from "sharp";
+import { createPrecoloredKitchen } from "./_lib/cabinetMask.js";
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
-const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
-const CATALOG_IMAGE_QUALITY = "medium";
-const CATALOG_PROMPT_VERSION = "v13-upload-analysis-masked-edit";
-const CLEAN_TEST_COMPANY_KEY = "13333";
-const CLEAN_TEST_PROMPT_VERSION = "v11-clean";
+const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1.5";
+const CATALOG_PROMPT_VERSION = "v14-source-authority-precolored-mask";
 
 function selectCatalogImageModel(value) {
   return String(value || "").trim().toLowerCase() === TEST_CATALOG_IMAGE_MODEL
     ? TEST_CATALOG_IMAGE_MODEL
     : DEFAULT_CATALOG_IMAGE_MODEL;
+}
+
+function selectCatalogImageQuality(value) {
+  return String(value || "").trim().toLowerCase() === "high" ? "high" : "medium";
+}
+
+async function outputSizeFor(image, model) {
+  if (model !== DEFAULT_CATALOG_IMAGE_MODEL) return "1536x1024";
+  const input = Buffer.from(stripDataUrl(image), "base64");
+  const metadata = await sharp(input).metadata();
+  let width = metadata.width || 1536;
+  let height = metadata.height || 1024;
+  const minimumScale = Math.max(1, Math.sqrt(655360 / (width * height)));
+  const scale = Math.min(minimumScale, 2048 / Math.max(width, height), Math.sqrt(8294400 / (width * height)));
+  width = Math.max(16, Math.round(width * scale / 16) * 16);
+  height = Math.max(16, Math.round(height * scale / 16) * 16);
+  return `${width}x${height}`;
+}
+
+function buildFocusedCabinetPrompt(body, hasSeparateBase) {
+  const details = selectedDetails(body);
+  return `Edit only the transparent cabinet area in the mask.
+
+REFERENCE PRIORITY
+Image 1 is the prepared kitchen and controls the scene, layout, perspective, lighting, cabinet locations, hardware, and prepared upper and base colors.
+Image 2 is the original catalog door photo and is the authoritative door geometry.
+Image 3 is the original catalog drawer front photo and is the authoritative drawer geometry.
+Images 4 and 5 are clean supporting views of those same catalog designs. They may clarify the profile but may not replace or simplify the original designs.
+Image 6 is the upper finish swatch.${hasSeparateBase ? " Image 7 is the base finish swatch." : " Use the same finish for upper and base cabinets."}
+
+CATALOG GEOMETRY
+Door style: ${details.doorName}.
+Door construction: ${details.doorConstructionType}.
+Door specification: ${String(body.catalogDoorProfileDescription || "").trim()}
+Door must avoid: ${String(body.catalogDoorProfileMustAvoid || "").trim()}
+Drawer construction: ${details.drawerConstructionType}.
+Drawer specification: ${String(body.catalogDrawerProfileDescription || "").trim()}
+Drawer must avoid: ${String(body.catalogDrawerProfileMustAvoid || "").trim()}
+
+Replace every visible cabinet door and drawer front with the exact matching catalog geometry. Preserve the panel count, outer profile, rail and stile proportions, inside edge, bevels, reveals, corners, depth direction, and raised or recessed construction. Adapt proportions to each existing opening without changing the opening, cabinet count, or cabinet layout. Do not substitute a generic shaker or generic raised panel.
+
+FINISH AND SCENE LOCK
+The prepared kitchen already separates upper color ${details.upperName} from base color ${details.baseName}. Preserve that upper versus base assignment and refine it to match the swatches while keeping realistic wood shading and lighting. Preserve countertops, backsplash, flooring, appliances, walls, windows, objects, open shelves, cabinet interiors, camera angle, composition, and hardware. Never paste rectangular reference cards into the kitchen. Return one coherent photorealistic kitchen image.`;
 }
 
 function cleanEnvValue(value) {
@@ -502,7 +544,6 @@ export default async function handler(req, res) {
 
     const safeCompanyKey = cleanKey(body.companyKey);
     const safeCompanyName = body.companyName || safeCompanyKey;
-    const cleanPromptTest = safeCompanyKey === CLEAN_TEST_COMPANY_KEY;
     const safeMonthlyLimit = Math.max(1, parseInt(body.monthlyLimit ?? DEFAULT_MONTHLY_LIMIT, 10) || DEFAULT_MONTHLY_LIMIT);
     const customerRecord = (await redisGet(`visualizer:customer:${safeCompanyKey}`)) || (await redisGet(`customer:${safeCompanyKey}`));
     if (customerRecord) {
@@ -523,6 +564,8 @@ export default async function handler(req, res) {
     const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || body.catalogBaseSwatchReference || mainReference;
     const doorReference = body.catalogDoorReference || null;
     const drawerReference = body.catalogDrawerReference || null;
+    const doorSourceReference = body.catalogDoorSourceReference || null;
+    const drawerSourceReference = body.catalogDrawerSourceReference || null;
     const requireDrawerReference = body.requireDrawerReference === true;
     const doorConstructionType = normalizeConstructionType(body.catalogDoorConstructionType);
     const drawerConstructionType = normalizeConstructionType(body.catalogDrawerConstructionType);
@@ -539,16 +582,19 @@ export default async function handler(req, res) {
     if (!doorReference) {
       return res.status(400).json({ error: "Catalog door image was not sent. Select a catalog door again and generate after the page finishes loading." });
     }
+    if (!doorSourceReference || !drawerSourceReference) {
+      return res.status(400).json({ error: "The original catalog door or drawer image was not sent. Add both source images in Catalog Manager, save, and reload the visualizer." });
+    }
     if (requireDrawerReference && !drawerReference) {
       return res.status(400).json({ error: "Catalog drawer image was not sent. Add and generate the separate AI drawer reference in Catalog Manager before creating this premium custom preview." });
     }
-    if (!cleanPromptTest && requireConstructionTypes && !doorConstructionType) {
+    if (requireConstructionTypes && !doorConstructionType) {
       return res.status(400).json({ error: "Catalog door construction type was not sent. Edit this door in Catalog Manager and select Inset, Raised panel, or Slab." });
     }
-    if (!cleanPromptTest && requireConstructionTypes && !drawerConstructionType) {
+    if (requireConstructionTypes && !drawerConstructionType) {
       return res.status(400).json({ error: "Catalog drawer-front construction type was not sent. Edit this door in Catalog Manager and select Inset, Raised panel, or Slab for its drawer front." });
     }
-    if (!cleanPromptTest && requireProfileDescriptions && (!doorProfileDescription || !drawerProfileDescription || !doorProfileMustAvoid || !drawerProfileMustAvoid || body.profileAnalysisStatus !== "ready")) {
+    if (requireProfileDescriptions && (!doorProfileDescription || !drawerProfileDescription || !doorProfileMustAvoid || !drawerProfileMustAvoid || body.profileAnalysisStatus !== "ready")) {
       return res.status(400).json({ error: "This style needs current door and drawer geometry descriptions. Generate them in Catalog Manager, save the catalog, and reload the visualizer." });
     }
     if (!mainReference) {
@@ -559,12 +605,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Kitchen cabinet analysis is not ready. Upload the kitchen photo again and wait for analysis to finish." });
     }
 
-    const imageModel = selectCatalogImageModel(body.imageModel);
-    const activePromptVersion = CATALOG_PROMPT_VERSION;
-    const prompt = buildCatalogPrompt(body, true, !!(baseReference && baseReference !== mainReference), false, false, false) + `
+    if (!body.upperCabinetMask || !body.baseCabinetMask) {
+      return res.status(400).json({ error: "The upper and base cabinet maps are not ready. Upload the kitchen photo again and wait for analysis." });
+    }
 
-MASK RULE
-The transparent area of the mask identifies the only cabinet region that may change. Preserve every pixel outside that editable cabinet region. Do not change countertops, backsplash, flooring, appliances, walls, windows, decorations, or room layout. Complete the cabinet door style, drawer-front style, finish, face frames, exposed sides, trim, and toe kicks naturally inside the editable region. Preserve existing hardware and realistic shadows.`;
+    const imageModel = selectCatalogImageModel(body.imageModel);
+    const imageQuality = selectCatalogImageQuality(body.imageQuality);
+    const activePromptVersion = CATALOG_PROMPT_VERSION;
+    const hasSeparateBase = !!(baseReference && baseReference !== mainReference);
+    const preparedKitchen = await createPrecoloredKitchen(body.image, body.upperCabinetMask, body.baseCabinetMask, mainReference, baseReference || mainReference);
+    const outputSize = await outputSizeFor(preparedKitchen, imageModel);
+    const prompt = buildFocusedCabinetPrompt(body, hasSeparateBase);
 
     const editForm = new FormData();
     const generationId = createGenerationId();
@@ -578,6 +629,8 @@ The transparent area of the mask identifies the only cabinet region that may cha
     const attachmentStatus = {
       kitchen: false,
       cabinetMask: false,
+      catalogDoorSource: false,
+      catalogDrawerSource: false,
       catalogDoor: false,
       catalogDrawer: !drawerReference,
       upperSwatch: false,
@@ -588,11 +641,19 @@ The transparent area of the mask identifies the only cabinet region that may cha
     };
     editForm.append("model", imageModel);
     editForm.append("prompt", prompt);
-    editForm.append("size", "1536x1024");
-    editForm.append("quality", CATALOG_IMAGE_QUALITY);
-    attachmentStatus.kitchen = appendImage(editForm, body.image, "kitchen");
-    if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
+    editForm.append("size", outputSize);
+    editForm.append("quality", imageQuality);
+    if (imageModel === TEST_CATALOG_IMAGE_MODEL) editForm.append("input_fidelity", "high");
+    attachmentStatus.kitchen = appendImage(editForm, preparedKitchen, "prepared-kitchen");
+    if (attachmentStatus.kitchen) observeImage("Prepared kitchen with deterministic upper and base colors", preparedKitchen, "prepared-kitchen");
     attachmentStatus.cabinetMask = appendMask(editForm, body.cabinetMask);
+    observeImage("Combined cabinet edit mask", body.cabinetMask, "combined-cabinet-mask");
+    observeImage("Upper cabinet map", body.upperCabinetMask, "upper-cabinet-map");
+    observeImage("Base cabinet map", body.baseCabinetMask, "base-cabinet-map");
+    attachmentStatus.catalogDoorSource = appendImage(editForm, doorSourceReference, "original-catalog-door-source");
+    if (attachmentStatus.catalogDoorSource) observeImage("Authoritative original catalog door", doorSourceReference, "original-catalog-door-source");
+    attachmentStatus.catalogDrawerSource = appendImage(editForm, drawerSourceReference, "original-catalog-drawer-source");
+    if (attachmentStatus.catalogDrawerSource) observeImage("Authoritative original catalog drawer front", drawerSourceReference, "original-catalog-drawer-source");
     attachmentStatus.catalogDoor = appendImage(editForm, doorReference, "selected-catalog-door-exact-reference");
     if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
     if (drawerReference) attachmentStatus.catalogDrawer = appendImage(editForm, drawerReference, "selected-catalog-drawer-front-reference");
@@ -604,16 +665,17 @@ The transparent area of the mask identifies the only cabinet region that may cha
     if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.cabinetMask) return res.status(400).json({ error: "Kitchen cabinet mask could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
+    if (!attachmentStatus.catalogDoorSource || !attachmentStatus.catalogDrawerSource) return res.status(400).json({ error: "Original catalog door or drawer source could not be attached. Save both images in Catalog Manager and reload." });
     if (drawerReference && !attachmentStatus.catalogDrawer) return res.status(400).json({ error: "Catalog drawer front image could not be attached. Select the catalog door style again after the page finishes loading." });
     if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
 
     const inspectorPayload = {
       model: imageModel,
-      size: "1536x1024",
-      quality: CATALOG_IMAGE_QUALITY,
+      size: outputSize,
+      quality: imageQuality,
       promptVersion: activePromptVersion,
       prompt,
-      generationMode: "upload-analysis-masked-edit",
+      generationMode: "source-authority-precolored-mask",
       requestCount: 1,
       passes: [{ stage: "masked-cabinet-edit", prompt }],
       attachmentStatus,
@@ -634,7 +696,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
       status: "sent",
       model: imageModel,
       promptVersion: activePromptVersion,
-      quality: CATALOG_IMAGE_QUALITY,
+      quality: imageQuality,
       attachmentStatus,
       summary: {
         companyKey: safeCompanyKey,
@@ -642,13 +704,13 @@ The transparent area of the mask identifies the only cabinet region that may cha
         cabinetLine: body.cabinetLine || "",
         doorStyle: body.catalogDoorName || body.selectedDoorStyle || body.style || "",
         drawerFront: body.catalogDrawerName || "",
-        doorConstructionType: cleanPromptTest ? "" : doorConstructionType,
-        drawerConstructionType: cleanPromptTest ? "" : drawerConstructionType,
-        doorProfileDescription: cleanPromptTest ? "" : doorProfileDescription,
-        drawerProfileDescription: cleanPromptTest ? "" : drawerProfileDescription,
-        doorProfileMustAvoid: cleanPromptTest ? "" : doorProfileMustAvoid,
-        drawerProfileMustAvoid: cleanPromptTest ? "" : drawerProfileMustAvoid,
-        promptMode: "upload-analysis-masked-edit",
+        doorConstructionType,
+        drawerConstructionType,
+        doorProfileDescription,
+        drawerProfileDescription,
+        doorProfileMustAvoid,
+        drawerProfileMustAvoid,
+        promptMode: "source-authority-precolored-mask",
         requestCount: 1,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
         baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",

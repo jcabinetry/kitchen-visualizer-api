@@ -96,3 +96,44 @@ export async function createCabinetEditMask(image, regions) {
     .toBuffer();
   return `data:image/png;base64,${mask.toString("base64")}`;
 }
+
+export async function createCabinetGroupMask(image, regions, group) {
+  return createCabinetEditMask(image, regions.filter(region => region.group === group));
+}
+
+async function averageSwatch(dataUrl) {
+  const input = Buffer.from(stripDataUrl(dataUrl), "base64");
+  if (!input.length) throw new Error("Invalid finish swatch.");
+  const channels = await sharp(input).resize(48, 48, { fit: "cover" }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const totals = [0, 0, 0];
+  for (let index = 0; index < channels.data.length; index += channels.info.channels) {
+    totals[0] += channels.data[index];
+    totals[1] += channels.data[index + 1];
+    totals[2] += channels.data[index + 2];
+  }
+  const count = channels.data.length / channels.info.channels;
+  return { r: Math.round(totals[0] / count), g: Math.round(totals[1] / count), b: Math.round(totals[2] / count) };
+}
+
+export async function createPrecoloredKitchen(image, upperMask, baseMask, upperSwatch, baseSwatch) {
+  const input = Buffer.from(stripDataUrl(image), "base64");
+  if (!input.length) throw new Error("Invalid kitchen image.");
+  const metadata = await sharp(input).rotate().metadata();
+  const width = metadata.width;
+  const height = metadata.height;
+  if (!width || !height) throw new Error("Kitchen image dimensions could not be read.");
+
+  async function tintLayer(maskDataUrl, swatchDataUrl) {
+    const color = await averageSwatch(swatchDataUrl);
+    const mask = Buffer.from(stripDataUrl(maskDataUrl), "base64");
+    const alpha = await sharp(mask).ensureAlpha().extractChannel(3).negate().linear(0.68).png().toBuffer();
+    const rgb = await sharp({ create: { width, height, channels: 3, background: color } }).png().toBuffer();
+    return sharp(rgb).joinChannel(alpha).png().toBuffer();
+  }
+
+  const layers = [];
+  if (upperMask && upperSwatch) layers.push({ input: await tintLayer(upperMask, upperSwatch), blend: "over" });
+  if (baseMask && baseSwatch) layers.push({ input: await tintLayer(baseMask, baseSwatch), blend: "over" });
+  const output = await sharp(input).rotate().composite(layers).jpeg({ quality: 94, chromaSubsampling: "4:4:4" }).toBuffer();
+  return `data:image/jpeg;base64,${output.toString("base64")}`;
+}
