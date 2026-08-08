@@ -1,5 +1,5 @@
 export const config = {
-  maxDuration: 180,
+  maxDuration: 300,
   api: {
     bodyParser: {
       sizeLimit: "35mb"
@@ -19,7 +19,8 @@ const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const GEOMETRY_IMAGE_QUALITY = "high";
 const FINISH_IMAGE_QUALITY = "medium";
-const CATALOG_PROMPT_VERSION = "v16-high-quality-geometry";
+const CATALOG_PROMPT_VERSION = "v17-blueprint-candidate-selection";
+const GEOMETRY_JUDGE_MODEL = process.env.CABINET_GEOMETRY_JUDGE_MODEL || "gpt-4.1-mini";
 
 function selectCatalogImageModel(value) {
   return String(value || "").trim().toLowerCase() === TEST_CATALOG_IMAGE_MODEL
@@ -366,9 +367,11 @@ ATTACHMENT ORDER
 1. ORIGINAL KITCHEN PHOTO: preserve its layout, objects, lighting, perspective, and composition.
 2. APPROVED AI CABINET DOOR MASTER (${details.doorName}): exact geometry for cabinet doors only.
 3. APPROVED AI DRAWER-FRONT MASTER (${details.drawerName}): exact geometry for drawer fronts only.
+4. CABINET DOOR EDGE BLUEPRINT: high contrast geometry extracted from image 2. Use only to see subtle profile boundaries.
+5. DRAWER-FRONT EDGE BLUEPRINT: high contrast geometry extracted from image 3. Use only to see subtle profile boundaries.
 
 CHANGE ONLY CABINET DOORS AND DRAWER FRONTS
-Replace every existing cabinet door with the exact visible design from image 2. Replace every drawer front with the exact visible design from image 3. Copy the panel outline, outer contour, rail and stile proportions, profile steps, bevels, reveals, molding, edge treatment, corners, and depth direction. Fit the same designs naturally to narrow, wide, short, tall, double, upper, base, island, and peninsula faces without simplifying them.
+Replace every existing cabinet door with the exact visible design from image 2. Replace every drawer front with the exact visible design from image 3. Use images 4 and 5 to locate every subtle rail, stile, inset, bevel, reveal, and panel boundary that may be hard to see in the shaded masters. The masters control the real appearance. The blueprints control edge placement only and must never be interpreted as color, finish, thickness, or a new design. Copy the panel outline, outer contour, rail and stile proportions, profile steps, bevels, reveals, molding, edge treatment, corners, and depth direction. Fit the same designs naturally to narrow, wide, short, tall, double, upper, base, island, and peninsula faces without simplifying them.
 
 Door construction classification: ${details.doorConstructionType}.
 Door geometry specification: ${doorDescription}
@@ -561,6 +564,97 @@ Keep these profile dimensions and proportions. Do not widen them into a generic 
   }
 }
 
+async function createGeometryBlueprint(dataUrl, targetWidth, targetHeight) {
+  const base64 = stripDataUrl(dataUrl);
+  if (!base64) return "";
+  try {
+    const prepared = await sharp(Buffer.from(base64, "base64")).rotate().trim({ threshold: 10 })
+      .resize(targetWidth, targetHeight, { fit: "contain", background: "#ffffff" }).greyscale().raw()
+      .toBuffer({ resolveWithObject: true });
+    const width = prepared.info.width, height = prepared.info.height, pixels = prepared.data;
+    const gradients = [], strengths = new Float32Array(width * height);
+    for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
+      const index = y * width + x;
+      const strength = Math.abs(pixels[index + 1] - pixels[index - 1]) + Math.abs(pixels[index + width] - pixels[index - width]);
+      strengths[index] = strength; gradients.push(strength);
+    }
+    gradients.sort(function(a, b) { return a - b; });
+    const adaptive = gradients[Math.floor(gradients.length * 0.86)] || 8;
+    const strongThreshold = Math.max(7, adaptive * 0.72), softThreshold = Math.max(4, strongThreshold * 0.48);
+    const edgePixels = Buffer.alloc(width * height, 255);
+    for (let index = 0; index < strengths.length; index++) {
+      if (strengths[index] >= strongThreshold) edgePixels[index] = 18;
+      else if (strengths[index] >= softThreshold) edgePixels[index] = 115;
+    }
+    const output = await sharp(edgePixels, { raw: { width, height, channels: 1 } }).png().toBuffer();
+    return `data:image/png;base64,${output.toString("base64")}`;
+  } catch (_error) { return ""; }
+}
+
+function responseOutputText(result) {
+  if (result && typeof result.output_text === "string") return result.output_text;
+  const parts = [];
+  for (const item of result?.output || []) for (const content of item?.content || []) {
+    if (content?.type === "output_text" && typeof content.text === "string") parts.push(content.text);
+  }
+  return parts.join("\n");
+}
+
+function parseJsonObject(text) {
+  const cleaned = String(text || "").replace(/```json/gi, "").replace(/```/g, "").trim();
+  const start = cleaned.indexOf("{"), end = cleaned.lastIndexOf("}");
+  if (start < 0 || end <= start) throw new Error("Judge returned no JSON object.");
+  return JSON.parse(cleaned.slice(start, end + 1));
+}
+
+async function callVisionJudge(prompt, labeledImages) {
+  const content = [{ type: "input_text", text: prompt }];
+  for (const image of labeledImages) {
+    if (!stripDataUrl(image.dataUrl)) continue;
+    content.push({ type: "input_text", text: image.label });
+    content.push({ type: "input_image", image_url: image.dataUrl, detail: "high" });
+  }
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: GEOMETRY_JUDGE_MODEL, input: [{ role: "user", content }], max_output_tokens: 900 })
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result?.error?.message || "Geometry judge request failed.");
+  return parseJsonObject(responseOutputText(result));
+}
+
+async function selectBestGeometryCandidate(input) {
+  if (!input.candidates.length) return { selectedIndex: 0, scores: [], reason: "No candidate was available." };
+  if (input.candidates.length === 1) return { selectedIndex: 0, scores: [], reason: "Only one candidate was returned." };
+  try {
+    const judged = await callVisionJudge(`You are a strict cabinet manufacturing geometry inspector. Compare both candidate kitchens against the exact door and drawer masters and their edge blueprints. Ignore finish color. Score door profile fidelity from 0 to 50, drawer profile fidelity from 0 to 25, and preservation of the original kitchen layout and cabinet face positions from 0 to 25. Narrow rails and stiles, panel opening proportions, bevel count, reveal placement, inset versus overlay construction, and raised versus recessed depth are critical. Select the closest candidate, not the prettiest. Return JSON only in this exact shape: {"selectedIndex":0,"scores":[{"index":0,"door":0,"drawer":0,"layout":0,"total":0,"reason":""},{"index":1,"door":0,"drawer":0,"layout":0,"total":0,"reason":""}],"reason":""}.`, [
+      { label: "Exact cabinet door master", dataUrl: input.doorReference },
+      { label: "Cabinet door edge blueprint", dataUrl: input.doorBlueprint },
+      { label: "Exact drawer front master", dataUrl: input.drawerReference },
+      { label: "Drawer front edge blueprint", dataUrl: input.drawerBlueprint },
+      { label: "Candidate kitchen 1", dataUrl: input.candidates[0] },
+      { label: "Candidate kitchen 2", dataUrl: input.candidates[1] }
+    ]);
+    return { ...judged, selectedIndex: Number(judged.selectedIndex) === 1 ? 1 : 0 };
+  } catch (error) {
+    return { selectedIndex: 0, scores: [], reason: "Automatic candidate comparison failed. Candidate 1 was used.", error: error?.message || String(error) };
+  }
+}
+
+async function validateFinishedGeometry(input) {
+  try {
+    return await callVisionJudge(`You are a strict cabinet geometry quality inspector. Compare the final finished kitchen against the selected geometry stage and the exact door and drawer masters. Determine whether the color pass preserved the selected door and drawer profile proportions, edges, panel openings, face count, and kitchen layout. Ignore color differences. Return JSON only in this exact shape: {"preserved":true,"score":0,"reason":""}. Score from 0 to 100.`, [
+      { label: "Exact cabinet door master", dataUrl: input.doorReference },
+      { label: "Exact drawer front master", dataUrl: input.drawerReference },
+      { label: "Selected geometry stage", dataUrl: input.geometryImage },
+      { label: "Final finished kitchen", dataUrl: input.finalImage }
+    ]);
+  } catch (error) {
+    return { preserved: null, score: 0, reason: "Automatic finish validation failed.", error: error?.message || String(error) };
+  }
+}
+
 function appendImage(form, dataUrl, fallbackName) {
   const base64 = stripDataUrl(dataUrl);
   if (!base64) return false;
@@ -589,16 +683,22 @@ async function resizeMaskToMatchImage(maskDataUrl, imageDataUrl) {
   return `data:image/png;base64,${resizedMask.toString("base64")}`;
 }
 
+async function resultImagesDataUrls(result) {
+  const images = [];
+  for (const item of result?.data || []) {
+    if (item?.b64_json) { images.push(`data:image/png;base64,${item.b64_json}`); continue; }
+    if (!item?.url) continue;
+    const response = await fetch(item.url);
+    if (!response.ok) continue;
+    const mime = response.headers.get("content-type") || "image/png";
+    const bytes = Buffer.from(await response.arrayBuffer());
+    images.push(`data:${mime};base64,${bytes.toString("base64")}`);
+  }
+  return images;
+}
 async function resultImageDataUrl(result) {
-  const imageBase64 = result?.data?.[0]?.b64_json;
-  if (imageBase64) return `data:image/png;base64,${imageBase64}`;
-  const imageUrl = result?.data?.[0]?.url;
-  if (!imageUrl) return "";
-  const response = await fetch(imageUrl);
-  if (!response.ok) return "";
-  const mime = response.headers.get("content-type") || "image/png";
-  const bytes = Buffer.from(await response.arrayBuffer());
-  return `data:${mime};base64,${bytes.toString("base64")}`;
+  const images = await resultImagesDataUrls(result);
+  return images[0] || "";
 }
 
 export default async function handler(req, res) {
@@ -678,9 +778,12 @@ export default async function handler(req, res) {
     const activePromptVersion = CATALOG_PROMPT_VERSION;
     const doorMasterMeasurements = await measureMasterGeometry(doorReference, 18, 24, "CABINET DOOR");
     const drawerMasterMeasurements = await measureMasterGeometry(drawerReference || doorReference, 18, 5, "DRAWER FRONT");
+    const masterMeasurements = doorMasterMeasurements + "\n" + drawerMasterMeasurements;
+    const doorBlueprint = await createGeometryBlueprint(doorReference, 768, 1024);
+    const drawerBlueprint = await createGeometryBlueprint(drawerReference || doorReference, 1024, 320);
     const prompt = buildGeometryPassPrompt({
       ...body,
-      masterMeasurements: doorMasterMeasurements + "\n" + drawerMasterMeasurements
+      masterMeasurements
     }) + `
 
 MASK RULE
@@ -700,6 +803,8 @@ The transparent area of the mask identifies the only cabinet region that may cha
       cabinetMask: false,
       catalogDoor: false,
       catalogDrawer: !drawerReference,
+      doorBlueprint: false,
+      drawerBlueprint: false,
       upperSwatch: false,
       baseSwatch: !baseReference || baseReference === mainReference,
       countertop: true,
@@ -710,6 +815,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
     editForm.append("prompt", prompt);
     editForm.append("size", outputSize);
     editForm.append("quality", GEOMETRY_IMAGE_QUALITY);
+    editForm.append("n", "2");
     attachmentStatus.kitchen = appendImage(editForm, body.image, "kitchen");
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
     attachmentStatus.cabinetMask = appendMask(editForm, body.cabinetMask);
@@ -717,6 +823,10 @@ The transparent area of the mask identifies the only cabinet region that may cha
     if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
     if (drawerReference) attachmentStatus.catalogDrawer = appendImage(editForm, drawerReference, "selected-catalog-drawer-front-reference");
     if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Approved AI drawer-front master", drawerReference, "selected-catalog-drawer-front-reference");
+    attachmentStatus.doorBlueprint = appendImage(editForm, doorBlueprint, "cabinet-door-edge-blueprint");
+    if (attachmentStatus.doorBlueprint) observeImage("Cabinet door edge blueprint", doorBlueprint, "cabinet-door-edge-blueprint");
+    attachmentStatus.drawerBlueprint = appendImage(editForm, drawerBlueprint, "drawer-front-edge-blueprint");
+    if (attachmentStatus.drawerBlueprint) observeImage("Drawer front edge blueprint", drawerBlueprint, "drawer-front-edge-blueprint");
     // Finish swatches are intentionally withheld from the geometry pass.
     // They are attached only to the second pass so the first model call can focus on door and drawer shape.
     attachmentStatus.upperSwatch = true;
@@ -726,6 +836,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
     if (!attachmentStatus.cabinetMask) return res.status(400).json({ error: "Kitchen cabinet mask could not be attached. Upload the kitchen photo again and retry." });
     if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
     if (drawerReference && !attachmentStatus.catalogDrawer) return res.status(400).json({ error: "Catalog drawer front image could not be attached. Select the catalog door style again after the page finishes loading." });
+    if (!attachmentStatus.doorBlueprint || !attachmentStatus.drawerBlueprint) return res.status(500).json({ error: "The high contrast cabinet geometry blueprints could not be created." });
     if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
 
     const inspectorPayload = {
@@ -734,9 +845,15 @@ The transparent area of the mask identifies the only cabinet region that may cha
       quality: `geometry ${GEOMETRY_IMAGE_QUALITY}, finish ${FINISH_IMAGE_QUALITY}`,
       promptVersion: activePromptVersion,
       prompt,
-      generationMode: "two-pass-geometry-then-color",
-      requestCount: 2,
-      passes: [{ stage: "door-drawer-geometry", prompt }, { stage: "cabinet-finish", prompt: buildColorPassPrompt(body) }],
+      generationMode: "two-candidate-geometry-selection-then-color",
+      requestCount: 4,
+      masterMeasurements,
+      passes: [
+        { stage: "door-drawer-geometry", prompt, candidateCount: 2 },
+        { stage: "geometry-candidate-selection", model: GEOMETRY_JUDGE_MODEL },
+        { stage: "cabinet-finish", prompt: buildColorPassPrompt(body) },
+        { stage: "finish-geometry-validation", model: GEOMETRY_JUDGE_MODEL }
+      ],
       attachmentStatus,
       attachments: attachedImages.map(function(image) {
         return {
@@ -769,8 +886,9 @@ The transparent area of the mask identifies the only cabinet region that may cha
         drawerProfileDescription,
         doorProfileMustAvoid,
         drawerProfileMustAvoid,
-        promptMode: "two-pass-geometry-then-color",
-        requestCount: 2,
+        promptMode: "two-candidate-geometry-selection-then-color",
+        requestCount: 4,
+        masterMeasurements,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
         baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
         countertop: "disabled in masked test",
@@ -799,8 +917,20 @@ The transparent area of the mask identifies the only cabinet region that may cha
       return res.status(geometryResponse.status).json({ error: geometryResult?.error?.message || geometryResult?.message || "The cabinet geometry edit failed." });
     }
 
-    const geometryImage = await resultImageDataUrl(geometryResult);
-    if (!geometryImage) return res.status(500).json({ error: "The cabinet geometry pass returned no image." });
+    const geometryCandidates = await resultImagesDataUrls(geometryResult);
+    if (!geometryCandidates.length) return res.status(500).json({ error: "The cabinet geometry pass returned no image." });
+    const geometrySelection = await selectBestGeometryCandidate({
+      candidates: geometryCandidates,
+      doorReference,
+      drawerReference: drawerReference || doorReference,
+      doorBlueprint,
+      drawerBlueprint
+    });
+    const selectedGeometryIndex = Math.min(geometryCandidates.length - 1, Math.max(0, Number(geometrySelection.selectedIndex) || 0));
+    const geometryImage = geometryCandidates[selectedGeometryIndex];
+    await updateGenerationRecord(generationId, {
+      result: { masterMeasurements, geometryCandidates, selectedGeometryIndex, geometrySelection, geometryImage }
+    }).catch(function(error) { console.warn("Geometry candidate logging skipped.", error?.message || error); });
 
     const colorPrompt = buildColorPassPrompt(body);
     const colorForm = new FormData();
@@ -838,6 +968,12 @@ The transparent area of the mask identifies the only cabinet region that may cha
 
     const generatedImage = await resultImageDataUrl(colorResult);
     if (!generatedImage) return res.status(500).json({ error: "The cabinet finish pass returned no image." });
+    const finishGeometryValidation = await validateFinishedGeometry({
+      doorReference,
+      drawerReference: drawerReference || doorReference,
+      geometryImage,
+      finalImage: generatedImage
+    });
 
     const updatedUsed = await redisIncr(usageKey);
     if (updatedUsed >= safeMonthlyLimit) await sendLimitEmail({ companyKey: safeCompanyKey, companyName: safeCompanyName, used: updatedUsed, limit: safeMonthlyLimit, customerName: body.customerName, customerEmail: body.customerEmail, customerPhone: body.customerPhone });
@@ -847,7 +983,13 @@ The transparent area of the mask identifies the only cabinet region that may cha
       result: {
         generationTimeMs: Date.now() - generationStartedAt,
         image: generatedImage,
-        imageSize: imageSizeLabel(generatedImage)
+        imageSize: imageSizeLabel(generatedImage),
+        masterMeasurements,
+        geometryCandidates,
+        selectedGeometryIndex,
+        geometrySelection,
+        geometryImage,
+        finishGeometryValidation
       }
     }).catch(function(error) {
       console.warn("Generation inspector result logging skipped.", error?.message || error);
