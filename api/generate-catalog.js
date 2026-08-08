@@ -19,7 +19,7 @@ const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const GEOMETRY_IMAGE_QUALITY = "high";
 const FINISH_IMAGE_QUALITY = "medium";
-const CATALOG_PROMPT_VERSION = "v17-blueprint-candidate-selection";
+const CATALOG_PROMPT_VERSION = "v18-catalog-fixed-frame-width";
 const GEOMETRY_JUDGE_MODEL = process.env.CABINET_GEOMETRY_JUDGE_MODEL || "gpt-4.1-mini";
 
 function selectCatalogImageModel(value) {
@@ -383,7 +383,7 @@ Drawer front must avoid: ${drawerMustAvoid}
 
 MASTER SCALE
 ${masterMeasurements}
-Use these measurements only to preserve the master proportions. Do not enlarge rails, stiles, molding, bevels, or reveals when fitting the style to the kitchen.
+The saved flat rail and stile width is a fixed physical dimension for this catalog style. Keep it constant on every cabinet door regardless of door width or height. Never enlarge it proportionally on wide or tall doors. Never shrink it proportionally on narrow or short doors. Only the center panel area changes size. Keep bevels, reveals, molding, and profile transitions separate from the flat rail and stile dimension.
 
 The door and drawer masters are separate exact templates. Never stretch the door master into drawer areas, blend the two designs, keep the kitchen's old door profile, substitute a generic cabinet style, reverse raised versus recessed depth, or invent details absent from the correct master.
 
@@ -628,7 +628,7 @@ async function selectBestGeometryCandidate(input) {
   if (!input.candidates.length) return { selectedIndex: 0, scores: [], reason: "No candidate was available." };
   if (input.candidates.length === 1) return { selectedIndex: 0, scores: [], reason: "Only one candidate was returned." };
   try {
-    const judged = await callVisionJudge(`You are a strict cabinet manufacturing geometry inspector. Compare both candidate kitchens against the exact door and drawer masters and their edge blueprints. Ignore finish color. Score door profile fidelity from 0 to 50, drawer profile fidelity from 0 to 25, and preservation of the original kitchen layout and cabinet face positions from 0 to 25. Narrow rails and stiles, panel opening proportions, bevel count, reveal placement, inset versus overlay construction, and raised versus recessed depth are critical. Select the closest candidate, not the prettiest. Return JSON only in this exact shape: {"selectedIndex":0,"scores":[{"index":0,"door":0,"drawer":0,"layout":0,"total":0,"reason":""},{"index":1,"door":0,"drawer":0,"layout":0,"total":0,"reason":""}],"reason":""}.`, [
+    const judged = await callVisionJudge(`You are a strict cabinet manufacturing geometry inspector. Compare both candidate kitchens against the exact door and drawer masters and their edge blueprints. Ignore finish color. The catalog saved flat rail and stile width is ${Number(input.frameWidthInches || 0).toFixed(2)} inches and must remain the same physical width on every cabinet door. Score door profile fidelity from 0 to 50, drawer profile fidelity from 0 to 25, and preservation of the original kitchen layout and cabinet face positions from 0 to 25. Fixed rail and stile width, panel opening proportions, bevel count, reveal placement, inset versus overlay construction, and raised versus recessed depth are critical. Select the closest candidate, not the prettiest. Return JSON only in this exact shape: {"selectedIndex":0,"scores":[{"index":0,"door":0,"drawer":0,"layout":0,"total":0,"reason":""},{"index":1,"door":0,"drawer":0,"layout":0,"total":0,"reason":""}],"reason":""}.`, [
       { label: "Exact cabinet door master", dataUrl: input.doorReference },
       { label: "Cabinet door edge blueprint", dataUrl: input.doorBlueprint },
       { label: "Exact drawer front master", dataUrl: input.drawerReference },
@@ -639,19 +639,6 @@ async function selectBestGeometryCandidate(input) {
     return { ...judged, selectedIndex: Number(judged.selectedIndex) === 1 ? 1 : 0 };
   } catch (error) {
     return { selectedIndex: 0, scores: [], reason: "Automatic candidate comparison failed. Candidate 1 was used.", error: error?.message || String(error) };
-  }
-}
-
-async function validateFinishedGeometry(input) {
-  try {
-    return await callVisionJudge(`You are a strict cabinet geometry quality inspector. Compare the final finished kitchen against the selected geometry stage and the exact door and drawer masters. Determine whether the color pass preserved the selected door and drawer profile proportions, edges, panel openings, face count, and kitchen layout. Ignore color differences. Return JSON only in this exact shape: {"preserved":true,"score":0,"reason":""}. Score from 0 to 100.`, [
-      { label: "Exact cabinet door master", dataUrl: input.doorReference },
-      { label: "Exact drawer front master", dataUrl: input.drawerReference },
-      { label: "Selected geometry stage", dataUrl: input.geometryImage },
-      { label: "Final finished kitchen", dataUrl: input.finalImage }
-    ]);
-  } catch (error) {
-    return { preserved: null, score: 0, reason: "Automatic finish validation failed.", error: error?.message || String(error) };
   }
 }
 
@@ -746,6 +733,13 @@ export default async function handler(req, res) {
     const doorProfileMustAvoid = String(body.catalogDoorProfileMustAvoid || "").trim();
     const drawerProfileMustAvoid = String(body.catalogDrawerProfileMustAvoid || "").trim();
     const requireProfileDescriptions = body.requireProfileDescriptions === true;
+    const suppliedDoorMasterWidth = Number(body.catalogDoorMasterWidthInches || 18);
+    const suppliedDoorMasterHeight = Number(body.catalogDoorMasterHeightInches || 24);
+    const suppliedDoorFrameWidth = Number(body.catalogDoorFrameWidthInches || 0);
+    const doorMasterWidthInches = Number.isFinite(suppliedDoorMasterWidth) && suppliedDoorMasterWidth > 0 ? suppliedDoorMasterWidth : 18;
+    const doorMasterHeightInches = Number.isFinite(suppliedDoorMasterHeight) && suppliedDoorMasterHeight > 0 ? suppliedDoorMasterHeight : 24;
+    const doorFrameWidthInches = Number.isFinite(suppliedDoorFrameWidth) && suppliedDoorFrameWidth > 0 ? suppliedDoorFrameWidth : 0;
+    const requireFrameMeasurements = body.requireFrameMeasurements === true;
     const countertopReference = body.countertopCustomReference || null;
     const backsplashReference = body.backsplashCustomReference || null;
     const flooringReference = body.flooringCustomReference || null;
@@ -765,6 +759,9 @@ export default async function handler(req, res) {
     if (requireProfileDescriptions && (!doorProfileDescription || !drawerProfileDescription || !doorProfileMustAvoid || !drawerProfileMustAvoid || body.profileAnalysisStatus !== "ready")) {
       return res.status(400).json({ error: "This style needs current door and drawer geometry descriptions. Generate them in Catalog Manager, save the catalog, and reload the visualizer." });
     }
+    if (requireFrameMeasurements && doorConstructionType !== "slab" && (!doorFrameWidthInches || body.doorFrameMeasurementStatus !== "confirmed")) {
+      return res.status(400).json({ error: "This style needs a confirmed rail and stile width. Measure and confirm it in Catalog Manager, save the catalog, and reload the visualizer." });
+    }
     if (!mainReference) {
       return res.status(400).json({ error: "Catalog color swatch image was not sent. Select a catalog color swatch again and generate after the page finishes loading." });
     }
@@ -776,7 +773,12 @@ export default async function handler(req, res) {
     const imageModel = selectCatalogImageModel(body.imageModel);
     const outputSize = await selectOutputSize(body.image, imageModel);
     const activePromptVersion = CATALOG_PROMPT_VERSION;
-    const doorMasterMeasurements = await measureMasterGeometry(doorReference, 18, 24, "CABINET DOOR");
+    const doorMasterMeasurements = doorFrameWidthInches > 0
+      ? `CABINET DOOR master represents exactly ${doorMasterWidthInches.toFixed(2)} inches wide by ${doorMasterHeightInches.toFixed(2)} inches tall.
+Catalog saved flat rail and stile width: exactly ${doorFrameWidthInches.toFixed(2)} inches.
+That flat width is ${(doorFrameWidthInches / doorMasterWidthInches * 100).toFixed(2)} percent of the ${doorMasterWidthInches.toFixed(2)} inch master width.
+Keep the flat rails and stiles exactly ${doorFrameWidthInches.toFixed(2)} inches wide on every cabinet door. This is a fixed manufacturing dimension, not a scalable proportion. Only the center panel area may expand or contract. The bevel and recessed or raised transition are additional profile details and must not be counted as part of the flat rail and stile width.`
+      : await measureMasterGeometry(doorReference, doorMasterWidthInches, doorMasterHeightInches, "CABINET DOOR");
     const drawerMasterMeasurements = await measureMasterGeometry(drawerReference || doorReference, 18, 5, "DRAWER FRONT");
     const masterMeasurements = doorMasterMeasurements + "\n" + drawerMasterMeasurements;
     const doorBlueprint = await createGeometryBlueprint(doorReference, 768, 1024);
@@ -846,13 +848,12 @@ The transparent area of the mask identifies the only cabinet region that may cha
       promptVersion: activePromptVersion,
       prompt,
       generationMode: "two-candidate-geometry-selection-then-color",
-      requestCount: 4,
+      requestCount: 3,
       masterMeasurements,
       passes: [
         { stage: "door-drawer-geometry", prompt, candidateCount: 2 },
         { stage: "geometry-candidate-selection", model: GEOMETRY_JUDGE_MODEL },
-        { stage: "cabinet-finish", prompt: buildColorPassPrompt(body) },
-        { stage: "finish-geometry-validation", model: GEOMETRY_JUDGE_MODEL }
+        { stage: "cabinet-finish", prompt: buildColorPassPrompt(body) }
       ],
       attachmentStatus,
       attachments: attachedImages.map(function(image) {
@@ -887,8 +888,11 @@ The transparent area of the mask identifies the only cabinet region that may cha
         doorProfileMustAvoid,
         drawerProfileMustAvoid,
         promptMode: "two-candidate-geometry-selection-then-color",
-        requestCount: 4,
+        requestCount: 3,
         masterMeasurements,
+        doorMasterWidthInches,
+        doorMasterHeightInches,
+        doorFrameWidthInches,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
         baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
         countertop: "disabled in masked test",
@@ -924,7 +928,8 @@ The transparent area of the mask identifies the only cabinet region that may cha
       doorReference,
       drawerReference: drawerReference || doorReference,
       doorBlueprint,
-      drawerBlueprint
+      drawerBlueprint,
+      frameWidthInches: doorFrameWidthInches
     });
     const selectedGeometryIndex = Math.min(geometryCandidates.length - 1, Math.max(0, Number(geometrySelection.selectedIndex) || 0));
     const geometryImage = geometryCandidates[selectedGeometryIndex];
@@ -968,12 +973,6 @@ The transparent area of the mask identifies the only cabinet region that may cha
 
     const generatedImage = await resultImageDataUrl(colorResult);
     if (!generatedImage) return res.status(500).json({ error: "The cabinet finish pass returned no image." });
-    const finishGeometryValidation = await validateFinishedGeometry({
-      doorReference,
-      drawerReference: drawerReference || doorReference,
-      geometryImage,
-      finalImage: generatedImage
-    });
 
     const updatedUsed = await redisIncr(usageKey);
     if (updatedUsed >= safeMonthlyLimit) await sendLimitEmail({ companyKey: safeCompanyKey, companyName: safeCompanyName, used: updatedUsed, limit: safeMonthlyLimit, customerName: body.customerName, customerEmail: body.customerEmail, customerPhone: body.customerPhone });
@@ -988,8 +987,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
         geometryCandidates,
         selectedGeometryIndex,
         geometrySelection,
-        geometryImage,
-        finishGeometryValidation
+        geometryImage
       }
     }).catch(function(error) {
       console.warn("Generation inspector result logging skipped.", error?.message || error);
