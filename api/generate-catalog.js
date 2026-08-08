@@ -17,8 +17,9 @@ const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
 const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
-const CATALOG_IMAGE_QUALITY = "medium";
-const CATALOG_PROMPT_VERSION = "v15-baseline-plus-master-scale";
+const GEOMETRY_IMAGE_QUALITY = "high";
+const FINISH_IMAGE_QUALITY = "medium";
+const CATALOG_PROMPT_VERSION = "v16-high-quality-geometry";
 
 function selectCatalogImageModel(value) {
   return String(value || "").trim().toLowerCase() === TEST_CATALOG_IMAGE_MODEL
@@ -708,7 +709,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
     editForm.append("model", imageModel);
     editForm.append("prompt", prompt);
     editForm.append("size", outputSize);
-    editForm.append("quality", CATALOG_IMAGE_QUALITY);
+    editForm.append("quality", GEOMETRY_IMAGE_QUALITY);
     attachmentStatus.kitchen = appendImage(editForm, body.image, "kitchen");
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
     attachmentStatus.cabinetMask = appendMask(editForm, body.cabinetMask);
@@ -730,7 +731,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
     const inspectorPayload = {
       model: imageModel,
       size: outputSize,
-      quality: CATALOG_IMAGE_QUALITY,
+      quality: `geometry ${GEOMETRY_IMAGE_QUALITY}, finish ${FINISH_IMAGE_QUALITY}`,
       promptVersion: activePromptVersion,
       prompt,
       generationMode: "two-pass-geometry-then-color",
@@ -754,7 +755,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
       status: "sent",
       model: imageModel,
       promptVersion: activePromptVersion,
-      quality: CATALOG_IMAGE_QUALITY,
+      quality: `geometry ${GEOMETRY_IMAGE_QUALITY}, finish ${FINISH_IMAGE_QUALITY}`,
       attachmentStatus,
       summary: {
         companyKey: safeCompanyKey,
@@ -806,7 +807,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
     colorForm.append("model", imageModel);
     colorForm.append("prompt", colorPrompt);
     colorForm.append("size", outputSize);
-    colorForm.append("quality", CATALOG_IMAGE_QUALITY);
+    colorForm.append("quality", FINISH_IMAGE_QUALITY);
     if (!appendImage(colorForm, geometryImage, "geometry-corrected-kitchen")) {
       return res.status(500).json({ error: "The corrected kitchen could not be prepared for the finish pass." });
     }
