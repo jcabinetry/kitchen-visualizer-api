@@ -15,7 +15,7 @@ import sharp from "sharp";
 
 const DEFAULT_MONTHLY_LIMIT = 200;
 const ALERT_EMAIL_FORM = "https://formspree.io/f/xaqzgvyk";
-const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2-2026-04-21";
+const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const CATALOG_IMAGE_QUALITY = "medium";
 const CATALOG_PROMPT_VERSION = "v15-baseline-plus-master-scale";
