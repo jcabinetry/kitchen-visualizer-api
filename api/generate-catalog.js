@@ -19,7 +19,7 @@ const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const GEOMETRY_IMAGE_QUALITY = "high";
 const FINISH_IMAGE_QUALITY = "medium";
-const CATALOG_PROMPT_VERSION = "v18-catalog-fixed-frame-width";
+const CATALOG_PROMPT_VERSION = "v19-complete-style-specific-frame-width";
 const GEOMETRY_JUDGE_MODEL = process.env.CABINET_GEOMETRY_JUDGE_MODEL || "gpt-4.1-mini";
 
 function selectCatalogImageModel(value) {
@@ -371,7 +371,7 @@ ATTACHMENT ORDER
 5. DRAWER-FRONT EDGE BLUEPRINT: high contrast geometry extracted from image 3. Use only to see subtle profile boundaries.
 
 CHANGE ONLY CABINET DOORS AND DRAWER FRONTS
-Replace every existing cabinet door with the exact visible design from image 2. Replace every drawer front with the exact visible design from image 3. Use images 4 and 5 to locate every subtle rail, stile, inset, bevel, reveal, and panel boundary that may be hard to see in the shaded masters. The masters control the real appearance. The blueprints control edge placement only and must never be interpreted as color, finish, thickness, or a new design. Copy the panel outline, outer contour, rail and stile proportions, profile steps, bevels, reveals, molding, edge treatment, corners, and depth direction. Fit the same designs naturally to narrow, wide, short, tall, double, upper, base, island, and peninsula faces without simplifying them.
+Replace every existing cabinet door with the exact visible design from image 2. Replace every drawer front with the exact visible design from image 3. Use images 4 and 5 to locate every subtle rail, stile, inset, bevel, reveal, and panel boundary that may be hard to see in the shaded masters. The masters control the profile sequence, panel shape, corner treatment, and depth direction. The saved complete rail and stile width below overrides the apparent border proportion in the AI door master whenever they conflict. Compress or expand the complete door profile assembly to the saved physical width while keeping its internal bevel, reveal, and molding sequence recognizable. The blueprints control edge order only and must never override the saved physical width or be interpreted as color, finish, thickness, or a new design. Fit the same designs naturally to narrow, wide, short, tall, double, upper, base, island, and peninsula faces without simplifying them.
 
 Door construction classification: ${details.doorConstructionType}.
 Door geometry specification: ${doorDescription}
@@ -383,7 +383,7 @@ Drawer front must avoid: ${drawerMustAvoid}
 
 MASTER SCALE
 ${masterMeasurements}
-The saved flat rail and stile width is a fixed physical dimension for this catalog style. Keep it constant on every cabinet door regardless of door width or height. Never enlarge it proportionally on wide or tall doors. Never shrink it proportionally on narrow or short doors. Only the center panel area changes size. Keep bevels, reveals, molding, and profile transitions separate from the flat rail and stile dimension.
+The saved complete rail and stile assembly width is a fixed physical dimension for this catalog style. It runs from the outside door edge all the way to the center panel opening and includes the flat face, edge treatment, bevels, reveals, molding, and the full recessed or raised transition. Keep this complete assembly width constant on every cabinet door regardless of door width or height. Never enlarge it proportionally on wide or tall doors. Never shrink it proportionally on narrow or short doors. Only the center panel area changes size.
 
 The door and drawer masters are separate exact templates. Never stretch the door master into drawer areas, blend the two designs, keep the kitchen's old door profile, substitute a generic cabinet style, reverse raised versus recessed depth, or invent details absent from the correct master.
 
@@ -628,7 +628,7 @@ async function selectBestGeometryCandidate(input) {
   if (!input.candidates.length) return { selectedIndex: 0, scores: [], reason: "No candidate was available." };
   if (input.candidates.length === 1) return { selectedIndex: 0, scores: [], reason: "Only one candidate was returned." };
   try {
-    const judged = await callVisionJudge(`You are a strict cabinet manufacturing geometry inspector. Compare both candidate kitchens against the exact door and drawer masters and their edge blueprints. Ignore finish color. The catalog saved flat rail and stile width is ${Number(input.frameWidthInches || 0).toFixed(2)} inches and must remain the same physical width on every cabinet door. Score door profile fidelity from 0 to 50, drawer profile fidelity from 0 to 25, and preservation of the original kitchen layout and cabinet face positions from 0 to 25. Fixed rail and stile width, panel opening proportions, bevel count, reveal placement, inset versus overlay construction, and raised versus recessed depth are critical. Select the closest candidate, not the prettiest. Return JSON only in this exact shape: {"selectedIndex":0,"scores":[{"index":0,"door":0,"drawer":0,"layout":0,"total":0,"reason":""},{"index":1,"door":0,"drawer":0,"layout":0,"total":0,"reason":""}],"reason":""}.`, [
+    const judged = await callVisionJudge(`You are a strict cabinet manufacturing geometry inspector. Compare both candidate kitchens against the exact door and drawer masters and their edge blueprints. Ignore finish color. The catalog saved complete rail and stile assembly width is ${Number(input.frameWidthInches || 0).toFixed(2)} inches from the outside door edge to the center panel opening, including every bevel, reveal, molding, and profile transition. It must remain the same physical width on every cabinet door. Score door profile fidelity from 0 to 50, drawer profile fidelity from 0 to 25, and preservation of the original kitchen layout and cabinet face positions from 0 to 25. Fixed complete rail and stile width, panel opening proportions, bevel count, reveal placement, inset versus overlay construction, and raised versus recessed depth are critical. Select the closest candidate, not the prettiest. Return JSON only in this exact shape: {"selectedIndex":0,"scores":[{"index":0,"door":0,"drawer":0,"layout":0,"total":0,"reason":""},{"index":1,"door":0,"drawer":0,"layout":0,"total":0,"reason":""}],"reason":""}.`, [
       { label: "Exact cabinet door master", dataUrl: input.doorReference },
       { label: "Cabinet door edge blueprint", dataUrl: input.doorBlueprint },
       { label: "Exact drawer front master", dataUrl: input.drawerReference },
@@ -775,9 +775,9 @@ export default async function handler(req, res) {
     const activePromptVersion = CATALOG_PROMPT_VERSION;
     const doorMasterMeasurements = doorFrameWidthInches > 0
       ? `CABINET DOOR master represents exactly ${doorMasterWidthInches.toFixed(2)} inches wide by ${doorMasterHeightInches.toFixed(2)} inches tall.
-Catalog saved flat rail and stile width: exactly ${doorFrameWidthInches.toFixed(2)} inches.
-That flat width is ${(doorFrameWidthInches / doorMasterWidthInches * 100).toFixed(2)} percent of the ${doorMasterWidthInches.toFixed(2)} inch master width.
-Keep the flat rails and stiles exactly ${doorFrameWidthInches.toFixed(2)} inches wide on every cabinet door. This is a fixed manufacturing dimension, not a scalable proportion. Only the center panel area may expand or contract. The bevel and recessed or raised transition are additional profile details and must not be counted as part of the flat rail and stile width.`
+Catalog saved complete rail and stile assembly width: exactly ${doorFrameWidthInches.toFixed(2)} inches from the outside door edge to the center panel opening.
+That complete width is ${(doorFrameWidthInches / doorMasterWidthInches * 100).toFixed(2)} percent of the ${doorMasterWidthInches.toFixed(2)} inch master width.
+Keep the entire rail and stile assembly exactly ${doorFrameWidthInches.toFixed(2)} inches wide on every cabinet door. This includes the flat face, outer edge treatment, every bevel, reveal, molding detail, and the complete recessed or raised transition before the center panel begins. This is a fixed manufacturing dimension, not a scalable proportion. Only the center panel area may expand or contract.`
       : await measureMasterGeometry(doorReference, doorMasterWidthInches, doorMasterHeightInches, "CABINET DOOR");
     const drawerMasterMeasurements = await measureMasterGeometry(drawerReference || doorReference, 18, 5, "DRAWER FRONT");
     const masterMeasurements = doorMasterMeasurements + "\n" + drawerMasterMeasurements;

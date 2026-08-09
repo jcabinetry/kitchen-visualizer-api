@@ -2,7 +2,7 @@ import { setCorsHeaders } from "./_lib/cors.js";
 
 export const config = { api: { bodyParser: { sizeLimit: "20mb" } } };
 
-const ANALYSIS_VERSION = "profile-v2-fixed-frame-scale";
+const ANALYSIS_VERSION = "profile-v3-complete-frame-scale";
 
 function admin(req, res) {
   const expected = process.env.ADMIN_API_TOKEN || process.env.ADMIN_TOKEN || "";
@@ -54,11 +54,11 @@ export default async function handler(req, res) {
 
 Image order: 1 original CABINET DOOR source; 2 approved AI CABINET DOOR master; 3 original DRAWER-FRONT source; 4 approved AI DRAWER-FRONT master.
 Administrator classifications: door=${String(body.doorConstructionType || "unspecified")}; drawer=${String(body.drawerConstructionType || "unspecified")}.
-Catalog door scale: master width=${Number(body.doorMasterWidthInches || 18)} inches. An existing administrator value of ${Number(body.doorFrameWidthInches || 0)} inches may be present, but independently calculate a new suggestion from the approved master. Keep bevels and panel transitions separate from the flat width.
+Catalog door scale: the complete original catalog door shown in image 1 represents ${Number(body.doorMasterWidthInches || 18)} inches of physical width. An existing administrator value of ${Number(body.doorFrameWidthInches || 0)} inches may be present, but independently calculate a new suggestion from the original catalog door. Use image 2 only as a secondary geometry reference because AI generation may have changed its proportions.
 
 For each face, describe only reproducible geometry: outer contour, number of pieces, rail/stile proportions, center-panel shape and depth direction, inner and outer profile sequence, bevels, steps, reveals, molding, edge treatment, corners, and important proportions. Explicitly distinguish raised, recessed/inset, and slab depth. Write a separate must-avoid statement listing generic substitutions and details that would change this exact style. Never copy door geometry into the drawer front or vice versa.
 
-For the cabinet door only, calculate the flat rail and stile face width from the approved AI door master. The full visible door width represents exactly ${Number(body.doorMasterWidthInches || 18)} inches. Measure the flat face band from the actual outside door boundary to the point where the flat rail or stile face ends and the decorative bevel, molding, recessed transition, or raised transition begins. Exclude the outer edge treatment and exclude the inner bevel or panel transition from the flat width. Rails and stiles are the same physical width for this style. Do not measure all the way to the center panel opening. Return the calculated physical width in inches and a short visual explanation.
+For the cabinet door only, calculate the complete finished rail and stile assembly width from the original catalog door in image 1. Measure from the actual outside door boundary all the way to the center panel opening. Include the flat face, outer edge treatment, bevels, molding, reveals, and the full recessed or raised transition. The measurement ends exactly where the center panel begins. Rails and stiles use this same fixed physical width for this style. Return the calculated physical width in inches and a short visual explanation.
 
 Return JSON only: {"door":{"description":"...","mustAvoid":"...","frameWidthInches":0,"frameMeasurementExplanation":"..."},"drawer":{"description":"...","mustAvoid":"..."}}`;
     const content = [{ type: "input_text", text: prompt }];
