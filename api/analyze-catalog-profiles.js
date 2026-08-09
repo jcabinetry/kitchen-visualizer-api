@@ -2,7 +2,7 @@ import { setCorsHeaders } from "./_lib/cors.js";
 
 export const config = { api: { bodyParser: { sizeLimit: "20mb" } } };
 
-const ANALYSIS_VERSION = "profile-v1";
+const ANALYSIS_VERSION = "profile-v3-complete-frame-scale";
 
 function admin(req, res) {
   const expected = process.env.ADMIN_API_TOKEN || process.env.ADMIN_TOKEN || "";
@@ -25,8 +25,14 @@ function parseJson(value) {
   return JSON.parse(match[0]);
 }
 
-function cleanProfile(profile) {
-  return { description: String(profile?.description || "").trim(), mustAvoid: String(profile?.mustAvoid || "").trim() };
+function cleanProfile(profile, includeFrameWidth = false) {
+  const cleaned = { description: String(profile?.description || "").trim(), mustAvoid: String(profile?.mustAvoid || "").trim() };
+  if (includeFrameWidth) {
+    const width = Number(profile?.frameWidthInches || 0);
+    cleaned.frameWidthInches = Number.isFinite(width) && width > 0 ? Math.round(width * 20) / 20 : 0;
+    cleaned.frameMeasurementExplanation = String(profile?.frameMeasurementExplanation || "").trim();
+  }
+  return cleaned;
 }
 
 function responseText(result) {
@@ -48,10 +54,13 @@ export default async function handler(req, res) {
 
 Image order: 1 original CABINET DOOR source; 2 approved AI CABINET DOOR master; 3 original DRAWER-FRONT source; 4 approved AI DRAWER-FRONT master.
 Administrator classifications: door=${String(body.doorConstructionType || "unspecified")}; drawer=${String(body.drawerConstructionType || "unspecified")}.
+Catalog door scale: the complete original catalog door shown in image 1 represents ${Number(body.doorMasterWidthInches || 18)} inches of physical width. An existing administrator value of ${Number(body.doorFrameWidthInches || 0)} inches may be present, but independently calculate a new suggestion from the original catalog door. Use image 2 only as a secondary geometry reference because AI generation may have changed its proportions.
 
 For each face, describe only reproducible geometry: outer contour, number of pieces, rail/stile proportions, center-panel shape and depth direction, inner and outer profile sequence, bevels, steps, reveals, molding, edge treatment, corners, and important proportions. Explicitly distinguish raised, recessed/inset, and slab depth. Write a separate must-avoid statement listing generic substitutions and details that would change this exact style. Never copy door geometry into the drawer front or vice versa.
 
-Return JSON only: {"door":{"description":"...","mustAvoid":"..."},"drawer":{"description":"...","mustAvoid":"..."}}`;
+For the cabinet door only, calculate the complete finished rail and stile assembly width from the original catalog door in image 1. Measure from the actual outside door boundary all the way to the center panel opening. Include the flat face, outer edge treatment, bevels, molding, reveals, and the full recessed or raised transition. The measurement ends exactly where the center panel begins. Rails and stiles use this same fixed physical width for this style. Return the calculated physical width in inches and a short visual explanation.
+
+Return JSON only: {"door":{"description":"...","mustAvoid":"...","frameWidthInches":0,"frameMeasurementExplanation":"..."},"drawer":{"description":"...","mustAvoid":"..."}}`;
     const content = [{ type: "input_text", text: prompt }];
     images.forEach(function(image) { content.push({ type: "input_image", image_url: image, detail: "high" }); });
     const response = await fetch("https://api.openai.com/v1/responses", {
@@ -62,7 +71,7 @@ Return JSON only: {"door":{"description":"...","mustAvoid":"..."},"drawer":{"des
     const result = await response.json().catch(function() { return {}; });
     if (!response.ok) return res.status(response.status).json({ error: result?.error?.message || "AI profile analysis failed." });
     const parsed = parseJson(responseText(result));
-    const door = cleanProfile(parsed.door);
+    const door = cleanProfile(parsed.door, true);
     const drawer = cleanProfile(parsed.drawer);
     if (!door.description || !drawer.description || !door.mustAvoid || !drawer.mustAvoid) return res.status(502).json({ error: "The AI profile helper returned incomplete details. Please regenerate." });
     return res.status(200).json({ door, drawer, analysisVersion: ANALYSIS_VERSION, analyzedAt: new Date().toISOString() });

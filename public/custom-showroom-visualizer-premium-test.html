@@ -931,6 +931,9 @@ document.documentElement.style.setProperty("--kv-card", kvCard);
     logo.style.display = "block";
   }
   let uploadedImageData = "";
+  let cabinetMaskData = "";
+  let cabinetAnalysisPromise = null;
+  let cabinetAnalysisSequence = 0;
   let uploadedMainCustomColorData = "";
   let uploadedIslandCustomColorData = "";
   let extractedMainCustomHex = "";
@@ -1863,6 +1866,9 @@ It should not look like a different kitchen.
       status.innerText = "Please upload a JPG, PNG, or WEBP kitchen photo.";
       photoName.innerText = "";
       uploadedImageData = "";
+      cabinetMaskData = "";
+      cabinetAnalysisPromise = null;
+      cabinetAnalysisSequence += 1;
       return;
     }
     status.innerText = "Preparing kitchen photo...";
@@ -1870,7 +1876,28 @@ It should not look like a different kitchen.
     try {
       const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
       uploadedImageData = await resizeImage(file, cleanPromptTest ? 2048 : 1400, cleanPromptTest ? 0.92 : 0.82);
-      status.innerText = "Kitchen photo ready.";
+      cabinetMaskData = "";
+      const analysisSequence = ++cabinetAnalysisSequence;
+      status.innerText = "Kitchen photo ready. Finding cabinets now...";
+      cabinetAnalysisPromise = fetch("/api/analyze-kitchen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: uploadedImageData })
+      }).then(async function(response) {
+        const data = await response.json().catch(function() { return {}; });
+        if (!response.ok || !data.mask) throw new Error(data.error || "Kitchen analysis failed.");
+        if (analysisSequence === cabinetAnalysisSequence) {
+          cabinetMaskData = data.mask;
+          status.innerText = "Kitchen photo and cabinet map ready.";
+        }
+        return data;
+      }).catch(function(error) {
+        if (analysisSequence === cabinetAnalysisSequence) {
+          cabinetMaskData = "";
+          status.innerText = error.message || "Kitchen analysis failed. Upload the photo again.";
+        }
+        return null;
+      });
     } catch (err) { status.innerText = "Could not read kitchen photo."; }
   }
 
@@ -2358,6 +2385,11 @@ It should not look like a different kitchen.
   }
 
   button.addEventListener("click", async function() {    if (!uploadedImageData) { status.innerText = "Upload a kitchen photo first."; return; }
+    if (!cabinetMaskData && cabinetAnalysisPromise) {
+      status.innerText = "Finishing the cabinet map...";
+      await cabinetAnalysisPromise;
+    }
+    if (!cabinetMaskData) { status.innerText = "The cabinet map is not ready. Upload the kitchen photo again."; return; }
     if (colorInput.value === "custom main color reference" && !uploadedMainCustomColorData) { status.innerText = "Upload a main cabinet finish reference image."; return; }
     if (islandInput.value === "custom base cabinet color reference" && !uploadedIslandCustomColorData) { status.innerText = "Upload an base cabinet finish reference image."; return; }
     if (countertopInput.value === "custom countertop reference" && !uploadedCountertopCustomData) { status.innerText = "Upload a countertop reference image."; return; }
@@ -2375,6 +2407,10 @@ It should not look like a different kitchen.
     const catalogDoorProfileMustAvoid = activeProfileField("doorProfileMustAvoid");
     const catalogDrawerProfileMustAvoid = activeProfileField("drawerProfileMustAvoid");
     const profileAnalysisStatus = activeProfileField("profileAnalysisStatus");
+    const catalogDoorMasterWidthInches = activeProfileField("doorMasterWidthInches");
+    const catalogDoorMasterHeightInches = activeProfileField("doorMasterHeightInches");
+    const catalogDoorFrameWidthInches = activeProfileField("doorFrameWidthInches");
+    const doorFrameMeasurementStatus = activeProfileField("doorFrameMeasurementStatus");
     if (!catalogDoorImage) {
       status.innerText = "This catalog style is missing its AI door reference. Generate and save the AI door reference in Catalog Manager, then reload this page.";
       return;
@@ -2383,12 +2419,15 @@ It should not look like a different kitchen.
       status.innerText = "This catalog style is missing its separate AI drawer reference. Upload the matching drawer front and generate its AI reference in Catalog Manager, then reload this page.";
       return;
     }
-    const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
-    if (!cleanPromptTest && (!catalogDoorConstructionType || !catalogDrawerConstructionType)) {
+    if (!catalogDoorConstructionType || !catalogDrawerConstructionType) {
       status.innerText = "This catalog style is missing its door or drawer construction type. Edit it in Catalog Manager, choose Inset, Raised panel, or Slab for both, save, then reload this page.";
       return;
     }
-    if (!cleanPromptTest && (!catalogDoorProfileDescription || !catalogDrawerProfileDescription || !catalogDoorProfileMustAvoid || !catalogDrawerProfileMustAvoid || profileAnalysisStatus !== "ready")) {
+    if (catalogDoorConstructionType !== "slab" && (!catalogDoorFrameWidthInches || doorFrameMeasurementStatus !== "confirmed")) {
+      status.innerText = "This catalog style needs a confirmed rail and stile width. In Catalog Manager, measure the rail and stile, review the suggested number, save the door, and reload this page.";
+      return;
+    }
+    if (!catalogDoorProfileDescription || !catalogDrawerProfileDescription || !catalogDoorProfileMustAvoid || !catalogDrawerProfileMustAvoid || profileAnalysisStatus !== "ready") {
       status.innerText = "This catalog style needs current door and drawer descriptions. In Catalog Manager, click Generate Door & Drawer Descriptions, save, then reload this page.";
       return;
     }
@@ -2431,6 +2470,7 @@ It should not look like a different kitchen.
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: uploadedImageData,
+          cabinetMask: cabinetMaskData,
           imageModel: new URLSearchParams(window.location.search).get("imageModel") === "gpt-image-1" ? "gpt-image-1" : "gpt-image-2",
           prompt: prompt,
           companyKey: KV_COMPANY.companyKey,
@@ -2452,10 +2492,15 @@ It should not look like a different kitchen.
           catalogDrawerProfileDescription: catalogDrawerProfileDescription,
           catalogDoorProfileMustAvoid: catalogDoorProfileMustAvoid,
           catalogDrawerProfileMustAvoid: catalogDrawerProfileMustAvoid,
+          catalogDoorMasterWidthInches: catalogDoorMasterWidthInches || 18,
+          catalogDoorMasterHeightInches: catalogDoorMasterHeightInches || 24,
+          catalogDoorFrameWidthInches: catalogDoorFrameWidthInches || null,
+          doorFrameMeasurementStatus: doorFrameMeasurementStatus,
           profileAnalysisStatus: profileAnalysisStatus,
-          requireConstructionTypes: !cleanPromptTest,
+          requireConstructionTypes: true,
           requireDrawerReference: true,
-          requireProfileDescriptions: !cleanPromptTest,
+          requireProfileDescriptions: true,
+          requireFrameMeasurements: true,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,
           upperSwatchName: upperFinishName || colorInput.value || null,
