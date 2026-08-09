@@ -19,8 +19,7 @@ const DEFAULT_CATALOG_IMAGE_MODEL = "gpt-image-2";
 const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const GEOMETRY_IMAGE_QUALITY = "high";
 const FINISH_IMAGE_QUALITY = "medium";
-const CATALOG_PROMPT_VERSION = "v19-complete-style-specific-frame-width";
-const GEOMETRY_JUDGE_MODEL = process.env.CABINET_GEOMETRY_JUDGE_MODEL || "gpt-4.1-mini";
+const CATALOG_PROMPT_VERSION = "v20-four-sided-frame-consistency-correction";
 
 function selectCatalogImageModel(value) {
   return String(value || "").trim().toLowerCase() === TEST_CATALOG_IMAGE_MODEL
@@ -383,7 +382,7 @@ Drawer front must avoid: ${drawerMustAvoid}
 
 MASTER SCALE
 ${masterMeasurements}
-The saved complete rail and stile assembly width is a fixed physical dimension for this catalog style. It runs from the outside door edge all the way to the center panel opening and includes the flat face, edge treatment, bevels, reveals, molding, and the full recessed or raised transition. Keep this complete assembly width constant on every cabinet door regardless of door width or height. Never enlarge it proportionally on wide or tall doors. Never shrink it proportionally on narrow or short doors. Only the center panel area changes size.
+The saved complete rail and stile assembly width is a fixed physical dimension for this catalog style. It runs from the outside door edge all the way to the center panel opening and includes the flat face, edge treatment, bevels, reveals, molding, and the full recessed or raised transition. On every individual door, the left stile, right stile, top rail, and bottom rail must each have this same complete physical width. Never make the vertical stiles wider than the horizontal rails. Keep this four-sided assembly width constant on every cabinet door regardless of door width or height. Never enlarge it proportionally on wide or tall doors. Never shrink it proportionally on narrow or short doors. Only the center panel area changes size.
 
 The door and drawer masters are separate exact templates. Never stretch the door master into drawer areas, blend the two designs, keep the kitchen's old door profile, substitute a generic cabinet style, reverse raised versus recessed depth, or invent details absent from the correct master.
 
@@ -391,6 +390,33 @@ LOCK EVERYTHING ELSE
 Keep every existing cabinet color and material unchanged during this stage. Keep face frames, cabinet boxes, exposed sides, end panels, fillers, trim, toe kicks, hardware, countertops, backsplash, flooring, appliances, walls, windows, decorations, lighting, camera angle, perspective, and room dimensions unchanged. Do not recolor cabinets and do not change any non-cabinet surface.
 
 Return one photorealistic image of the same kitchen with only the cabinet-door and drawer-front geometry replaced. Exact catalog geometry is the primary success criterion.`;
+}
+
+function buildGeometryConsistencyPrompt(body, masterMeasurements) {
+  const details = selectedDetails(body);
+  return `Correct rail and stile scale consistency in a preliminary cabinet-refacing image.
+
+ATTACHMENT ORDER
+1. PRELIMINARY GEOMETRY KITCHEN: edit this image without redesigning it.
+2. APPROVED AI CABINET DOOR MASTER (${details.doorName}): controls profile shape and sequence, but not an oversized apparent border proportion.
+3. APPROVED AI DRAWER-FRONT MASTER (${details.drawerName}): preserve the drawer fronts already created.
+4. CABINET DOOR EDGE BLUEPRINT: controls the order of door profile edges only.
+5. DRAWER-FRONT EDGE BLUEPRINT: preserve drawer geometry.
+
+EXACT PHYSICAL SCALE
+${masterMeasurements}
+
+Normalize every cabinet door so the complete rail and stile assembly has the same fixed physical width. The complete assembly runs from the outside door edge to the center panel opening and includes every flat section, bevel, reveal, molding detail, and raised or recessed transition. Do not scale this assembly proportionally with door width or height. A taller or wider door must have a larger center panel, not a wider rail or stile.
+
+WITHIN EACH INDIVIDUAL DOOR
+The left stile, right stile, top rail, and bottom rail must all have the same complete physical width. The center panel must be centered within four equal-width sides. Never make the side stiles thicker than the top or bottom rail. If the bottom rail already matches the saved physical width, preserve it and reduce the top rail and both side stiles to match it. Do not enlarge a correct narrow rail merely to match incorrect wide stiles.
+
+Compare doors that lie on the same cabinet plane and at similar depth. Their complete rails and stiles must have the same apparent thickness after perspective is considered. Preserve any door whose scale is already correct and use it as an in-image calibration reference. Correct doors with enlarged rails or stiles to match that physical scale. Across different walls or depths, preserve normal perspective while keeping the physical dimension consistent.
+
+LOCKED ELEMENTS
+Do not change drawer fronts, door count, drawer count, cabinet openings, face positions, cabinet boxes, hardware, colors, materials, lighting, shadows, countertops, backsplash, flooring, appliances, walls, windows, decorations, camera angle, perspective, or room layout. Do not move, add, remove, or resize cabinets. Change only incorrect cabinet-door rail and stile scale and the resulting center-panel opening.
+
+Return one corrected photorealistic image.`;
 }
 
 function buildFinishSurfacePassPrompt(body, hasBaseReference, hasCountertopReference, hasBacksplashReference, hasFlooringReference) {
@@ -591,57 +617,6 @@ async function createGeometryBlueprint(dataUrl, targetWidth, targetHeight) {
   } catch (_error) { return ""; }
 }
 
-function responseOutputText(result) {
-  if (result && typeof result.output_text === "string") return result.output_text;
-  const parts = [];
-  for (const item of result?.output || []) for (const content of item?.content || []) {
-    if (content?.type === "output_text" && typeof content.text === "string") parts.push(content.text);
-  }
-  return parts.join("\n");
-}
-
-function parseJsonObject(text) {
-  const cleaned = String(text || "").replace(/```json/gi, "").replace(/```/g, "").trim();
-  const start = cleaned.indexOf("{"), end = cleaned.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error("Judge returned no JSON object.");
-  return JSON.parse(cleaned.slice(start, end + 1));
-}
-
-async function callVisionJudge(prompt, labeledImages) {
-  const content = [{ type: "input_text", text: prompt }];
-  for (const image of labeledImages) {
-    if (!stripDataUrl(image.dataUrl)) continue;
-    content.push({ type: "input_text", text: image.label });
-    content.push({ type: "input_image", image_url: image.dataUrl, detail: "high" });
-  }
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: GEOMETRY_JUDGE_MODEL, input: [{ role: "user", content }], max_output_tokens: 900 })
-  });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result?.error?.message || "Geometry judge request failed.");
-  return parseJsonObject(responseOutputText(result));
-}
-
-async function selectBestGeometryCandidate(input) {
-  if (!input.candidates.length) return { selectedIndex: 0, scores: [], reason: "No candidate was available." };
-  if (input.candidates.length === 1) return { selectedIndex: 0, scores: [], reason: "Only one candidate was returned." };
-  try {
-    const judged = await callVisionJudge(`You are a strict cabinet manufacturing geometry inspector. Compare both candidate kitchens against the exact door and drawer masters and their edge blueprints. Ignore finish color. The catalog saved complete rail and stile assembly width is ${Number(input.frameWidthInches || 0).toFixed(2)} inches from the outside door edge to the center panel opening, including every bevel, reveal, molding, and profile transition. It must remain the same physical width on every cabinet door. Score door profile fidelity from 0 to 50, drawer profile fidelity from 0 to 25, and preservation of the original kitchen layout and cabinet face positions from 0 to 25. Fixed complete rail and stile width, panel opening proportions, bevel count, reveal placement, inset versus overlay construction, and raised versus recessed depth are critical. Select the closest candidate, not the prettiest. Return JSON only in this exact shape: {"selectedIndex":0,"scores":[{"index":0,"door":0,"drawer":0,"layout":0,"total":0,"reason":""},{"index":1,"door":0,"drawer":0,"layout":0,"total":0,"reason":""}],"reason":""}.`, [
-      { label: "Exact cabinet door master", dataUrl: input.doorReference },
-      { label: "Cabinet door edge blueprint", dataUrl: input.doorBlueprint },
-      { label: "Exact drawer front master", dataUrl: input.drawerReference },
-      { label: "Drawer front edge blueprint", dataUrl: input.drawerBlueprint },
-      { label: "Candidate kitchen 1", dataUrl: input.candidates[0] },
-      { label: "Candidate kitchen 2", dataUrl: input.candidates[1] }
-    ]);
-    return { ...judged, selectedIndex: Number(judged.selectedIndex) === 1 ? 1 : 0 };
-  } catch (error) {
-    return { selectedIndex: 0, scores: [], reason: "Automatic candidate comparison failed. Candidate 1 was used.", error: error?.message || String(error) };
-  }
-}
-
 function appendImage(form, dataUrl, fallbackName) {
   const base64 = stripDataUrl(dataUrl);
   if (!base64) return false;
@@ -777,7 +752,7 @@ export default async function handler(req, res) {
       ? `CABINET DOOR master represents exactly ${doorMasterWidthInches.toFixed(2)} inches wide by ${doorMasterHeightInches.toFixed(2)} inches tall.
 Catalog saved complete rail and stile assembly width: exactly ${doorFrameWidthInches.toFixed(2)} inches from the outside door edge to the center panel opening.
 That complete width is ${(doorFrameWidthInches / doorMasterWidthInches * 100).toFixed(2)} percent of the ${doorMasterWidthInches.toFixed(2)} inch master width.
-Keep the entire rail and stile assembly exactly ${doorFrameWidthInches.toFixed(2)} inches wide on every cabinet door. This includes the flat face, outer edge treatment, every bevel, reveal, molding detail, and the complete recessed or raised transition before the center panel begins. This is a fixed manufacturing dimension, not a scalable proportion. Only the center panel area may expand or contract.`
+Keep the entire rail and stile assembly exactly ${doorFrameWidthInches.toFixed(2)} inches wide on every cabinet door. This includes the flat face, outer edge treatment, every bevel, reveal, molding detail, and the complete recessed or raised transition before the center panel begins. On each individual door, the left stile, right stile, top rail, and bottom rail must all be exactly ${doorFrameWidthInches.toFixed(2)} inches wide. Never make the vertical stiles wider than the horizontal rails. This is a fixed manufacturing dimension, not a scalable proportion. Only the center panel area may expand or contract.`
       : await measureMasterGeometry(doorReference, doorMasterWidthInches, doorMasterHeightInches, "CABINET DOOR");
     const drawerMasterMeasurements = await measureMasterGeometry(drawerReference || doorReference, 18, 5, "DRAWER FRONT");
     const masterMeasurements = doorMasterMeasurements + "\n" + drawerMasterMeasurements;
@@ -817,7 +792,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
     editForm.append("prompt", prompt);
     editForm.append("size", outputSize);
     editForm.append("quality", GEOMETRY_IMAGE_QUALITY);
-    editForm.append("n", "2");
+    editForm.append("n", "1");
     attachmentStatus.kitchen = appendImage(editForm, body.image, "kitchen");
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
     attachmentStatus.cabinetMask = appendMask(editForm, body.cabinetMask);
@@ -830,7 +805,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
     attachmentStatus.drawerBlueprint = appendImage(editForm, drawerBlueprint, "drawer-front-edge-blueprint");
     if (attachmentStatus.drawerBlueprint) observeImage("Drawer front edge blueprint", drawerBlueprint, "drawer-front-edge-blueprint");
     // Finish swatches are intentionally withheld from the geometry pass.
-    // They are attached only to the second pass so the first model call can focus on door and drawer shape.
+    // They are attached only to the final pass so the first two model calls can focus on door and drawer shape.
     attachmentStatus.upperSwatch = true;
     attachmentStatus.baseSwatch = true;
     if (attachmentStatus.cabinetMask) observeImage("Diagnostic cabinet edit mask, not a numbered reference image", body.cabinetMask, "diagnostic-cabinet-edit-mask");
@@ -847,12 +822,12 @@ The transparent area of the mask identifies the only cabinet region that may cha
       quality: `geometry ${GEOMETRY_IMAGE_QUALITY}, finish ${FINISH_IMAGE_QUALITY}`,
       promptVersion: activePromptVersion,
       prompt,
-      generationMode: "two-candidate-geometry-selection-then-color",
+      generationMode: "geometry-consistency-correction-then-color",
       requestCount: 3,
       masterMeasurements,
       passes: [
-        { stage: "door-drawer-geometry", prompt, candidateCount: 2 },
-        { stage: "geometry-candidate-selection", model: GEOMETRY_JUDGE_MODEL },
+        { stage: "door-drawer-geometry", prompt, candidateCount: 1 },
+        { stage: "door-scale-consistency-correction", prompt: buildGeometryConsistencyPrompt(body, masterMeasurements) },
         { stage: "cabinet-finish", prompt: buildColorPassPrompt(body) }
       ],
       attachmentStatus,
@@ -887,7 +862,7 @@ The transparent area of the mask identifies the only cabinet region that may cha
         drawerProfileDescription,
         doorProfileMustAvoid,
         drawerProfileMustAvoid,
-        promptMode: "two-candidate-geometry-selection-then-color",
+        promptMode: "geometry-consistency-correction-then-color",
         requestCount: 3,
         masterMeasurements,
         doorMasterWidthInches,
@@ -923,19 +898,46 @@ The transparent area of the mask identifies the only cabinet region that may cha
 
     const geometryCandidates = await resultImagesDataUrls(geometryResult);
     if (!geometryCandidates.length) return res.status(500).json({ error: "The cabinet geometry pass returned no image." });
-    const geometrySelection = await selectBestGeometryCandidate({
-      candidates: geometryCandidates,
-      doorReference,
-      drawerReference: drawerReference || doorReference,
-      doorBlueprint,
-      drawerBlueprint,
-      frameWidthInches: doorFrameWidthInches
-    });
-    const selectedGeometryIndex = Math.min(geometryCandidates.length - 1, Math.max(0, Number(geometrySelection.selectedIndex) || 0));
-    const geometryImage = geometryCandidates[selectedGeometryIndex];
+    const preliminaryGeometryImage = geometryCandidates[0];
+    const consistencyPrompt = buildGeometryConsistencyPrompt(body, masterMeasurements);
+    const consistencyForm = new FormData();
+    consistencyForm.append("model", imageModel);
+    consistencyForm.append("prompt", consistencyPrompt);
+    consistencyForm.append("size", outputSize);
+    consistencyForm.append("quality", GEOMETRY_IMAGE_QUALITY);
+    consistencyForm.append("n", "1");
+    if (!appendImage(consistencyForm, preliminaryGeometryImage, "preliminary-geometry-kitchen")) {
+      return res.status(500).json({ error: "The preliminary kitchen could not be prepared for door scale correction." });
+    }
+    const consistencyMask = await resizeMaskToMatchImage(body.cabinetMask, preliminaryGeometryImage);
+    if (!appendMask(consistencyForm, consistencyMask)) {
+      return res.status(500).json({ error: "The cabinet mask could not be resized for door scale correction." });
+    }
+    appendImage(consistencyForm, doorReference, "approved-cabinet-door-master");
+    appendImage(consistencyForm, drawerReference || doorReference, "approved-drawer-front-master");
+    appendImage(consistencyForm, doorBlueprint, "cabinet-door-edge-blueprint");
+    appendImage(consistencyForm, drawerBlueprint, "drawer-front-edge-blueprint");
+
+    const consistencyResponse = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, body: consistencyForm });
+    const consistencyResult = await consistencyResponse.json();
+    if (!consistencyResponse.ok) {
+      await updateGenerationRecord(generationId, {
+        status: "error",
+        error: {
+          status: consistencyResponse.status,
+          stage: "door-scale-consistency-correction",
+          message: consistencyResult?.error?.message || consistencyResult?.message || "OpenAI door scale consistency correction failed."
+        }
+      }).catch(function() {});
+      return res.status(consistencyResponse.status).json({ error: consistencyResult?.error?.message || consistencyResult?.message || "The door scale consistency correction failed." });
+    }
+    const geometryImage = await resultImageDataUrl(consistencyResult);
+    if (!geometryImage) return res.status(500).json({ error: "The door scale consistency correction returned no image." });
+    const geometrySelection = { selectedIndex: 0, reason: "A dedicated image correction pass normalized complete rail and stile scale across cabinet doors." };
+    const selectedGeometryIndex = 0;
     await updateGenerationRecord(generationId, {
-      result: { masterMeasurements, geometryCandidates, selectedGeometryIndex, geometrySelection, geometryImage }
-    }).catch(function(error) { console.warn("Geometry candidate logging skipped.", error?.message || error); });
+      result: { masterMeasurements, geometryCandidates, preliminaryGeometryImage, selectedGeometryIndex, geometrySelection, consistencyPrompt, geometryImage }
+    }).catch(function(error) { console.warn("Geometry correction logging skipped.", error?.message || error); });
 
     const colorPrompt = buildColorPassPrompt(body);
     const colorForm = new FormData();
@@ -985,8 +987,10 @@ The transparent area of the mask identifies the only cabinet region that may cha
         imageSize: imageSizeLabel(generatedImage),
         masterMeasurements,
         geometryCandidates,
+        preliminaryGeometryImage,
         selectedGeometryIndex,
         geometrySelection,
+        consistencyPrompt,
         geometryImage
       }
     }).catch(function(error) {

@@ -212,7 +212,7 @@ function renderDetail(generation) {
     '<div class="section"><h2>Reference Images</h2>' + renderImages(generation.referenceImages || []) + '</div>' +
     '<div class="section"><h2>Calculated Master Measurements</h2><pre>' + escapeHtml(result.masterMeasurements || summary.masterMeasurements || (generation.payload && generation.payload.masterMeasurements) || "No measurements recorded.") + '</pre></div>' +
     '<div class="section"><h2>Geometry Candidates</h2>' + renderGeometryCandidates(result) +
-      '<h3>Automatic Selection</h3><pre>' + escapeHtml(JSON.stringify(result.geometrySelection || {}, null, 2)) + '</pre></div>' +
+      '<h3>Scale Correction Summary</h3><pre>' + escapeHtml(JSON.stringify(result.geometrySelection || {}, null, 2)) + '</pre></div>' +
     '<div class="section"><h2>Selected Geometry Stage</h2>' + (result.geometryImage ? '<img class="result-img" src="' + escapeHtml(result.geometryImage) + '" alt="Selected geometry stage">' : '<div class="empty">No selected geometry image recorded.</div>') + '</div>' +
     '<div class="section"><h2>Generated Result</h2>' + (result.image ? '<img class="result-img" src="' + escapeHtml(result.image) + '" alt="Generated result">' : '<div class="empty">No generated image recorded.</div>') + '</div>';
 }
