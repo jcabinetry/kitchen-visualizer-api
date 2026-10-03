@@ -40,13 +40,18 @@ export default async function handler(req,res){
           const turned=state==='TURNED_IN'||returned;
           const today=new Date();today.setHours(0,0,0,0);
           const d=new Date(due+'T12:00:00');
-          const status=turned?'done':(d<today?'missing':'assigned');
+          const hasGrade=sub?.assignedGrade!=null||sub?.draftGrade!=null;
+          const status=returned?'graded':(state==='TURNED_IN'?'waiting':(d<today?'missing':'assigned'));
           assignments.push({
             id:'gc-'+course.id+'-'+cw.id,
             course:course.name||'Class',
             title:cw.title||'Assignment',
             type:String(cw.workType||'ASSIGNMENT').replaceAll('_',' ').toLowerCase().replace(/\b\w/g,m=>m.toUpperCase()),
             due,status,
+            classroomState:state||null,
+            submitted:turned,
+            waitingOnGrade:state==='TURNED_IN',
+            graded:returned,
             points:cw.maxPoints??null,
             grade:sub?.assignedGrade??sub?.draftGrade??null,
             notes:cw.description||'',
