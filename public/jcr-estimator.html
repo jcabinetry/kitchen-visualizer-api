@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JCR Employee Estimator</title>
+<style>
+:root{--navy:#173a57;--navy2:#225f88;--green:#178253;--light:#f4f7fa;--border:#d9e2e9;--text:#25313c;--muted:#6d7882}
+*{box-sizing:border-box}
+body{margin:0;background:var(--light);font-family:Arial,Helvetica,sans-serif;color:var(--text)}
+.app{max-width:1150px;margin:20px auto;padding:0 12px}
+.shell{background:#fff;border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 10px 35px rgba(0,0,0,.08)}
+.header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:26px}
+.header h1{margin:0;font-size:29px}.header p{margin:7px 0 0;opacity:.88}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;padding:14px;background:#eef4f8;border-bottom:1px solid var(--border)}
+.tab{border:1px solid #c8d5df;background:#fff;padding:10px 16px;border-radius:100px;color:var(--navy);font-weight:700;cursor:pointer}
+.tab.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.page{display:none;padding:24px}.page.active{display:block}
+h2{color:var(--navy);font-size:21px;margin:0 0 18px}h3{color:var(--navy);margin:0 0 14px;font-size:17px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.field label{display:block;margin:0 0 6px;font-size:13px;font-weight:700;color:#465460}
+input,select,textarea{width:100%;border:1px solid #cbd7df;border-radius:10px;padding:12px;font-size:16px;background:#fff}
+.card{border:1px solid var(--border);border-radius:14px;padding:17px;margin:0 0 15px;background:#fff}
+.note{background:#fff5da;border:1px solid #e8cf91;border-radius:10px;padding:11px 13px;margin:0 0 15px;font-size:13px}
+.small{color:var(--muted);font-size:12px}
+.item-row{display:grid;grid-template-columns:minmax(220px,1fr) 115px 120px;align-items:end;gap:12px;padding:10px 0;border-bottom:1px dashed #e2e8ec}
+.item-row:last-child{border-bottom:0}.item-name{font-weight:700;padding-bottom:10px}.line-total{text-align:right;font-weight:800;color:var(--green);padding-bottom:11px}
+.subtotal{display:flex;justify-content:space-between;align-items:center;gap:20px}.subtotal-value{color:var(--green);font-size:24px;font-weight:900}
+.footer-total{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:15px;box-shadow:0 -8px 25px rgba(0,0,0,.07)}
+.total-label{font-size:11px;color:var(--muted);letter-spacing:.05em}.total-number{color:var(--green);font-size:30px;font-weight:900}
+.buttons{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:12px 17px;font-size:14px;font-weight:800;cursor:pointer}.primary{background:var(--navy);color:#fff}.secondary{background:#edf3f7;color:var(--navy)}.danger{background:#f8eeee;color:#8c2f2f}
+table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;padding:10px;text-align:left}th{color:var(--navy);background:#f5f8fa;font-size:13px}.right{text-align:right}.summary-total td{font-size:19px;font-weight:900}.summary-total td:last-child{color:var(--green)}
+@media(max-width:760px){.app{margin:0;padding:0}.shell{border-radius:0}.grid2,.grid3{grid-template-columns:1fr}.item-row{grid-template-columns:1fr 100px}.line-total{grid-column:2}.footer-total{align-items:flex-start;flex-direction:column}.header h1{font-size:24px}.page{padding:17px}}
+@media print{body{background:#fff}.tabs,.footer-total,.no-print{display:none!important}.page{display:none!important}#summaryPage{display:block!important}.app{margin:0;max-width:none}.shell{box-shadow:none;border:0}}
+</style>
+</head>
+<body>
+<div class="app"><div class="shell">
+<div class="header"><h1>JCR Employee Estimator</h1><p>Johnson Cabinetry &amp; Refacing — Internal Estimating Tool</p></div>
+
+<div class="tabs no-print">
+<button class="tab active" data-page="jobPage">1. Job</button>
+<button class="tab" data-page="cabinetPage">2. Refacing</button>
+<button class="tab" data-page="counterPage">3. Countertops</button>
+<button class="tab" data-page="pulloutPage">4. Pull-Outs</button>
+<button class="tab" data-page="extrasPage">5. Extras</button>
+<button class="tab" data-page="summaryPage">6. Summary</button>
+</div>
+
+<section class="page active" id="jobPage">
+<h2>Customer / Job Information</h2>
+<div class="grid2">
+<div class="field"><label>Customer Name</label><input id="customerName"></div>
+<div class="field"><label>Salesperson / Employee</label><input id="salesperson"></div>
+<div class="field"><label>Job Address</label><input id="jobAddress"></div>
+<div class="field"><label>City / ZIP</label><input id="cityZip"></div>
+<div class="field"><label>Phone</label><input id="phone" type="tel"></div>
+<div class="field"><label>Email</label><input id="email" type="email"></div>
+</div>
+<div class="field" style="margin-top:15px"><label>Job Notes</label><textarea id="jobNotes" rows="5"></textarea></div>
+</section>
+
+<section class="page" id="cabinetPage">
+<h2>Cabinet Refacing</h2>
+<div class="note">Select the material group and enter cabinet measurements. Pricing updates automatically.</div>
+<div class="card"><h3>Material Group</h3>
+<select id="cabinetGroup">
+<option value="">No Cabinet Refacing</option>
+<option value="g1">Group #1 — Alder, Beech &amp; Paint Grade Hardwood</option>
+<option value="g2">Group #2 — Red Oak, Hickory &amp; Farmhouse Chic</option>
+<option value="g3">Group #3 — Maple, Cherry &amp; White Oak</option>
+<option value="thermo">Thermofoil</option>
+</select></div>
+<div class="card"><h3>Cabinet Measurements</h3><div class="grid3">
+<div class="field"><label>Base Cabinets — Linear Feet</label><input id="baseLF" type="number" min="0" step=".01" value="0"></div>
+<div class="field"><label>30&quot; &amp; Under Uppers — Linear Feet</label><input id="upper30" type="number" min="0" step=".01" value="0"></div>
+<div class="field"><label>36&quot; Uppers — Linear Feet</label><input id="upper36" type="number" min="0" step=".01" value="0"></div>
+<div class="field"><label>42&quot; Uppers — Linear Feet</label><input id="upper42" type="number" min="0" step=".01" value="0"></div>
+<div class="field"><label>Pantry / Tall Cabinets — Linear Feet</label><input id="pantryLF" type="number" min="0" step=".01" value="0"></div>
+<div class="field"><label>Door Count</label><input id="doorCount" type="number" min="0" value="0"></div>
+<div class="field"><label>Drawer Front Count</label><input id="drawerCount" type="number" min="0" value="0"></div>
+</div></div>
+<div class="card"><h3>Cabinet Add-Ons</h3><div id="cabinetExtraRows"></div></div>
+<div class="card subtotal"><strong>Cabinet Refacing Subtotal</strong><span class="subtotal-value" id="cabinetSubtotal">$0</span></div>
+</section>
+
+<section class="page" id="counterPage">
+<h2>Countertops</h2>
+<div class="card"><div class="grid2">
+<div class="field"><label>Countertop Level</label><select id="counterLevel">
+<option value="0">None</option><option value="55">Level 1</option><option value="62">Level 2</option><option value="67">Level 3</option><option value="99">Level 4</option><option value="104">Level 5</option><option value="125">Luxury</option>
+</select></div>
+<div class="field"><label>Countertop Square Feet</label><input id="counterSqFt" type="number" min="0" step=".1" value="0"></div>
+</div></div>
+<div class="card"><h3>Countertop Add-Ons</h3><div id="counterExtraRows"></div></div>
+<div class="card subtotal"><strong>Countertop Subtotal</strong><span class="subtotal-value" id="counterSubtotal">$0</span></div>
+</section>
+
+<section class="page" id="pulloutPage">
+<h2>Pull-Out Shelves</h2>
+<div class="card"><div class="grid3">
+<div class="field"><label>Opening Width — Inches</label><input id="pullWidth" type="number" min="0" step=".01"></div>
+<div class="field"><label>Depth — Inches</label><input id="pullDepth" type="number" min="0" step=".01"></div>
+<div class="field"><label>Quantity</label><input id="pullQty" type="number" min="1" value="1"></div>
+<div class="field"><label>Scoop Quantity</label><input id="pullScoops" type="number" min="0" value="0"></div>
+</div><div style="margin-top:15px"><button type="button" class="btn primary" id="addPullout">Add Pull-Out</button></div></div>
+<div class="card"><table><thead><tr><th>Width</th><th>Depth</th><th>Qty</th><th>Scoops</th><th class="right">Total</th><th></th></tr></thead><tbody id="pulloutTable"></tbody></table></div>
+<div class="card subtotal"><strong>Pull-Out Subtotal</strong><span class="subtotal-value" id="pulloutSubtotal">$0</span></div>
+</section>
+
+<section class="page" id="extrasPage">
+<h2>Other Services</h2>
+<div class="card"><h3>Hardwood Flooring</h3><div id="floorRows"></div></div>
+<div class="card"><h3>Miscellaneous Services</h3><div id="miscRows"></div></div>
+<div class="card subtotal"><strong>Other Services Subtotal</strong><span class="subtotal-value" id="extrasSubtotal">$0</span></div>
+</section>
+
+<section class="page" id="summaryPage">
+<h2>Estimate Summary</h2>
+<div class="card"><div style="font-size:20px;font-weight:800" id="summaryCustomer">Customer</div><div class="small" id="summaryContact"></div></div>
+<div class="card"><table><tbody>
+<tr><td>Cabinet Refacing</td><td class="right" id="summaryCabinets">$0</td></tr>
+<tr><td>Countertops</td><td class="right" id="summaryCounters">$0</td></tr>
+<tr><td>Pull-Out Shelves</td><td class="right" id="summaryPullouts">$0</td></tr>
+<tr><td>Other Services</td><td class="right" id="summaryExtras">$0</td></tr>
+<tr class="summary-total"><td>ESTIMATED TOTAL</td><td class="right" id="summaryGrand">$0</td></tr>
+</tbody></table></div>
+<div class="card" id="summaryNotesBox" style="display:none"><strong>Job Notes</strong><div id="summaryNotes" style="margin-top:8px"></div></div>
+<div class="buttons no-print"><button type="button" class="btn primary" id="printButton">Print / Save PDF</button><button type="button" class="btn secondary" id="saveButton2">Save Estimate</button><button type="button" class="btn danger" id="clearButton">Clear Estimate</button></div>
+</section>
+
+<div class="footer-total no-print">
+<div><div class="total-label">CURRENT ESTIMATE</div><div class="total-number" id="grandTotal">$0</div></div>
+<div class="buttons"><button type="button" class="btn secondary" id="saveButton">Save Estimate</button><button type="button" class="btn primary" id="summaryButton">View Summary</button></div>
+</div>
+</div></div>
+
+<script>
+(function(){
+function $(id){return document.getElementById(id)}
+function num(id){var e=$(id);return e?(parseFloat(e.value)||0):0}
+function money(v){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(v||0)}
+
+var cabinetRates={
+g1:{base:248.85,u30:229.95,u36:264.60,u42:305.55,pantry:612.15,door:48.30,drawer:24.15},
+g2:{base:270.90,u30:248.85,u36:286.65,u42:330.75,pantry:661.50,door:48.30,drawer:24.15},
+g3:{base:303.45,u30:276.15,u36:320.25,u42:369.60,pantry:738.15,door:48.30,drawer:24.15},
+thermo:{base:181.65,u30:165.90,u36:187.95,u42:215.25,pantry:429.45,door:48.30,drawer:24.15}
+};
+var hardwarePrice=7.35;
+
+var cabinetExtras=[
+["False Door Panels","Each",297.614766456],["End Panel - Standard Wall","Each",61.3361524986],["End Panel - Oversized Wall","Each",80.41851105372],["End Panel - Standard Base","Each",128.12440744152],["End Panel - Extra Base","Each",128.12440744152],["End Panel - Tall Panel","Each",280.78327588248],["Remove / Replace Appliance","Each",55.021217328],["Debris Removal","Each",176.317991892],["Reuse Existing Drawers","Each",21.258197604],["New Drawer & Soft Close - Up To 24 inch","Each",212.10],["New Drawer & Soft Close - 27 inch And Up","Each",317.10],["Side Mount Ball Bearing Upgrade","Each",99.75],["Crown Moulding","Linear Foot",23.759162028],["Extra Reface","Square Foot",23.759162028],["New Cabinet - Standard Up To 48 inch","Linear Foot",181.31992074],["New Cabinet - Tall Over 48 inch","Linear Foot",276.356568852],["Door Panels - New Cabinet","Each",262.60126452],["Drawer Fronts - New Cabinet","Each",107.541470232],["Remove Existing Cabinets","Linear Foot",18.75723318],["Set Existing Cabinets","Linear Foot",18.75723318],["Modify Cabinet","Linear Foot",56.27169954],["New Lazy Susan Unit","Each",357.637912632],["Trash Can Pull-Out","Each",480.185169408],["Blind Corner Unit","Each",455.175525168],["Tip-Out Tray","Each",97.537612536],["Valance","Linear Foot",50.01928848],["Wine Rack","Square Foot",66.275557236],["Countertop Corbels","Each",118.79581014],["New Sink Base Bottom","Each",151.308347652],["Extend Wall Cabinets / Faceframes","Door",60.023146176],["Reface Cabinet Tops","Square Foot",25.00964424],["Reface Inside Edge Of Faceframe","Door",97.537612536],["Cut / Frame New Appliance Opening","Each",131.30063226],["Glass Insert For Door Panel","Each",80.85],["Extra Trim - Excluding Crown","Linear Foot",10.003857696],["Floating Shelf","Linear Foot",157.50],["Wood Top - 10 Sq Ft Minimum","Square Foot",63],["Remove / Replace Light Fixture","Each",40.015430784],["Remove / Replace Under-Cabinet Items","Each",20.007715392],["New Shelf","Linear Foot",33.763019724],["Ceiling Light Grid","Linear Foot",28.761090876],["Cut And Frame Island","Each",160.061723136],["Open Existing Wood Soffit","Door",26.260126452],["Level Existing Cabinets","Linear Foot",21.258197604],["New Nic-Nac Shelves","Each",257.599335672],["Add For 3/4 inch Faceframe","Each",180.069438528],["Light Rail","Linear Foot",16.256268756]
+];
+var counterExtras=[["Sink Cutout","Each",275],["Countertop Demo","Each",100],["Kitchen Plumbing","Each",625],["Vanity Plumbing","Each",275],["Complete Kitchen Plumbing","Each",675],["Stainless Kitchen Sink","Each",525],["Vanity Sink","Each",150]];
+var flooringItems=[["Distance Trip Charge","Each",300],["Sand, Fill & Stain","Square Foot",7],["Sand, Fill - Natural","Square Foot",6.75],["Buff & Recoat","Square Foot",3],["Refinish Step","Each",125],["Refinish Riser","Each",125],["Patch Hardwood","Each",150],["One Board Repair","Each",100],["Install Raw Wood","Square Foot",6],["New Finish Step","Each",75],["New Finish Riser","Each",125],["Install Laminate","Square Foot",6]];
+var miscItems=[["Baseboard & Casing","Linear Foot",14],["Prehung Passage Door","Each",429],["Cut Down Exterior Door","Each",61],["Cut Down Passage Door","Each",61],["Laminate Flooring","Square Foot",18],["Move Furniture For Flooring","Square Foot",1],["Remove Existing Carpet","Square Foot",3],["Remove Existing Tile Floor","Square Foot",7],["Subfloor Patch / Replace","Block",490],["Remove / Replace Toilet","Each",100],["Tile Backsplash Demo","Each",156],["Tile Baseboards","Linear Foot",19],["Tile Floor Prep - First 50 Sq Ft","Square Foot",11],["Tile Floor Prep - 51-100 Sq Ft","Square Foot",9],["Tile Floor Prep - 101+ Sq Ft","Square Foot",7],["Tile Floor 90 Degree - First 50 Sq Ft","Square Foot",40],["Tile Floor 90 Degree - 51-100 Sq Ft","Square Foot",38],["Tile Floor 90 Degree - 101+ Sq Ft","Square Foot",35],["Tile Floor 45 Degree - First 50 Sq Ft","Square Foot",54],["Tile Floor 45 Degree - 51-100 Sq Ft","Square Foot",52],["Tile Floor 45 Degree - 101+ Sq Ft","Square Foot",45],["Tile Floor Heat Add-On","Square Foot",20],["Transition Strip / Threshold","Linear Foot",21],["Wall Tile 90 Degree - First 75 Sq Ft","Square Foot",39],["Wall Tile 90 Degree - 76+ Sq Ft","Square Foot",26],["Wall Tile 45 Degree - First 75 Sq Ft","Square Foot",53],["Wall Tile 45 Degree - 76+ Sq Ft","Square Foot",36],["Accent Band / Glass Mosaic","Linear Foot",27],["Single Piece Diamond Insert","Each",17],["Solid Surface Backsplash / Walls","Square Foot",46],["Laminate Floor - Alternate","Square Foot",11],["Engineered Wood Floor","Square Foot",11]];
+var pullouts=[];
+
+function buildRows(targetId,items,prefix){
+var target=$(targetId),html="";
+items.forEach(function(item,index){
+html+='<div class="item-row"><div class="item-name">'+item[0]+'<div class="small">'+item[1]+'</div></div><div class="field"><label>Qty</label><input id="'+prefix+index+'" type="number" min="0" step=".01" value="0"></div><div class="line-total" id="'+prefix+'total'+index+'">$0</div></div>';
+});
+target.innerHTML=html;
+}
+buildRows("cabinetExtraRows",cabinetExtras,"cabExtra");
+buildRows("counterExtraRows",counterExtras,"counterExtra");
+buildRows("floorRows",flooringItems,"floorExtra");
+buildRows("miscRows",miscItems,"miscExtra");
+
+function sumExtras(prefix,items){
+var total=0;
+items.forEach(function(item,index){
+var q=num(prefix+index),line=q*item[2];total+=line;$(prefix+"total"+index).textContent=money(line);
+});
+return total;
+}
+function calculateCabinets(){
+var total=sumExtras("cabExtra",cabinetExtras),group=$("cabinetGroup").value,rate=cabinetRates[group];
+if(!rate)return total;
+total+=num("baseLF")*rate.base+num("upper30")*rate.u30+num("upper36")*rate.u36+num("upper42")*rate.u42+num("pantryLF")*rate.pantry+num("doorCount")*rate.door+num("drawerCount")*rate.drawer+(num("doorCount")+num("drawerCount"))*hardwarePrice;
+return total;
+}
+function calculateCounters(){
+var material=num("counterSqFt")*num("counterLevel")*1.389*1.07;
+return material+sumExtras("counterExtra",counterExtras);
+}
+function pulloutPrice(w,d,q,s){return ((((w*2+d*2)*.7*q)+(42.5*q)+(10*s))*1.75)}
+function calculatePullouts(){return pullouts.reduce(function(sum,item){return sum+item.total},0)}
+function renderPullouts(){
+var html="";
+pullouts.forEach(function(item,index){
+html+='<tr><td>'+item.width+'&quot;</td><td>'+item.depth+'&quot;</td><td>'+item.qty+'</td><td>'+item.scoops+'</td><td class="right">'+money(item.total)+'</td><td class="right"><button type="button" class="btn secondary removePullout" data-index="'+index+'">Remove</button></td></tr>';
+});
+$("pulloutTable").innerHTML=html;
+document.querySelectorAll(".removePullout").forEach(function(button){
+button.addEventListener("click",function(){pullouts.splice(Number(button.dataset.index),1);renderPullouts();recalc()});
+});
+}
+$("addPullout").addEventListener("click",function(){
+var w=num("pullWidth"),d=num("pullDepth"),q=num("pullQty"),s=num("pullScoops");
+if(w<=0||d<=0){alert("Enter the opening width and depth.");return}
+if(q<=0)q=1;
+pullouts.push({width:w,depth:d,qty:q,scoops:s,total:pulloutPrice(w,d,q,s)});
+$("pullWidth").value="";$("pullDepth").value="";$("pullQty").value=1;$("pullScoops").value=0;renderPullouts();recalc();
+});
+function calculateExtras(){return sumExtras("floorExtra",flooringItems)+sumExtras("miscExtra",miscItems)}
+function recalc(){
+var cabinets=calculateCabinets(),counters=calculateCounters(),pulls=calculatePullouts(),extras=calculateExtras(),grand=cabinets+counters+pulls+extras;
+$("cabinetSubtotal").textContent=money(cabinets);$("counterSubtotal").textContent=money(counters);$("pulloutSubtotal").textContent=money(pulls);$("extrasSubtotal").textContent=money(extras);$("grandTotal").textContent=money(grand);
+$("summaryCabinets").textContent=money(cabinets);$("summaryCounters").textContent=money(counters);$("summaryPullouts").textContent=money(pulls);$("summaryExtras").textContent=money(extras);$("summaryGrand").textContent=money(grand);
+$("summaryCustomer").textContent=$("customerName").value||"Customer";
+var c=[];if($("jobAddress").value)c.push($("jobAddress").value);if($("cityZip").value)c.push($("cityZip").value);if($("phone").value)c.push($("phone").value);if($("email").value)c.push($("email").value);if($("salesperson").value)c.push("Employee: "+$("salesperson").value);$("summaryContact").innerHTML=c.join("<br>");
+var notes=$("jobNotes").value.trim();$("summaryNotes").textContent=notes;$("summaryNotesBox").style.display=notes?"block":"none";
+}
+function openPage(pageId){
+document.querySelectorAll(".page").forEach(function(page){page.classList.remove("active")});
+$(pageId).classList.add("active");
+document.querySelectorAll(".tab").forEach(function(tab){tab.classList.toggle("active",tab.dataset.page===pageId)});
+recalc();window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll(".tab").forEach(function(tab){tab.addEventListener("click",function(){openPage(tab.dataset.page)})});
+$("summaryButton").addEventListener("click",function(){openPage("summaryPage")});
+document.querySelector(".shell").addEventListener("input",recalc);
+document.querySelector(".shell").addEventListener("change",recalc);
+
+function saveEstimate(){
+var fields={};
+document.querySelectorAll("input,select,textarea").forEach(function(field){if(field.id)fields[field.id]=field.value});
+localStorage.setItem("JCR_ESTIMATE",JSON.stringify({fields:fields,pullouts:pullouts}));
+alert("Estimate saved on this device.");
+}
+$("saveButton").addEventListener("click",saveEstimate);$("saveButton2").addEventListener("click",saveEstimate);
+function loadEstimate(){
+var saved=localStorage.getItem("JCR_ESTIMATE");if(!saved)return;
+try{var data=JSON.parse(saved);Object.keys(data.fields||{}).forEach(function(id){if($(id))$(id).value=data.fields[id]});if(Array.isArray(data.pullouts))pullouts=data.pullouts}catch(e){console.error(e)}
+}
+$("clearButton").addEventListener("click",function(){
+if(!confirm("Clear this entire estimate?"))return;
+localStorage.removeItem("JCR_ESTIMATE");
+document.querySelectorAll("input,textarea").forEach(function(field){if(field.type==="number")field.value=field.id==="pullQty"?1:0;else field.value=""});
+document.querySelectorAll("select").forEach(function(select){select.selectedIndex=0});pullouts=[];renderPullouts();recalc();openPage("jobPage");
+});
+$("printButton").addEventListener("click",function(){recalc();window.print()});
+loadEstimate();renderPullouts();recalc();
+})();
+</script>
+</body>
+</html>
