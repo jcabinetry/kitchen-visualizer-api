@@ -55,7 +55,7 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 </div>
 
 <section class="hero">
-  <div><h2 id="greeting">You've got this, Molly.</h2><p id="heroInspo">One thing at a time. You can do this.</p></div>
+  <div><h2 id="greeting">You've got this, Molly.</h2><p>Assignments, grades, study plans, reminders, email notices and your school calendar in one place.</p></div>
   <div class="hero-actions"><button class="do-now" id="doNowBtn">✨ What should I do now?</button></div>
 </section>
 
@@ -283,7 +283,7 @@ const inspoMessages=[
 'Less worrying. More starting.',
 'Get it done, then go enjoy your time.'
 ];
-function setFreshInspo(){const el=document.getElementById('heroInspo');if(!el)return;const last=sessionStorage.getItem('mollyLastInspo'),choices=inspoMessages.filter(x=>x!==last),msg=choices[Math.floor(Math.random()*choices.length)]||inspoMessages[0];el.textContent=msg;sessionStorage.setItem('mollyLastInspo',msg)}
+function setFreshInspo(){const el=document.getElementById('greeting');if(!el)return;const last=sessionStorage.getItem('mollyLastInspo'),choices=inspoMessages.filter(x=>x!==last),msg=choices[Math.floor(Math.random()*choices.length)]||inspoMessages[0];el.textContent=msg;sessionStorage.setItem('mollyLastInspo',msg)}
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function parseDate(v){if(!v)return null;const [y,m,d]=String(v).split('-').map(Number);if(!y||!m||!d)return null;return new Date(y,m-1,d,12)}
@@ -295,7 +295,7 @@ function nice(v){if(!v)return'No due date';const n=days(v);if(n===0)return'Today
 function item(a,check=false){const state=st(a),c=state==='missing'?'red':state==='today'||state==='tomorrow'?'orange':state==='done'||state==='graded'||state==='returned'?'green':'blue',lab=state==='missing'?'Missing':state==='today'?'Due today':state==='tomorrow'?'Due tomorrow':state==='waiting'?'Waiting on grade':state==='returned'?'Returned':state==='graded'?(a.grade!=null&&a.points?'Graded ✓ — '+a.grade+'/'+a.points:'Graded ✓'):state==='done'?'Completed':state==='nodue'?'No due date':nice(a.due),canCheck=check&&a.source!=='classroom';return '<div class="item">'+(canCheck?'<button class="task-check '+(state==='done'?'is-done':'')+'" type="button" data-complete="'+esc(a.id)+'">'+(state==='done'?'✓ DONE':'MARK DONE')+'</button>':'<div class="dot '+c+'"></div>')+'<div class="item-main"><div class="item-title">'+esc(a.title)+'</div><div class="item-meta">'+esc(a.course)+' • '+esc(a.type)+' • '+nice(a.due)+(a.minutes?' • '+a.minutes+' min':'')+'</div></div><span class="pill '+c+'">'+lab+'</span></div>'}
 function render(){snapshot();const ass=[...data.assignments].sort((a,b)=>pri(b)-pri(a)),miss=ass.filter(a=>st(a)==='missing'),today=ass.filter(a=>st(a)==='today'),week=ass.filter(a=>!isFinished(a)&&a.due&&days(a.due)>=0&&days(a.due)<=7),done=ass.filter(isFinished);
 missingCount.textContent=miss.length;todayCount.textContent=today.length;weekCount.textContent=week.length;doneCount.textContent=done.length;data.streak=currentDayStreak();streakCount.textContent=data.streak;
-greeting.textContent="You've got this, "+(data.profile.name||'Molly')+'.';
+
 const open=ass.filter(a=>!isFinished(a)),urgent=open.filter(a=>st(a)==='missing'||st(a)==='today'||st(a)==='tomorrow'),totalMin=urgent.reduce((n,a)=>n+assignmentMinutes(a),0),next=open[0];
 todaySummary.firstChild.textContent='Hey '+(data.profile.name||'Molly')+' 👋';
 const freedomWork=open.filter(a=>st(a)==='missing'||st(a)==='today'),freedomMins=freedomWork.reduce((n,a)=>n+assignmentMinutes(a),0),freedomDone=data.assignments.filter(a=>isFinished(a)&&a.due&&days(a.due)===0).length,freedomTotal=freedomWork.length+freedomDone,freedomPct=freedomTotal?Math.round(freedomDone/freedomTotal*100):(freedomWork.length?0:100),freedomAt=new Date(Date.now()+freedomMins*60000);freedomMinutes.textContent=freedomMins?freedomMins+' MIN':'FREE';freedomFreeBy.textContent=freedomMins?'Start now → free about '+freedomAt.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'Nothing urgent left tonight 🎉';freedomCount.textContent=freedomWork.length?freedomWork.length+' thing'+(freedomWork.length===1?'':'s')+' between you and freedom':'You’re clear.';freedomBar.style.width=freedomPct+'%';todayTimeSummary.textContent=open.length?(urgent.length+' thing'+(urgent.length===1?'':'s')+' to handle now • about '+totalMin+' min'):'You’re done for today 🎉';
