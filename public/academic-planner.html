@@ -103,7 +103,7 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 </section>
 
 <section class="view" id="assignments">
-<div class="card"><div class="section-head"><h3>School work</h3><button class="ghost" id="addAssignmentBtn">+ Add</button></div><div class="work-filters"><button class="active" data-filter="open">To do</button><button data-filter="missing">Missing</button><button data-filter="today">Today</button><button data-filter="done">Done</button><button data-filter="all">All</button></div><div id="assignmentList" class="list"></div></div>
+<div class="card"><div class="section-head"><h3>School work</h3><button class="ghost" id="addAssignmentBtn">+ Add</button></div><div class="work-filters"><button class="active" data-filter="open">To do</button><button data-filter="missing">Missing</button><button data-filter="today">Today</button><button data-filter="waiting">Waiting on Grade</button><button data-filter="graded">Graded</button><button data-filter="done">Done</button><button data-filter="all">All</button></div><div id="assignmentList" class="list"></div></div>
 </section>
 
 <section class="view" id="study">
@@ -278,8 +278,10 @@ function renderWork(ass){
  const list=ass.filter(a=>{
   if(workFilter==='missing')return st(a)==='missing';
   if(workFilter==='today')return st(a)==='today';
-  if(workFilter==='done')return st(a)==='done';
-  if(workFilter==='open')return st(a)!=='done';
+  if(workFilter==='waiting')return st(a)==='waiting';
+  if(workFilter==='graded')return st(a)==='graded';
+  if(workFilter==='done')return ['done','graded'].includes(st(a));
+  if(workFilter==='open')return !['done','waiting','graded'].includes(st(a));
   return true;
  });
  assignmentList.innerHTML=list.map(a=>item(a,true)).join('')||'<div class="encourage">Nothing here right now.</div>';
