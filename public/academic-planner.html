@@ -329,6 +329,18 @@ if(!data.settings.testDataV1){data.assignments.push(
 {id:'test-n2',course:'Algebra',title:'Quiz Review',type:'Quiz',due:offsetDate(2),status:'assigned',minutes:30,source:'test'},
 {id:'test-n3',course:'English',title:'Essay Draft',type:'Project',due:offsetDate(4),status:'assigned',minutes:60,source:'test'}
 );data.settings.testDataV1=true;localStorage.setItem(STORE,JSON.stringify(data));}
+if(!data.settings.testDataV2){data.assignments.push(
+{id:'test-m3',course:'English',title:'Missing: Vocabulary Practice',type:'Assignment',due:offsetDate(-4),status:'missing',minutes:15,source:'test'},
+{id:'test-m4',course:'World History',title:'Missing: Map Analysis',type:'Assignment',due:offsetDate(-3),status:'missing',minutes:25,source:'test'},
+{id:'test-m5',course:'Science',title:'Missing: Photosynthesis Questions',type:'Assignment',due:offsetDate(-1),status:'missing',minutes:30,source:'test'},
+{id:'test-t3',course:'Algebra',title:'Linear Equations Homework',type:'Assignment',due:offsetDate(0),status:'assigned',minutes:25,source:'test'},
+{id:'test-t4',course:'Biology',title:'Cell Division Review',type:'Assignment',due:offsetDate(0),status:'assigned',minutes:30,source:'test'},
+{id:'test-t5',course:'English',title:'Short Story Questions',type:'Assignment',due:offsetDate(0),status:'assigned',minutes:20,source:'test'},
+{id:'test-n4',course:'World History',title:'Unit 2 Study Guide',type:'Assignment',due:offsetDate(1),status:'assigned',minutes:40,source:'test'},
+{id:'test-n5',course:'Algebra',title:'Functions Practice',type:'Assignment',due:offsetDate(2),status:'assigned',minutes:30,source:'test'},
+{id:'test-n6',course:'Science',title:'Lab Report Draft',type:'Project',due:offsetDate(3),status:'assigned',minutes:50,source:'test'},
+{id:'test-n7',course:'English',title:'Novel Chapter Reading',type:'Assignment',due:offsetDate(5),status:'assigned',minutes:35,source:'test'}
+);data.settings.testDataV2=true;localStorage.setItem(STORE,JSON.stringify(data));}
 const q=new URLSearchParams(location.search);if(q.get('classroom')==='connected'){history.replaceState({},'',location.pathname);data.connected=true;data.lastSync=new Date().toISOString();save();syncClassroom()}
 applyTheme();render();
 </script>
