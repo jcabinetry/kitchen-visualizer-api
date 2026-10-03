@@ -324,7 +324,27 @@ const bibleVerses=[
 {r:'Proverbs 15:1',t:'A soft answer turneth away wrath: but grievous words stir up anger.',m:'When emotions get high, a calm response can keep a small problem from becoming a big one.'},
 {r:'Matthew 5:16',t:'Let your light so shine before men, that they may see your good works.',m:'You can influence people without trying to impress them. Let your choices, kindness, and effort speak for you.'},
 {r:'Psalm 23:4',t:'I will fear no evil: for thou art with me.',m:'Even on difficult days, God’s presence is something you can hold onto.'}
-];
+,
+{r:'Jeremiah 29:11',t:'For I know the thoughts that I think toward you, saith the LORD, thoughts of peace, and not of evil.',m:'You do not have to have your whole future figured out today. Keep growing and trust that your story is still being written.'},
+{r:'Psalm 147:3',t:'He healeth the broken in heart, and bindeth up their wounds.',m:'When something hurts deeply, you do not have to pretend you are fine. Healing can take time, and God cares about what hurts.'},
+{r:'John 14:27',t:'Peace I leave with you, my peace I give unto you: let not your heart be troubled, neither let it be afraid.',m:'When anxiety gets loud, remember that peace does not require every problem to disappear first.'},
+{r:'Proverbs 18:10',t:'The name of the LORD is a strong tower: the righteous runneth into it, and is safe.',m:'When life feels shaky, you can have somewhere steady to turn instead of trying to handle everything alone.'},
+{r:'Psalm 121:2',t:'My help cometh from the LORD, which made heaven and earth.',m:'Needing help is not weakness. Ask God, your family, teachers, and people you trust when you need support.'},
+{r:'Romans 15:13',t:'Now the God of hope fill you with all joy and peace in believing.',m:'Hope can change how you walk into a difficult day. Look beyond what is stressful right now.'},
+{r:'Psalm 31:24',t:'Be of good courage, and he shall strengthen your heart, all ye that hope in the LORD.',m:'You can be nervous and still be brave. Courage grows when you keep moving toward what matters.'},
+{r:'Proverbs 13:20',t:'He that walketh with wise men shall be wise.',m:'Friends influence who you become. Stay close to people who encourage good choices and bring out the best in you.'},
+{r:'1 Corinthians 10:31',t:'Whatsoever ye do, do all to the glory of God.',m:'Big accomplishments are not the only things that matter. The way you handle ordinary work and ordinary days matters too.'},
+{r:'Psalm 19:14',t:'Let the words of my mouth, and the meditation of my heart, be acceptable in thy sight.',m:'Before you speak, text, or post when you are upset, think about whether your words reflect the person you want to be.'},
+{r:'Philippians 4:6',t:'Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God.',m:'When worry starts piling up, turn some of that mental noise into prayer and name what you actually need help with.'},
+{r:'Philippians 4:8',t:'Whatsoever things are true, whatsoever things are honest, whatsoever things are just... think on these things.',m:'Your thoughts affect your day. Pay attention to what is true and good instead of letting your mind live only in worst-case scenarios.'},
+{r:'Psalm 32:8',t:'I will instruct thee and teach thee in the way which thou shalt go: I will guide thee with mine eye.',m:'You will face choices where the answer is not obvious. Ask for guidance, slow down, and choose wisely.'},
+{r:'Luke 6:31',t:'And as ye would that men should do to you, do ye also to them likewise.',m:'A simple rule for friendships and school: treat people with the same respect and kindness you hope to receive.'},
+{r:'Ecclesiastes 3:1',t:'To every thing there is a season, and a time to every purpose under the heaven:',m:'Not every season feels the same. There is time for work, rest, change, growth, fun, and starting over.'},
+{r:'Psalm 73:26',t:'My flesh and my heart faileth: but God is the strength of my heart.',m:'Some days you will feel tired or discouraged. A difficult day does not mean you have failed.'},
+{r:'Proverbs 12:25',t:'Heaviness in the heart of man maketh it stoop: but a good word maketh it glad.',m:'Words matter. Encourage someone today—and remember that it is okay to tell someone when your own heart feels heavy.'},
+{r:'Matthew 11:28',t:'Come unto me, all ye that labour and are heavy laden, and I will give you rest.',m:'Rest is not laziness. When you are genuinely worn down, slowing down and bringing your burden to God can be part of moving forward.'},
+{r:'1 Thessalonians 5:11',t:'Wherefore comfort yourselves together, and edify one another.',m:'Be the friend who builds people up instead of tearing them down. Encouragement is powerful.'},
+{r:'Psalm 138:8',t:'The LORD will perfect that which concerneth me.',m:'You are still growing. You do not need to be a finished version of yourself at fourteen, fifteen, or sixteen.'}];
 function setDailyVerse(){const now=new Date(),key=now.getFullYear()*1000+Math.floor((now-new Date(now.getFullYear(),0,0))/86400000),v=bibleVerses[key%bibleVerses.length];document.getElementById('dailyVerseText').textContent='“'+v.t+'”';document.getElementById('dailyVerseRef').textContent=v.r;document.getElementById('dailyVerseMeaning').textContent='For today: '+v.m}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function parseDate(v){if(!v)return null;const [y,m,d]=String(v).split('-').map(Number);if(!y||!m||!d)return null;return new Date(y,m-1,d,12)}
