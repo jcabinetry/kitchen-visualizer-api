@@ -26,12 +26,12 @@ input,select,textarea{width:100%;border:1px solid #cbd7df;border-radius:10px;pad
 .small{color:var(--muted);font-size:12px}
 .item-row{display:grid;grid-template-columns:minmax(220px,1fr) 115px 120px;align-items:end;gap:12px;padding:10px 0;border-bottom:1px dashed #e2e8ec}
 .item-row:last-child{border-bottom:0}.item-name{font-weight:700;padding-bottom:10px}.line-total{text-align:right;font-weight:800;color:var(--green);padding-bottom:11px}
-.subtotal{display:flex;justify-content:space-between;align-items:center;gap:20px}.subtotal-value{color:var(--green);font-size:24px;font-weight:900}
+.subtotal{display:flex;justify-content:space-between;align-items:center;gap:20px}.subtotal-value{color:var(--green);font-size:24px;font-weight:900}.price-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.price-option{border:1px solid var(--border);border-radius:14px;padding:16px;background:#f8fbfd}.price-option.selected{border:2px solid var(--navy);background:#eef5fa;box-shadow:0 0 0 3px rgba(23,58,87,.08)}.price-name{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:6px}.price-value{font-size:23px;font-weight:900;color:var(--green)}
 .footer-total{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:15px;box-shadow:0 -8px 25px rgba(0,0,0,.07)}
 .total-label{font-size:11px;color:var(--muted);letter-spacing:.05em}.total-number{color:var(--green);font-size:30px;font-weight:900}
 .buttons{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:12px 17px;font-size:14px;font-weight:800;cursor:pointer}.primary{background:var(--navy);color:#fff}.secondary{background:#edf3f7;color:var(--navy)}.danger{background:#f8eeee;color:#8c2f2f}
 table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;padding:10px;text-align:left}th{color:var(--navy);background:#f5f8fa;font-size:13px}.right{text-align:right}.summary-total td{font-size:19px;font-weight:900}.summary-total td:last-child{color:var(--green)}
-@media(max-width:760px){.app{margin:0;padding:0}.shell{border-radius:0}.grid2,.grid3{grid-template-columns:1fr}.item-row{grid-template-columns:1fr 100px}.line-total{grid-column:2}.footer-total{align-items:flex-start;flex-direction:column}.header h1{font-size:24px}.page{padding:17px}}
+@media(max-width:760px){.app{margin:0;padding:0}.shell{border-radius:0}.grid2,.grid3{grid-template-columns:1fr}.price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.item-row{grid-template-columns:1fr 100px}.line-total{grid-column:2}.footer-total{align-items:flex-start;flex-direction:column}.header h1{font-size:24px}.page{padding:17px}}
 @media print{body{background:#fff}.tabs,.footer-total,.no-print{display:none!important}.page{display:none!important}#summaryPage{display:block!important}.app{margin:0;max-width:none}.shell{box-shadow:none;border:0}}
 </style>
 </head>
@@ -63,7 +63,7 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;
 
 <section class="page" id="cabinetPage">
 <h2>Cabinet Refacing</h2>
-<div class="note">Select the material group and enter cabinet measurements. Pricing updates automatically.</div>
+<div class="note">Select the group you are working with, then enter the measurements. All four refacing prices will still be calculated every time, and your selected group will be highlighted.</div>
 <div class="card"><h3>Material Group</h3>
 <select id="cabinetGroup">
 <option value="">No Cabinet Refacing</option>
@@ -82,7 +82,12 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;
 <div class="field"><label>Drawer Front Count</label><input id="drawerCount" type="number" min="0" value="0"></div>
 </div></div>
 <div class="card"><h3>Cabinet Add-Ons</h3><div id="cabinetExtraRows"></div></div>
-<div class="card subtotal"><strong>Cabinet Refacing Subtotal</strong><span class="subtotal-value" id="cabinetSubtotal">$0</span></div>
+<div class="card"><h3>Refacing Price Options</h3><div class="price-grid">
+<div class="price-option" id="cardThermo"><div class="price-name">Thermofoil</div><div class="price-value" id="cabThermo">$0</div></div>
+<div class="price-option" id="cardG1"><div class="price-name">Group 1</div><div class="small">Alder, Beech &amp; Paint Grade Hardwood</div><div class="price-value" id="cabG1">$0</div></div>
+<div class="price-option" id="cardG2"><div class="price-name">Group 2</div><div class="small">Red Oak, Hickory &amp; Farmhouse Chic</div><div class="price-value" id="cabG2">$0</div></div>
+<div class="price-option" id="cardG3"><div class="price-name">Group 3</div><div class="small">Maple, Cherry &amp; White Oak</div><div class="price-value" id="cabG3">$0</div></div>
+</div></div>
 </section>
 
 <section class="page" id="counterPage">
@@ -120,18 +125,23 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;
 <h2>Estimate Summary</h2>
 <div class="card"><div style="font-size:20px;font-weight:800" id="summaryCustomer">Customer</div><div class="small" id="summaryContact"></div></div>
 <div class="card"><table><tbody>
-<tr><td>Cabinet Refacing</td><td class="right" id="summaryCabinets">$0</td></tr>
 <tr><td>Countertops</td><td class="right" id="summaryCounters">$0</td></tr>
 <tr><td>Pull-Out Shelves</td><td class="right" id="summaryPullouts">$0</td></tr>
 <tr><td>Other Services</td><td class="right" id="summaryExtras">$0</td></tr>
-<tr class="summary-total"><td>ESTIMATED TOTAL</td><td class="right" id="summaryGrand">$0</td></tr>
+</tbody></table></div>
+<div class="card"><h3>Total Estimate — All 4 Refacing Options</h3><div class="price-grid">
+<div class="price-option" id="sumCardThermo"><div class="price-name">Thermofoil</div><div class="price-value" id="sumThermo">$0</div></div>
+<div class="price-option" id="sumCardG1"><div class="price-name">Group 1</div><div class="price-value" id="sumG1">$0</div></div>
+<div class="price-option" id="sumCardG2"><div class="price-name">Group 2</div><div class="price-value" id="sumG2">$0</div></div>
+<div class="price-option" id="sumCardG3"><div class="price-name">Group 3</div><div class="price-value" id="sumG3">$0</div></div>
+</div>
 </tbody></table></div>
 <div class="card" id="summaryNotesBox" style="display:none"><strong>Job Notes</strong><div id="summaryNotes" style="margin-top:8px"></div></div>
 <div class="buttons no-print"><button type="button" class="btn primary" id="printButton">Print / Save PDF</button><button type="button" class="btn secondary" id="saveButton2">Save Estimate</button><button type="button" class="btn danger" id="clearButton">Clear Estimate</button></div>
 </section>
 
 <div class="footer-total no-print">
-<div><div class="total-label">CURRENT ESTIMATE</div><div class="total-number" id="grandTotal">$0</div></div>
+<div><div class="total-label">SELECTED GROUP ESTIMATE</div><div class="total-number" id="grandTotal">$0</div><div class="small" id="selectedGroupLabel">Select a group</div></div>
 <div class="buttons"><button type="button" class="btn secondary" id="saveButton">Save Estimate</button><button type="button" class="btn primary" id="summaryButton">View Summary</button></div>
 </div>
 </div></div>
@@ -177,11 +187,17 @@ var q=num(prefix+index),line=q*item[2];total+=line;$(prefix+"total"+index).textC
 });
 return total;
 }
+function cabinetPriceFor(rate,sharedExtras){
+return sharedExtras+num("baseLF")*rate.base+num("upper30")*rate.u30+num("upper36")*rate.u36+num("upper42")*rate.u42+num("pantryLF")*rate.pantry+num("doorCount")*rate.door+num("drawerCount")*rate.drawer+(num("doorCount")+num("drawerCount"))*hardwarePrice;
+}
 function calculateCabinets(){
-var total=sumExtras("cabExtra",cabinetExtras),group=$("cabinetGroup").value,rate=cabinetRates[group];
-if(!rate)return total;
-total+=num("baseLF")*rate.base+num("upper30")*rate.u30+num("upper36")*rate.u36+num("upper42")*rate.u42+num("pantryLF")*rate.pantry+num("doorCount")*rate.door+num("drawerCount")*rate.drawer+(num("doorCount")+num("drawerCount"))*hardwarePrice;
-return total;
+var sharedExtras=sumExtras("cabExtra",cabinetExtras);
+return {
+thermo:cabinetPriceFor(cabinetRates.thermo,sharedExtras),
+g1:cabinetPriceFor(cabinetRates.g1,sharedExtras),
+g2:cabinetPriceFor(cabinetRates.g2,sharedExtras),
+g3:cabinetPriceFor(cabinetRates.g3,sharedExtras)
+};
 }
 function calculateCounters(){
 var material=num("counterSqFt")*num("counterLevel")*1.389*1.07;
@@ -208,9 +224,23 @@ $("pullWidth").value="";$("pullDepth").value="";$("pullQty").value=1;$("pullScoo
 });
 function calculateExtras(){return sumExtras("floorExtra",flooringItems)+sumExtras("miscExtra",miscItems)}
 function recalc(){
-var cabinets=calculateCabinets(),counters=calculateCounters(),pulls=calculatePullouts(),extras=calculateExtras(),grand=cabinets+counters+pulls+extras;
-$("cabinetSubtotal").textContent=money(cabinets);$("counterSubtotal").textContent=money(counters);$("pulloutSubtotal").textContent=money(pulls);$("extrasSubtotal").textContent=money(extras);$("grandTotal").textContent=money(grand);
-$("summaryCabinets").textContent=money(cabinets);$("summaryCounters").textContent=money(counters);$("summaryPullouts").textContent=money(pulls);$("summaryExtras").textContent=money(extras);$("summaryGrand").textContent=money(grand);
+var cabinets=calculateCabinets(),counters=calculateCounters(),pulls=calculatePullouts(),extras=calculateExtras(),nonCab=counters+pulls+extras;
+var totals={thermo:cabinets.thermo+nonCab,g1:cabinets.g1+nonCab,g2:cabinets.g2+nonCab,g3:cabinets.g3+nonCab};
+$("cabThermo").textContent=money(cabinets.thermo);$("cabG1").textContent=money(cabinets.g1);$("cabG2").textContent=money(cabinets.g2);$("cabG3").textContent=money(cabinets.g3);
+$("counterSubtotal").textContent=money(counters);$("pulloutSubtotal").textContent=money(pulls);$("extrasSubtotal").textContent=money(extras);
+$("summaryCounters").textContent=money(counters);$("summaryPullouts").textContent=money(pulls);$("summaryExtras").textContent=money(extras);
+$("sumThermo").textContent=money(totals.thermo);$("sumG1").textContent=money(totals.g1);$("sumG2").textContent=money(totals.g2);$("sumG3").textContent=money(totals.g3);
+var selected=$("cabinetGroup").value;
+var labels={thermo:"Thermofoil",g1:"Group 1",g2:"Group 2",g3:"Group 3"};
+var selectedTotal=selected&&totals[selected]!==undefined?totals[selected]:0;
+$("grandTotal").textContent=money(selectedTotal);
+$("selectedGroupLabel").textContent=selected?labels[selected]:"Select a group";
+["thermo","g1","g2","g3"].forEach(function(key){
+var suffix=key==="thermo"?"Thermo":key.toUpperCase();
+var selectedClass=selected===key;
+$("card"+suffix).classList.toggle("selected",selectedClass);
+$("sumCard"+suffix).classList.toggle("selected",selectedClass);
+});
 $("summaryCustomer").textContent=$("customerName").value||"Customer";
 var c=[];if($("jobAddress").value)c.push($("jobAddress").value);if($("cityZip").value)c.push($("cityZip").value);if($("phone").value)c.push($("phone").value);if($("email").value)c.push($("email").value);if($("salesperson").value)c.push("Employee: "+$("salesperson").value);$("summaryContact").innerHTML=c.join("<br>");
 var notes=$("jobNotes").value.trim();$("summaryNotes").textContent=notes;$("summaryNotesBox").style.display=notes?"block":"none";
