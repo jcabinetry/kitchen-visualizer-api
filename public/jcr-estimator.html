@@ -26,7 +26,7 @@ input,select,textarea{width:100%;border:1px solid #cbd7df;border-radius:10px;pad
 .small{color:var(--muted);font-size:12px}
 .item-row{display:grid;grid-template-columns:minmax(220px,1fr) 115px 120px;align-items:end;gap:12px;padding:10px 0;border-bottom:1px dashed #e2e8ec}
 .item-row:last-child{border-bottom:0}.item-name{font-weight:700;padding-bottom:10px}.line-total{text-align:right;font-weight:800;color:var(--green);padding-bottom:11px}
-.subtotal{display:flex;justify-content:space-between;align-items:center;gap:20px}.subtotal-value{color:var(--green);font-size:24px;font-weight:900}.price-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.price-option{border:1px solid var(--border);border-radius:14px;padding:16px;background:#f8fbfd}.price-option.selected{border:2px solid var(--navy);background:#eef5fa;box-shadow:0 0 0 3px rgba(23,58,87,.08)}.price-name{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:6px}.price-value{font-size:23px;font-weight:900;color:var(--green)}
+.subtotal{display:flex;justify-content:space-between;align-items:center;gap:20px}.subtotal-value{color:var(--green);font-size:24px;font-weight:900}.price-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.price-option{border:1px solid var(--border);border-radius:14px;padding:16px;background:#f8fbfd}.price-name{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:6px}.price-value{font-size:23px;font-weight:900;color:var(--green)}
 .footer-total{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:15px;box-shadow:0 -8px 25px rgba(0,0,0,.07)}
 .total-label{font-size:11px;color:var(--muted);letter-spacing:.05em}.total-number{color:var(--green);font-size:30px;font-weight:900}
 .buttons{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:12px 17px;font-size:14px;font-weight:800;cursor:pointer}.primary{background:var(--navy);color:#fff}.secondary{background:#edf3f7;color:var(--navy)}.danger{background:#f8eeee;color:#8c2f2f}
@@ -63,15 +63,8 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;
 
 <section class="page" id="cabinetPage">
 <h2>Cabinet Refacing</h2>
-<div class="note">Select the group you are working with, then enter the measurements. All four refacing prices will still be calculated every time, and your selected group will be highlighted.</div>
-<div class="card"><h3>Material Group</h3>
-<select id="cabinetGroup">
-<option value="">No Cabinet Refacing</option>
-<option value="g1">Group #1 — Alder, Beech &amp; Paint Grade Hardwood</option>
-<option value="g2">Group #2 — Red Oak, Hickory &amp; Farmhouse Chic</option>
-<option value="g3">Group #3 — Maple, Cherry &amp; White Oak</option>
-<option value="thermo">Thermofoil</option>
-</select></div>
+<div class="note">Enter the cabinet measurements once. The estimator automatically calculates all four refacing price options every time.</div>
+
 <div class="card"><h3>Cabinet Measurements</h3><div class="grid3">
 <div class="field"><label>Base Cabinets — Linear Feet</label><input id="baseLF" type="number" min="0" step=".01" value="0"></div>
 <div class="field"><label>30&quot; &amp; Under Uppers — Linear Feet</label><input id="upper30" type="number" min="0" step=".01" value="0"></div>
@@ -141,7 +134,12 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;
 </section>
 
 <div class="footer-total no-print">
-<div><div class="total-label">SELECTED GROUP ESTIMATE</div><div class="total-number" id="grandTotal">$0</div><div class="small" id="selectedGroupLabel">Select a group</div></div>
+<div style="flex:1"><div class="total-label">CURRENT ESTIMATE — ALL 4 OPTIONS</div><div class="price-grid" style="margin-top:7px">
+<div><div class="small">Thermofoil</div><div class="subtotal-value" id="footThermo">$0</div></div>
+<div><div class="small">Group 1</div><div class="subtotal-value" id="footG1">$0</div></div>
+<div><div class="small">Group 2</div><div class="subtotal-value" id="footG2">$0</div></div>
+<div><div class="small">Group 3</div><div class="subtotal-value" id="footG3">$0</div></div>
+</div></div>
 <div class="buttons"><button type="button" class="btn secondary" id="saveButton">Save Estimate</button><button type="button" class="btn primary" id="summaryButton">View Summary</button></div>
 </div>
 </div></div>
@@ -230,17 +228,10 @@ $("cabThermo").textContent=money(cabinets.thermo);$("cabG1").textContent=money(c
 $("counterSubtotal").textContent=money(counters);$("pulloutSubtotal").textContent=money(pulls);$("extrasSubtotal").textContent=money(extras);
 $("summaryCounters").textContent=money(counters);$("summaryPullouts").textContent=money(pulls);$("summaryExtras").textContent=money(extras);
 $("sumThermo").textContent=money(totals.thermo);$("sumG1").textContent=money(totals.g1);$("sumG2").textContent=money(totals.g2);$("sumG3").textContent=money(totals.g3);
-var selected=$("cabinetGroup").value;
-var labels={thermo:"Thermofoil",g1:"Group 1",g2:"Group 2",g3:"Group 3"};
-var selectedTotal=selected&&totals[selected]!==undefined?totals[selected]:0;
-$("grandTotal").textContent=money(selectedTotal);
-$("selectedGroupLabel").textContent=selected?labels[selected]:"Select a group";
-["thermo","g1","g2","g3"].forEach(function(key){
-var suffix=key==="thermo"?"Thermo":key.toUpperCase();
-var selectedClass=selected===key;
-$("card"+suffix).classList.toggle("selected",selectedClass);
-$("sumCard"+suffix).classList.toggle("selected",selectedClass);
-});
+$("footThermo").textContent=money(totals.thermo);
+$("footG1").textContent=money(totals.g1);
+$("footG2").textContent=money(totals.g2);
+$("footG3").textContent=money(totals.g3);
 $("summaryCustomer").textContent=$("customerName").value||"Customer";
 var c=[];if($("jobAddress").value)c.push($("jobAddress").value);if($("cityZip").value)c.push($("cityZip").value);if($("phone").value)c.push($("phone").value);if($("email").value)c.push($("email").value);if($("salesperson").value)c.push("Employee: "+$("salesperson").value);$("summaryContact").innerHTML=c.join("<br>");
 var notes=$("jobNotes").value.trim();$("summaryNotes").textContent=notes;$("summaryNotesBox").style.display=notes?"block":"none";
