@@ -273,7 +273,7 @@ focusMinutes.textContent=(data.studyPlans||[]).filter(x=>days(x.date)>=0&&days(x
 projectCount.textContent=ass.filter(a=>a.status!=='done'&&(a.type==='Project'||a.type==='Test'||a.type==='Quiz')).length;changeCount.textContent=(data.changes||[]).length;
 renderCalendar();renderGrades();renderStudy();renderInbox();renderParent();renderWeekly();renderRewards();bindChecks()}
 function encourage(m,t,d){if(!m&&!t)return'Nothing urgent right now. Staying caught up is a win — enjoy the breathing room.';if(!m&&t)return'You’re caught up on missing work. Finish what’s due today and protect that streak.';if(m===1)return'One missing assignment is manageable. Finish that one first, then everything else gets easier.';return'Don’t try to fix everything at once. Pick one missing assignment, finish it, then take the next one.'}
-function bindChecks(){document.querySelectorAll('[data-complete]').forEach(x=>x.onchange=()=>{const a=data.assignments.find(z=>z.id===x.dataset.complete);if(a){a.status=x.checked?'done':'assigned';if(x.checked){data.points=(data.points||0)+10;data.streak=(data.streak||0)+1}save()}})}
+function bindChecks(){document.querySelectorAll('[data-complete]').forEach(x=>x.onchange=()=>{const a=data.assignments.find(z=>z.id===x.dataset.complete);if(!a)return;if(x.checked){const ok=window.confirm('Are you done with this assignment?');if(!ok){x.checked=false;return;}a.status='done';data.points=(data.points||0)+10;data.streak=(data.streak||0)+1;}else{const ok=window.confirm('Mark this assignment as not complete?');if(!ok){x.checked=true;return;}a.status='assigned';}save();})}
 function renderWork(ass){
  const list=ass.filter(a=>{
   if(workFilter==='missing')return st(a)==='missing';
