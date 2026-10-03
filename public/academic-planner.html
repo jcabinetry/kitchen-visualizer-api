@@ -60,7 +60,7 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
   <div class="hero-actions"><button class="do-now" id="doNowBtn">✨ What should I do now?</button></div>
 </section>
 
-<section class="verse-day" aria-label="Bible verse of the day">
+<section class="verse-day" aria-label="Bible verse for today">
   <div class="verse-label">✝ Bible verse of the day</div>
   <div class="verse-text" id="dailyVerseText"></div>
   <div class="verse-ref" id="dailyVerseRef"></div>
@@ -345,7 +345,7 @@ const bibleVerses=[
 {r:'Matthew 11:28',t:'Come unto me, all ye that labour and are heavy laden, and I will give you rest.',m:'Rest is not laziness. When you are genuinely worn down, slowing down and bringing your burden to God can be part of moving forward.'},
 {r:'1 Thessalonians 5:11',t:'Wherefore comfort yourselves together, and edify one another.',m:'Be the friend who builds people up instead of tearing them down. Encouragement is powerful.'},
 {r:'Psalm 138:8',t:'The LORD will perfect that which concerneth me.',m:'You are still growing. You do not need to be a finished version of yourself at fourteen, fifteen, or sixteen.'}];
-function setDailyVerse(){const now=new Date(),key=now.getFullYear()*1000+Math.floor((now-new Date(now.getFullYear(),0,0))/86400000),v=bibleVerses[key%bibleVerses.length];document.getElementById('dailyVerseText').textContent='“'+v.t+'”';document.getElementById('dailyVerseRef').textContent=v.r;document.getElementById('dailyVerseMeaning').textContent='For today: '+v.m}
+function setDailyVerse(){const last=sessionStorage.getItem('mollyLastVerse'),choices=bibleVerses.filter(v=>v.r!==last),v=choices[Math.floor(Math.random()*choices.length)]||bibleVerses[0];document.getElementById('dailyVerseText').textContent='“'+v.t+'”';document.getElementById('dailyVerseRef').textContent=v.r;document.getElementById('dailyVerseMeaning').textContent='For today: '+v.m;sessionStorage.setItem('mollyLastVerse',v.r)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function parseDate(v){if(!v)return null;const [y,m,d]=String(v).split('-').map(Number);if(!y||!m||!d)return null;return new Date(y,m-1,d,12)}
 function days(v){const d=parseDate(v);if(!d)return null;const t=new Date();t.setHours(12,0,0,0);return Math.round((d-t)/86400000)}
