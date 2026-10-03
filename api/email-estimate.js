@@ -50,28 +50,51 @@ export default async function handler(req, res) {
     }
 
     const totals = p.totals || {};
-    const customerHtml = `
-      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1f2937;max-width:700px;margin:auto;">
-        <h2 style="color:#173a57;margin-bottom:4px;">Johnson Cabinetry &amp; Refacing</h2>
-        <p style="margin-top:0;color:#6b7280;">Estimate for ${esc(customerName)}</p>
-        ${p.customer?.address ? `<p><strong>Project:</strong> ${esc(p.customer.address)} ${esc(p.customer.cityZip || "")}</p>` : ""}
-        <h3 style="color:#173a57;">Your 4 Refacing Price Options</h3>
-        <table style="width:100%;border-collapse:collapse;">
-          <tr><td style="padding:10px;border-bottom:1px solid #e5e7eb;"><strong>Thermofoil</strong></td><td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;">${money(totals.thermo)}</td></tr>
-          <tr><td style="padding:10px;border-bottom:1px solid #e5e7eb;"><strong>Group 1</strong><br><span style="color:#6b7280;font-size:12px;">Alder, Beech &amp; Paint Grade Hardwood</span></td><td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;">${money(totals.g1)}</td></tr>
-          <tr><td style="padding:10px;border-bottom:1px solid #e5e7eb;"><strong>Group 2</strong><br><span style="color:#6b7280;font-size:12px;">Red Oak, Hickory &amp; Farmhouse Chic</span></td><td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;">${money(totals.g2)}</td></tr>
-          <tr><td style="padding:10px;"><strong>Group 3</strong><br><span style="color:#6b7280;font-size:12px;">Maple, Cherry &amp; White Oak</span></td><td style="padding:10px;text-align:right;font-weight:700;">${money(totals.g3)}</td></tr>
-        </table>
-        <h3 style="color:#173a57;">Included Work</h3>
-        <p><strong>Countertops:</strong> ${money(p.sections?.countertops)}</p>
-        <p><strong>Pull-Out Shelves:</strong> ${money(p.sections?.pullouts)}</p>
-        <p><strong>Other Services:</strong> ${money(p.sections?.extras)}</p>
-        ${p.customerNotes ? `<p><strong>Notes:</strong><br>${esc(p.customerNotes).replace(/\n/g, "<br>")}</p>` : ""}
-        <p style="margin-top:24px;">Questions or ready to move forward? Contact Johnson Cabinetry &amp; Refacing.</p>
-        <p>970-652-0240<br>www.jcabinetry.com</p>
-        <p style="font-size:12px;color:#6b7280;">This is an estimate and may be revised if field conditions or scope change.</p>
+    const customerHtml = \`
+      <div style="margin:0;padding:0;background:#f3f6f8;font-family:Arial,Helvetica,sans-serif;color:#26313b;">
+        <div style="max-width:720px;margin:0 auto;padding:28px 14px;">
+          <div style="background:#173a57;border-radius:18px 18px 0 0;padding:28px 32px;color:#ffffff;">
+            <div style="font-size:28px;font-weight:800;line-height:1.15;">Johnson Cabinetry &amp; Refacing</div>
+            <div style="margin-top:7px;font-size:14px;opacity:.9;">Family Owned. Local. Trusted.</div>
+          </div>
+          <div style="background:#ffffff;border:1px solid #dce4ea;border-top:0;border-radius:0 0 18px 18px;overflow:hidden;">
+            <div style="padding:30px 32px 12px;">
+              <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#6b7782;font-weight:700;">Project Estimate</div>
+              <h1 style="margin:8px 0 10px;font-size:27px;line-height:1.2;color:#173a57;">Thank you, \${esc(customerName)}.</h1>
+              <p style="margin:0;font-size:16px;line-height:1.6;color:#465460;">Thank you for the opportunity to help with your project. Below are the cabinet refacing options we prepared for you.</p>
+              \${p.customer?.address ? \`<div style="margin-top:18px;padding:14px 16px;background:#f6f9fb;border-radius:10px;"><div style="font-size:12px;color:#6b7782;text-transform:uppercase;font-weight:700;letter-spacing:.05em;">Project Location</div><div style="margin-top:4px;font-size:15px;font-weight:700;color:#26313b;">\${esc(p.customer.address)} \${esc(p.customer.cityZip || "")}</div></div>\` : ""}
+            </div>
+            <div style="padding:8px 32px 6px;">
+              <h2 style="font-size:20px;color:#173a57;margin:16px 0 12px;">Your Refacing Options</h2>
+              <table role="presentation" style="width:100%;border-collapse:separate;border-spacing:0 10px;">
+                <tr><td style="padding:16px 18px;background:#f8fafb;border:1px solid #dce4ea;border-radius:12px;"><div style="font-weight:800;color:#173a57;font-size:16px;">Thermofoil</div><div style="font-size:13px;color:#6b7782;margin-top:3px;">Clean, durable and low-maintenance</div></td><td style="padding:16px 18px;background:#f8fafb;border:1px solid #dce4ea;border-radius:12px;text-align:right;white-space:nowrap;font-size:22px;font-weight:800;color:#178253;">\${money(totals.thermo)}</td></tr>
+                <tr><td style="padding:16px 18px;background:#f8fafb;border:1px solid #dce4ea;border-radius:12px;"><div style="font-weight:800;color:#173a57;font-size:16px;">Group 1</div><div style="font-size:13px;color:#6b7782;margin-top:3px;">Alder, Beech &amp; Paint Grade Hardwood</div></td><td style="padding:16px 18px;background:#f8fafb;border:1px solid #dce4ea;border-radius:12px;text-align:right;white-space:nowrap;font-size:22px;font-weight:800;color:#178253;">\${money(totals.g1)}</td></tr>
+                <tr><td style="padding:16px 18px;background:#f8fafb;border:1px solid #dce4ea;border-radius:12px;"><div style="font-weight:800;color:#173a57;font-size:16px;">Group 2</div><div style="font-size:13px;color:#6b7782;margin-top:3px;">Red Oak, Hickory &amp; Farmhouse Chic</div></td><td style="padding:16px 18px;background:#f8fafb;border:1px solid #dce4ea;border-radius:12px;text-align:right;white-space:nowrap;font-size:22px;font-weight:800;color:#178253;">\${money(totals.g2)}</td></tr>
+                <tr><td style="padding:16px 18px;background:#f8fafb;border:1px solid #dce4ea;border-radius:12px;"><div style="font-weight:800;color:#173a57;font-size:16px;">Group 3</div><div style="font-size:13px;color:#6b7782;margin-top:3px;">Maple, Cherry &amp; White Oak</div></td><td style="padding:16px 18px;background:#f8fafb;border:1px solid #dce4ea;border-radius:12px;text-align:right;white-space:nowrap;font-size:22px;font-weight:800;color:#178253;">\${money(totals.g3)}</td></tr>
+              </table>
+            </div>
+            <div style="padding:12px 32px 6px;">
+              <h2 style="font-size:20px;color:#173a57;margin:14px 0 12px;">Project Summary</h2>
+              <table role="presentation" style="width:100%;border-collapse:collapse;background:#f8fafb;border:1px solid #dce4ea;">
+                <tr><td style="padding:12px 15px;border-bottom:1px solid #e3e8ec;">Countertops</td><td style="padding:12px 15px;border-bottom:1px solid #e3e8ec;text-align:right;font-weight:700;">\${money(p.sections?.countertops)}</td></tr>
+                <tr><td style="padding:12px 15px;border-bottom:1px solid #e3e8ec;">Pull-Out Shelves</td><td style="padding:12px 15px;border-bottom:1px solid #e3e8ec;text-align:right;font-weight:700;">\${money(p.sections?.pullouts)}</td></tr>
+                <tr><td style="padding:12px 15px;">Other Included Services</td><td style="padding:12px 15px;text-align:right;font-weight:700;">\${money(p.sections?.extras)}</td></tr>
+              </table>
+            </div>
+            \${p.customerNotes ? \`<div style="padding:14px 32px 6px;"><h2 style="font-size:20px;color:#173a57;margin:14px 0 10px;">Project Notes</h2><div style="padding:15px 16px;background:#fff8e7;border:1px solid #ead7a3;border-radius:10px;line-height:1.6;">\${esc(p.customerNotes).replace(/\\n/g, "<br>")}</div></div>\` : ""}
+            <div style="padding:24px 32px 30px;">
+              <div style="background:#173a57;border-radius:14px;padding:22px;color:#ffffff;text-align:center;">
+                <div style="font-size:20px;font-weight:800;">Questions or ready to move forward?</div>
+                <div style="margin-top:8px;font-size:14px;line-height:1.6;opacity:.95;">We’re happy to review the options with you and answer any questions about your project.</div>
+                <div style="margin-top:18px;"><a href="tel:9706520240" style="display:inline-block;background:#178253;color:#ffffff;text-decoration:none;font-weight:800;padding:11px 18px;border-radius:8px;margin:4px;">Call 970-652-0240</a><a href="https://www.jcabinetry.com" style="display:inline-block;background:#ffffff;color:#173a57;text-decoration:none;font-weight:800;padding:11px 18px;border-radius:8px;margin:4px;">Visit jcabinetry.com</a></div>
+              </div>
+              <p style="margin:22px 0 0;font-size:12px;line-height:1.5;color:#7a858f;text-align:center;">Estimate pricing is based on the project information available at the time of preparation and may be adjusted if scope, selections, dimensions, or field conditions change.</p>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:12px;color:#87919a;padding:14px 20px;">Johnson Cabinetry &amp; Refacing &nbsp;•&nbsp; Colorado Premier Refacing Specialist</div>
+        </div>
       </div>
-    `;
+    \`;
 
     const internalHtml = `
       <div style="font-family:Arial,sans-serif;line-height:1.45;color:#111827;max-width:800px;margin:auto;">
@@ -124,7 +147,8 @@ export default async function handler(req, res) {
     const customerResult = await resend.emails.send({
       from: "Johnson Cabinetry & Refacing <onboarding@resend.dev>",
       to: [customerEmail],
-      subject: `Your Estimate | Johnson Cabinetry & Refacing`,
+      subject: `Your Cabinet Refacing Estimate | Johnson Cabinetry & Refacing`,
+      reply_to: process.env.JCR_REPLY_TO_EMAIL || "dusty@jcabinetry.com",
       html: customerHtml
     });
 
