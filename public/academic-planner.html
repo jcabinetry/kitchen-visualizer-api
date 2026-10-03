@@ -10,6 +10,7 @@
 :root{--bg:#f6f7fb;--card:#fff;--ink:#1f2430;--muted:#6f7787;--line:#e7e9f0;--p:#5b5bd6;--p2:#8a62ed;--red:#d94a4a;--orange:#df8a1c;--green:#2b9a66;--blue:#2f7ee6;--shadow:0 10px 30px rgba(27,31,59,.08);--r:20px}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#f4f2ff 0,#f7f8fb 260px);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 button,input,select,textarea{font:inherit}.app{max-width:1180px;margin:auto;padding:18px 18px 100px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 2px 18px}.brand{display:flex;align-items:center;gap:12px}.logo{width:48px;height:48px;border-radius:50%;cursor:pointer;background:linear-gradient(135deg,var(--p),var(--p2));display:grid;place-items:center;color:#fff;font-size:20px;font-weight:950;box-shadow:0 0 0 3px #fff,0 4px 14px rgba(0,0,0,.12)}.brand h1{margin:0;font-size:22px}.sub{color:var(--muted);font-size:13px}.connect,.primary{border:0;background:var(--p);color:#fff;padding:11px 14px;border-radius:12px;font-weight:800;cursor:pointer}.connect{background:#111827}.ghost{border:1px solid var(--line);background:#fff;padding:9px 12px;border-radius:12px;cursor:pointer}.hero{background:linear-gradient(135deg,#5554d8,#8a62ed);color:#fff;border-radius:28px;padding:24px;display:grid;grid-template-columns:1.6fr .8fr;gap:18px;box-shadow:0 18px 50px rgba(91,91,214,.24)}.hero h2{font-size:30px;margin:0 0 8px}.hero p{margin:0;opacity:.9}.hero-actions{display:flex;align-items:center;justify-content:flex-end}.do-now{border:0;border-radius:18px;padding:17px 19px;background:#fff;color:#3f3fae;font-weight:900;font-size:16px;cursor:pointer}
+.verse-day{margin:12px 0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px 18px;box-shadow:var(--shadow)}.verse-day .verse-label{font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--p);margin-bottom:7px}.verse-day .verse-text{font-size:17px;font-weight:850;line-height:1.35;color:var(--ink)}.verse-day .verse-ref{font-weight:900;color:var(--p);margin-top:5px}.verse-day .verse-meaning{font-size:14px;color:var(--muted);line-height:1.45;margin-top:8px}
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:16px 0}.stat{background:#fff;padding:17px;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow)}.stat .num{font-size:28px;font-weight:900}.stat .label{color:var(--muted);font-size:13px}.danger .num{color:var(--red)}.warn .num{color:var(--orange)}.good .num{color:var(--green)}
 .nav{display:flex;gap:8px;overflow:auto;padding:2px 0 14px}.nav button{white-space:nowrap;border:1px solid var(--line);background:#fff;padding:10px 14px;border-radius:999px;color:#4d5564;font-weight:700;cursor:pointer}.nav button.active{background:#191d2c;color:#fff;border-color:#191d2c}
 .view{display:none}.view.active{display:block}.grid{display:grid;grid-template-columns:1.4fr .8fr;gap:16px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}.card h3{margin:0 0 12px;font-size:17px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.list{display:grid;gap:9px}.item{border:1px solid var(--line);border-radius:15px;padding:12px;display:flex;gap:11px;align-items:center}.item-main{min-width:0;flex:1}.item-title{font-weight:800}.item-meta{color:var(--muted);font-size:12px;margin-top:3px}.dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}.red{background:var(--red)}.orange{background:var(--orange)}.blue{background:var(--blue)}.green{background:var(--green)}.pill{font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;background:#f1f3f8}.pill.red{background:#fff0f0;color:#b93232}.pill.orange{background:#fff5e9;color:#aa640e}.pill.green{background:#eaf8f1;color:#1d7d50}.encourage{background:linear-gradient(135deg,#ecfff6,#f4f1ff);padding:16px;border-radius:16px;font-weight:700;line-height:1.45}
@@ -57,6 +58,13 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 <section class="hero">
   <div><h2 id="greeting">You've got this, Molly.</h2><p>Assignments, grades, study plans, reminders, email notices and your school calendar in one place.</p></div>
   <div class="hero-actions"><button class="do-now" id="doNowBtn">✨ What should I do now?</button></div>
+</section>
+
+<section class="verse-day" aria-label="Bible verse of the day">
+  <div class="verse-label">✝ Bible verse of the day</div>
+  <div class="verse-text" id="dailyVerseText"></div>
+  <div class="verse-ref" id="dailyVerseRef"></div>
+  <div class="verse-meaning" id="dailyVerseMeaning"></div>
 </section>
 
 <div class="stats">
@@ -285,6 +293,39 @@ const inspoMessages=[
 ];
 function setFreshInspo(){const el=document.getElementById('greeting');if(!el)return;const last=sessionStorage.getItem('mollyLastInspo'),choices=inspoMessages.filter(x=>x!==last),msg=choices[Math.floor(Math.random()*choices.length)]||inspoMessages[0];el.textContent=msg;sessionStorage.setItem('mollyLastInspo',msg)}
 
+const bibleVerses=[
+{r:'Philippians 4:13',t:'I can do all things through Christ which strengtheneth me.',m:'When school feels overwhelming, remember that you do not have to rely only on your own strength.'},
+{r:'Proverbs 3:5',t:'Trust in the LORD with all thine heart; and lean not unto thine own understanding.',m:'You will not always know how everything will work out. Keep doing your part and trust God with what you cannot control.'},
+{r:'Isaiah 41:10',t:'Fear thou not; for I am with thee: be not dismayed; for I am thy God.',m:'A hard test, a stressful day, or a mistake does not have to control you. You are not facing it alone.'},
+{r:'Psalm 46:10',t:'Be still, and know that I am God.',m:'When your mind is racing, slow down for a moment. You do not have to solve everything at once.'},
+{r:'Joshua 1:9',t:'Be strong and of a good courage; be not afraid, neither be thou dismayed.',m:'Courage is not never feeling nervous. It is moving forward even when something feels hard.'},
+{r:'Psalm 56:3',t:'What time I am afraid, I will trust in thee.',m:'Fear and faith can show up at the same time. When you are worried, choose where you will place your trust.'},
+{r:'Proverbs 16:3',t:'Commit thy works unto the LORD, and thy thoughts shall be established.',m:'Give your effort to God, make a plan, and take the next step instead of carrying the whole day in your head.'},
+{r:'Colossians 3:23',t:'And whatsoever ye do, do it heartily, as to the Lord, and not unto men;',m:'Even ordinary schoolwork can be done with purpose. Give your best effort because your character matters more than applause.'},
+{r:'Psalm 119:105',t:'Thy word is a lamp unto my feet, and a light unto my path.',m:'You may not see the whole path ahead. Look for enough light to take the next right step.'},
+{r:'Romans 12:12',t:'Rejoicing in hope; patient in tribulation; continuing instant in prayer;',m:'Hard seasons do not last forever. Keep hope, stay patient, and keep talking to God.'},
+{r:'Galatians 6:9',t:'And let us not be weary in well doing: for in due season we shall reap, if we faint not.',m:'Progress can feel slow. Keep showing up and doing what is right even before you can see the payoff.'},
+{r:'Psalm 34:17',t:'The righteous cry, and the LORD heareth, and delivereth them out of all their troubles.',m:'It is okay to ask God for help. Prayer does not require having everything figured out first.'},
+{r:'Matthew 6:34',t:'Take therefore no thought for the morrow: for the morrow shall take thought for the things of itself.',m:'Do what you can today instead of letting tomorrow’s worries steal all of today’s energy.'},
+{r:'Proverbs 4:23',t:'Keep thy heart with all diligence; for out of it are the issues of life.',m:'Protect what you let shape your thoughts and attitude. What fills your heart affects how you handle everything else.'},
+{r:'Psalm 139:14',t:'I will praise thee; for I am fearfully and wonderfully made.',m:'Your worth is bigger than a grade, a mistake, or someone else’s opinion of you.'},
+{r:'James 1:5',t:'If any of you lack wisdom, let him ask of God, that giveth to all men liberally.',m:'When you do not know what to do next, asking for wisdom is a strong first step.'},
+{r:'1 Peter 5:7',t:'Casting all your care upon him; for he careth for you.',m:'You were never meant to carry every worry by yourself. Bring the things weighing on you to God.'},
+{r:'Psalm 37:5',t:'Commit thy way unto the LORD; trust also in him; and he shall bring it to pass.',m:'Make good choices, keep moving, and trust God with the parts of the future you cannot control.'},
+{r:'2 Timothy 1:7',t:'For God hath not given us the spirit of fear; but of power, and of love, and of a sound mind.',m:'Fear does not have to make your decisions. You can respond with courage, kindness, and a clear mind.'},
+{r:'Psalm 118:24',t:'This is the day which the LORD hath made; we will rejoice and be glad in it.',m:'Today is its own opportunity. Whatever happened yesterday, you get another day to learn, grow, and begin again.'},
+{r:'Proverbs 17:22',t:'A merry heart doeth good like a medicine.',m:'Joy matters too. School is important, but so are laughter, friends, rest, and enjoying the life God gave you.'},
+{r:'Ephesians 4:32',t:'And be ye kind one to another, tenderhearted, forgiving one another.',m:'How you treat people matters. Kindness and forgiveness can change someone else’s day and your own.'},
+{r:'Micah 6:8',t:'Do justly, and to love mercy, and to walk humbly with thy God.',m:'When you are unsure what kind of person to be, choose what is right, show mercy, and stay humble.'},
+{r:'Psalm 27:1',t:'The LORD is my light and my salvation; whom shall I fear?',m:'You do not have to let fear be the loudest voice in the room.'},
+{r:'Hebrews 11:1',t:'Now faith is the substance of things hoped for, the evidence of things not seen.',m:'Sometimes you keep moving before you can see the result. Faith gives you a reason to keep hoping.'},
+{r:'Romans 8:28',t:'And we know that all things work together for good to them that love God.',m:'A bad day or setback does not have to be the end of the story. God can use difficult things as part of something bigger.'},
+{r:'Psalm 55:22',t:'Cast thy burden upon the LORD, and he shall sustain thee.',m:'When the list feels too heavy, hand the worry to God and then handle one thing at a time.'},
+{r:'Proverbs 15:1',t:'A soft answer turneth away wrath: but grievous words stir up anger.',m:'When emotions get high, a calm response can keep a small problem from becoming a big one.'},
+{r:'Matthew 5:16',t:'Let your light so shine before men, that they may see your good works.',m:'You can influence people without trying to impress them. Let your choices, kindness, and effort speak for you.'},
+{r:'Psalm 23:4',t:'I will fear no evil: for thou art with me.',m:'Even on difficult days, God’s presence is something you can hold onto.'}
+];
+function setDailyVerse(){const now=new Date(),key=now.getFullYear()*1000+Math.floor((now-new Date(now.getFullYear(),0,0))/86400000),v=bibleVerses[key%bibleVerses.length];document.getElementById('dailyVerseText').textContent='“'+v.t+'”';document.getElementById('dailyVerseRef').textContent=v.r;document.getElementById('dailyVerseMeaning').textContent='For today: '+v.m}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function parseDate(v){if(!v)return null;const [y,m,d]=String(v).split('-').map(Number);if(!y||!m||!d)return null;return new Date(y,m-1,d,12)}
 function days(v){const d=parseDate(v);if(!d)return null;const t=new Date();t.setHours(12,0,0,0);return Math.round((d-t)/86400000)}
@@ -381,6 +422,6 @@ if(!data.settings.testDataV2){data.assignments.push(
 {id:'test-n7',course:'English',title:'Novel Chapter Reading',type:'Assignment',due:offsetDate(5),status:'assigned',minutes:35,source:'test'}
 );data.settings.testDataV2=true;localStorage.setItem(STORE,JSON.stringify(data));}
 const q=new URLSearchParams(location.search);if(q.get('classroom')==='connected'){history.replaceState({},'',location.pathname);data.connected=true;data.lastSync=new Date().toISOString();save();syncClassroom(true)}else if(data.connected){syncClassroom(true)}document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&data.connected&&Date.now()-lastAutoSync>60000)syncClassroom(true)});setInterval(()=>{if(document.visibilityState==='visible'&&data.connected)syncClassroom(true)},300000);
-setFreshInspo();applyTheme();render();
+setFreshInspo();setDailyVerse();applyTheme();render();
 </script>
 </body></html>
