@@ -312,6 +312,15 @@ calendarSyncBtn.onclick=async()=>{toast('Syncing calendar…');try{const r=await
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});installBtn.onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}else toast('Use your browser menu and choose Add to Home Screen / Install App.')};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/molly-sw.js').catch(()=>{});
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(window.__tt);window.__tt=setTimeout(()=>t.style.display='none',2800)}
+if(!data.settings.testDataV1){data.assignments.push(
+{id:'test-m1',course:'Biology',title:'Missing: Cell Membrane Worksheet',type:'Assignment',due:offsetDate(-2),status:'missing',minutes:20,source:'test'},
+{id:'test-m2',course:'Algebra',title:'Missing: Systems of Equations Practice',type:'Assignment',due:offsetDate(-1),status:'missing',minutes:25,source:'test'},
+{id:'test-t1',course:'English',title:'Reading Response',type:'Assignment',due:offsetDate(0),status:'assigned',minutes:30,source:'test'},
+{id:'test-t2',course:'World History',title:'Chapter 6 Notes',type:'Assignment',due:offsetDate(0),status:'assigned',minutes:20,source:'test'},
+{id:'test-n1',course:'Science',title:'Lab Questions',type:'Assignment',due:offsetDate(1),status:'assigned',minutes:35,source:'test'},
+{id:'test-n2',course:'Algebra',title:'Quiz Review',type:'Quiz',due:offsetDate(2),status:'assigned',minutes:30,source:'test'},
+{id:'test-n3',course:'English',title:'Essay Draft',type:'Project',due:offsetDate(4),status:'assigned',minutes:60,source:'test'}
+);data.settings.testDataV1=true;localStorage.setItem(STORE,JSON.stringify(data));}
 const q=new URLSearchParams(location.search);if(q.get('classroom')==='connected'){history.replaceState({},'',location.pathname);data.connected=true;data.lastSync=new Date().toISOString();save();syncClassroom()}
 applyTheme();render();
 </script>
