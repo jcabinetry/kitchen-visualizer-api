@@ -55,7 +55,7 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 </div>
 
 <section class="hero">
-  <div><h2 id="greeting">You've got this, Molly.</h2><p>Assignments, grades, study plans, reminders, email notices and your school calendar in one place.</p></div>
+  <div><h2 id="greeting">You've got this, Molly.</h2><p id="heroInspo">One thing at a time. You can do this.</p></div>
   <div class="hero-actions"><button class="do-now" id="doNowBtn">✨ What should I do now?</button></div>
 </section>
 
@@ -261,6 +261,30 @@ function currentDayStreak(){const dates=[...new Set(data.streakDates||[])].sort(
 function recordStreakActivity(a){if(!a||a.source==='test'||a.source==='demo')return;data.streakDates=data.streakDates||[];const key=localDayKey();if(!data.streakDates.includes(key))data.streakDates.push(key);data.streakDates=data.streakDates.slice(-120);data.streak=currentDayStreak()}
 function learnedMinutes(a){const h=data.timeHistory||[],same=h.filter(x=>x.course===a.course),vals=(same.length?same:h.filter(x=>x.type===a.type)).map(x=>+x.actual).filter(x=>x>0);if(vals.length)return Math.max(10,Math.min(90,Math.round(vals.reduce((n,v)=>n+v,0)/vals.length/5)*5));const t=(a.title||'').toLowerCase(),type=(a.type||'').toLowerCase();if(type==='project'||/project|essay|paper|presentation/.test(t))return 60;if(type==='test'||/test|exam/.test(t))return 45;if(type==='quiz'||/quiz/.test(t))return 30;if(/read|chapter|response/.test(t))return 35;if(/warm.?up|exit ticket|practice/.test(t))return 20;return 30}
 function assignmentMinutes(a){return +a.minutes||learnedMinutes(a)}
+const inspoMessages=[
+'One thing at a time. You can do this.',
+'Start small. Getting started is the hardest part.',
+'You do not have to finish everything at once.',
+'Future you will be glad you started now.',
+'Progress counts, even when it is not perfect.',
+'Pick one thing. Finish it. Then pick the next.',
+'You are closer than you think.',
+'Done is better than perfect.',
+'Twenty focused minutes can change your whole afternoon.',
+'Hard does not mean impossible.',
+'Your grades do not define you. Your effort matters.',
+'Clear one thing off the list and build from there.',
+'You can have a rough day and still make progress.',
+'Do the next right thing, not everything.',
+'Small wins add up fast.',
+'You have handled hard school days before.',
+'Focus on what you can finish today.',
+'Give yourself credit for showing up.',
+'Less worrying. More starting.',
+'Get it done, then go enjoy your time.'
+];
+function setFreshInspo(){const el=document.getElementById('heroInspo');if(!el)return;const last=sessionStorage.getItem('mollyLastInspo'),choices=inspoMessages.filter(x=>x!==last),msg=choices[Math.floor(Math.random()*choices.length)]||inspoMessages[0];el.textContent=msg;sessionStorage.setItem('mollyLastInspo',msg)}
+
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function parseDate(v){if(!v)return null;const [y,m,d]=String(v).split('-').map(Number);if(!y||!m||!d)return null;return new Date(y,m-1,d,12)}
 function days(v){const d=parseDate(v);if(!d)return null;const t=new Date();t.setHours(12,0,0,0);return Math.round((d-t)/86400000)}
@@ -357,6 +381,6 @@ if(!data.settings.testDataV2){data.assignments.push(
 {id:'test-n7',course:'English',title:'Novel Chapter Reading',type:'Assignment',due:offsetDate(5),status:'assigned',minutes:35,source:'test'}
 );data.settings.testDataV2=true;localStorage.setItem(STORE,JSON.stringify(data));}
 const q=new URLSearchParams(location.search);if(q.get('classroom')==='connected'){history.replaceState({},'',location.pathname);data.connected=true;data.lastSync=new Date().toISOString();save();syncClassroom(true)}else if(data.connected){syncClassroom(true)}document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&data.connected&&Date.now()-lastAutoSync>60000)syncClassroom(true)});setInterval(()=>{if(document.visibilityState==='visible'&&data.connected)syncClassroom(true)},300000);
-applyTheme();render();
+setFreshInspo();applyTheme();render();
 </script>
 </body></html>
