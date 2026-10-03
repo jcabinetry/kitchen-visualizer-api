@@ -29,9 +29,9 @@ input,select,textarea{width:100%;border:1px solid #cbd7df;border-radius:10px;pad
 .subtotal{display:flex;justify-content:space-between;align-items:center;gap:20px}.subtotal-value{color:var(--green);font-size:24px;font-weight:900}.price-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.price-option{border:1px solid var(--border);border-radius:14px;padding:16px;background:#f8fbfd}.price-name{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:6px}.price-value{font-size:23px;font-weight:900;color:var(--green)}
 .footer-total{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:15px;box-shadow:0 -8px 25px rgba(0,0,0,.07)}
 .total-label{font-size:11px;color:var(--muted);letter-spacing:.05em}.total-number{color:var(--green);font-size:30px;font-weight:900}
-.buttons{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:12px 17px;font-size:14px;font-weight:800;cursor:pointer}.primary{background:var(--navy);color:#fff}.secondary{background:#edf3f7;color:var(--navy)}.danger{background:#f8eeee;color:#8c2f2f}
+.buttons{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:12px 17px;font-size:14px;font-weight:800;cursor:pointer}.btn:disabled{opacity:.55;cursor:wait}.primary{background:var(--navy);color:#fff}.secondary{background:#edf3f7;color:var(--navy)}.danger{background:#f8eeee;color:#8c2f2f}.success{background:var(--green);color:#fff}.status{margin-top:10px;font-size:13px;font-weight:700}.overview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.overview-box{border:1px solid var(--border);border-radius:12px;padding:14px;background:#fafcfd}.overview-box h4{margin:0 0 8px;color:var(--navy)}.overview-list{margin:0;padding-left:18px}.overview-list li{margin:4px 0}
 table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;padding:10px;text-align:left}th{color:var(--navy);background:#f5f8fa;font-size:13px}.right{text-align:right}.summary-total td{font-size:19px;font-weight:900}.summary-total td:last-child{color:var(--green)}
-@media(max-width:760px){.app{margin:0;padding:0}.shell{border-radius:0}.grid2,.grid3{grid-template-columns:1fr}.price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.item-row{grid-template-columns:1fr 100px}.line-total{grid-column:2}.footer-total{align-items:flex-start;flex-direction:column}.header h1{font-size:24px}.page{padding:17px}}
+@media(max-width:760px){.app{margin:0;padding:0}.shell{border-radius:0}.grid2,.grid3,.overview-grid{grid-template-columns:1fr}.price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.item-row{grid-template-columns:1fr 100px}.line-total{grid-column:2}.footer-total{align-items:flex-start;flex-direction:column}.header h1{font-size:24px}.page{padding:17px}}
 @media print{body{background:#fff}.tabs,.footer-total,.no-print{display:none!important}.page{display:none!important}#summaryPage{display:block!important}.app{margin:0;max-width:none}.shell{box-shadow:none;border:0}}
 </style>
 </head>
@@ -58,7 +58,7 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;
 <div class="field"><label>Phone</label><input id="phone" type="tel"></div>
 <div class="field"><label>Email</label><input id="email" type="email"></div>
 </div>
-<div class="field" style="margin-top:15px"><label>Job Notes</label><textarea id="jobNotes" rows="5"></textarea></div>
+<div class="grid2" style="margin-top:15px"><div class="field"><label>Internal Job Notes</label><textarea id="jobNotes" rows="5"></textarea></div><div class="field"><label>Customer-Facing Estimate Notes</label><textarea id="customerNotes" rows="5" placeholder="Optional notes that can be emailed to the customer"></textarea></div></div>
 </section>
 
 <section class="page" id="cabinetPage">
@@ -129,8 +129,8 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;
 <div class="price-option" id="sumCardG3"><div class="price-name">Group 3</div><div class="price-value" id="sumG3">$0</div></div>
 </div>
 </tbody></table></div>
-<div class="card" id="summaryNotesBox" style="display:none"><strong>Job Notes</strong><div id="summaryNotes" style="margin-top:8px"></div></div>
-<div class="buttons no-print"><button type="button" class="btn primary" id="printButton">Print / Save PDF</button><button type="button" class="btn secondary" id="saveButton2">Save Estimate</button><button type="button" class="btn danger" id="clearButton">Clear Estimate</button></div>
+<div class="card"><h3>Full Job Overview</h3><div id="fullOverview"></div></div><div class="card" id="summaryNotesBox" style="display:none"><strong>Internal Job Notes</strong><div id="summaryNotes" style="margin-top:8px"></div></div>
+<div class="buttons no-print"><button type="button" class="btn success" id="emailEstimateButton">Email Estimate</button><button type="button" class="btn primary" id="downloadRecordButton">Download Full Job Record</button><button type="button" class="btn secondary" id="printButton">Print / Save PDF</button><button type="button" class="btn secondary" id="saveButton2">Save on This Device</button><button type="button" class="btn danger" id="clearButton">Clear Estimate</button></div><div class="status no-print" id="actionStatus"></div>
 </section>
 
 <div class="footer-total no-print">
@@ -140,7 +140,7 @@ table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e5eaee;
 <div><div class="small">Group 2</div><div class="subtotal-value" id="footG2">$0</div></div>
 <div><div class="small">Group 3</div><div class="subtotal-value" id="footG3">$0</div></div>
 </div></div>
-<div class="buttons"><button type="button" class="btn secondary" id="saveButton">Save Estimate</button><button type="button" class="btn primary" id="summaryButton">View Summary</button></div>
+<div class="buttons"><button type="button" class="btn secondary" id="saveButton">Save on This Device</button><button type="button" class="btn primary" id="summaryButton">View Summary</button></div>
 </div>
 </div></div>
 
@@ -221,6 +221,59 @@ pullouts.push({width:w,depth:d,qty:q,scoops:s,total:pulloutPrice(w,d,q,s)});
 $("pullWidth").value="";$("pullDepth").value="";$("pullQty").value=1;$("pullScoops").value=0;renderPullouts();recalc();
 });
 function calculateExtras(){return sumExtras("floorExtra",flooringItems)+sumExtras("miscExtra",miscItems)}
+function collectQtyItems(prefix,items){
+return items.map(function(item,index){return {name:item[0],unit:item[1],qty:num(prefix+index)};}).filter(function(x){return x.qty>0;});
+}
+function getRecord(){
+var cabinets=calculateCabinets(),counters=calculateCounters(),pullsTotal=calculatePullouts(),extrasTotal=calculateExtras(),nonCab=counters+pullsTotal+extrasTotal;
+return {
+savedAt:new Date().toLocaleString(),
+customer:{
+name:$("customerName").value.trim(),
+salesperson:$("salesperson").value.trim(),
+address:$("jobAddress").value.trim(),
+cityZip:$("cityZip").value.trim(),
+phone:$("phone").value.trim(),
+email:$("email").value.trim()
+},
+measurements:{
+baseLF:num("baseLF"),upper30:num("upper30"),upper36:num("upper36"),upper42:num("upper42"),pantryLF:num("pantryLF"),doorCount:num("doorCount"),drawerCount:num("drawerCount")
+},
+countertop:{
+sqft:num("counterSqFt"),
+levelValue:num("counterLevel"),
+levelLabel:$("counterLevel").options[$("counterLevel").selectedIndex].text
+},
+details:{
+cabinetExtras:collectQtyItems("cabExtra",cabinetExtras),
+counterExtras:collectQtyItems("counterExtra",counterExtras),
+pullouts:pullouts.map(function(x){return {width:x.width,depth:x.depth,qty:x.qty,scoops:x.scoops,total:x.total};}),
+flooring:collectQtyItems("floorExtra",flooringItems),
+misc:collectQtyItems("miscExtra",miscItems)
+},
+sections:{countertops:counters,pullouts:pullsTotal,extras:extrasTotal},
+totals:{thermo:cabinets.thermo+nonCab,g1:cabinets.g1+nonCab,g2:cabinets.g2+nonCab,g3:cabinets.g3+nonCab},
+internalNotes:$("jobNotes").value.trim(),
+customerNotes:$("customerNotes").value.trim()
+};
+}
+function overviewList(items){
+if(!items.length)return "<div class=\"small\">None</div>";
+return "<ul class=\"overview-list\">"+items.map(function(x){return "<li>"+x.name+": <strong>"+x.qty+"</strong> "+x.unit+"</li>";}).join("")+"</ul>";
+}
+function renderOverview(){
+var r=getRecord();
+var pulls=r.details.pullouts.length?r.details.pullouts.map(function(x){return "<li>"+x.width+"&quot; W × "+x.depth+"&quot; D — Qty <strong>"+x.qty+"</strong>, Scoops "+x.scoops+"</li>";}).join(""):"<div class=\"small\">None</div>";
+$("fullOverview").innerHTML=
+'<div class="overview-grid">'+
+'<div class="overview-box"><h4>Cabinet Measurements</h4><div>Base: <strong>'+r.measurements.baseLF+' LF</strong></div><div>30&quot; &amp; Under Uppers: <strong>'+r.measurements.upper30+' LF</strong></div><div>36&quot; Uppers: <strong>'+r.measurements.upper36+' LF</strong></div><div>42&quot; Uppers: <strong>'+r.measurements.upper42+' LF</strong></div><div>Pantry/Tall: <strong>'+r.measurements.pantryLF+' LF</strong></div><div>Doors: <strong>'+r.measurements.doorCount+'</strong></div><div>Drawer Fronts: <strong>'+r.measurements.drawerCount+'</strong></div></div>'+
+'<div class="overview-box"><h4>Countertops</h4><div>Square Feet: <strong>'+r.countertop.sqft+'</strong></div><div>Level: <strong>'+r.countertop.levelLabel+'</strong></div>'+overviewList(r.details.counterExtras)+'</div>'+
+'<div class="overview-box"><h4>Cabinet Add-Ons</h4>'+overviewList(r.details.cabinetExtras)+'</div>'+
+'<div class="overview-box"><h4>Pull-Out Shelves</h4>'+(r.details.pullouts.length?'<ul class="overview-list">'+pulls+'</ul>':pulls)+'</div>'+
+'<div class="overview-box"><h4>Flooring</h4>'+overviewList(r.details.flooring)+'</div>'+
+'<div class="overview-box"><h4>Miscellaneous</h4>'+overviewList(r.details.misc)+'</div>'+
+'</div>';
+}
 function recalc(){
 var cabinets=calculateCabinets(),counters=calculateCounters(),pulls=calculatePullouts(),extras=calculateExtras(),nonCab=counters+pulls+extras;
 var totals={thermo:cabinets.thermo+nonCab,g1:cabinets.g1+nonCab,g2:cabinets.g2+nonCab,g3:cabinets.g3+nonCab};
@@ -234,7 +287,7 @@ $("footG2").textContent=money(totals.g2);
 $("footG3").textContent=money(totals.g3);
 $("summaryCustomer").textContent=$("customerName").value||"Customer";
 var c=[];if($("jobAddress").value)c.push($("jobAddress").value);if($("cityZip").value)c.push($("cityZip").value);if($("phone").value)c.push($("phone").value);if($("email").value)c.push($("email").value);if($("salesperson").value)c.push("Employee: "+$("salesperson").value);$("summaryContact").innerHTML=c.join("<br>");
-var notes=$("jobNotes").value.trim();$("summaryNotes").textContent=notes;$("summaryNotesBox").style.display=notes?"block":"none";
+var notes=$("jobNotes").value.trim();$("summaryNotes").textContent=notes;$("summaryNotesBox").style.display=notes?"block":"none";renderOverview();
 }
 function openPage(pageId){
 document.querySelectorAll(".page").forEach(function(page){page.classList.remove("active")});
@@ -263,6 +316,26 @@ if(!confirm("Clear this entire estimate?"))return;
 localStorage.removeItem("JCR_ESTIMATE");
 document.querySelectorAll("input,textarea").forEach(function(field){if(field.type==="number")field.value=field.id==="pullQty"?1:0;else field.value=""});
 document.querySelectorAll("select").forEach(function(select){select.selectedIndex=0});pullouts=[];renderPullouts();recalc();openPage("jobPage");
+});
+$("downloadRecordButton").addEventListener("click",function(){
+var r=getRecord();
+var safe=(r.customer.name||"customer").replace(/[^a-z0-9_-]+/gi,"_");
+var html='<!doctype html><html><head><meta charset="utf-8"><title>JCR Job Record</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:30px auto;padding:20px;color:#222}h1,h2{color:#173a57}table{width:100%;border-collapse:collapse}td,th{padding:7px;border-bottom:1px solid #ddd;text-align:left}</style></head><body><h1>JCR Full Job Record</h1><p><strong>Saved:</strong> '+r.savedAt+'</p><p><strong>Customer:</strong> '+(r.customer.name||"")+'<br><strong>Address:</strong> '+r.customer.address+' '+r.customer.cityZip+'<br><strong>Phone:</strong> '+r.customer.phone+'<br><strong>Email:</strong> '+r.customer.email+'<br><strong>Salesperson:</strong> '+r.customer.salesperson+'</p><h2>Measurements</h2><table><tr><td>Base Cabinets</td><td>'+r.measurements.baseLF+' LF</td></tr><tr><td>30&quot; & Under Uppers</td><td>'+r.measurements.upper30+' LF</td></tr><tr><td>36&quot; Uppers</td><td>'+r.measurements.upper36+' LF</td></tr><tr><td>42&quot; Uppers</td><td>'+r.measurements.upper42+' LF</td></tr><tr><td>Pantry/Tall</td><td>'+r.measurements.pantryLF+' LF</td></tr><tr><td>Doors</td><td>'+r.measurements.doorCount+'</td></tr><tr><td>Drawer Fronts</td><td>'+r.measurements.drawerCount+'</td></tr></table><h2>Full Overview</h2>'+$("fullOverview").innerHTML+'<h2>Final Totals</h2><p>Thermofoil: <strong>'+money(r.totals.thermo)+'</strong><br>Group 1: <strong>'+money(r.totals.g1)+'</strong><br>Group 2: <strong>'+money(r.totals.g2)+'</strong><br>Group 3: <strong>'+money(r.totals.g3)+'</strong></p><h2>Internal Notes</h2><p>'+(r.internalNotes||"").replace(/\n/g,"<br>")+'</p></body></html>';
+var blob=new Blob([html],{type:"text/html"});
+var url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="JCR_Job_Record_"+safe+".html";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+});
+$("emailEstimateButton").addEventListener("click",async function(){
+var btn=this,status=$("actionStatus"),r=getRecord();
+if(!r.customer.email||!r.customer.email.includes("@")){status.textContent="Enter the customer's email address on the Job page first.";status.style.color="#8c2f2f";return;}
+if(!confirm("Email this estimate to "+r.customer.email+"?"))return;
+btn.disabled=true;status.textContent="Sending estimate...";status.style.color="#465460";
+try{
+var response=await fetch("/api/email-estimate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(r)});
+var data=await response.json();
+if(!response.ok)throw new Error(data.error||"Email failed.");
+status.textContent="Estimate emailed to "+r.customer.email+" and an internal record copy was sent to JCR.";status.style.color="#178253";
+}catch(err){status.textContent=err.message||"Email failed.";status.style.color="#8c2f2f";}
+finally{btn.disabled=false;}
 });
 $("printButton").addEventListener("click",function(){recalc();window.print()});
 loadEstimate();renderPullouts();recalc();
