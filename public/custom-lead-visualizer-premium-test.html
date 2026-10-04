@@ -2402,6 +2402,10 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     const catalogDoorProfileMustAvoid = activeProfileField("doorProfileMustAvoid");
     const catalogDrawerProfileMustAvoid = activeProfileField("drawerProfileMustAvoid");
     const profileAnalysisStatus = activeProfileField("profileAnalysisStatus");
+    const catalogDoorMasterWidthInches = activeProfileField("doorMasterWidthInches");
+    const catalogDoorMasterHeightInches = activeProfileField("doorMasterHeightInches");
+    const catalogDoorFrameWidthInches = activeProfileField("doorFrameWidthInches");
+    const doorFrameMeasurementStatus = activeProfileField("doorFrameMeasurementStatus");
     if (!catalogDoorImage) {
       status.innerText = "This catalog style is missing its AI door reference. Generate and save the AI door reference in Catalog Manager, then reload this page.";
       return;
@@ -2413,6 +2417,10 @@ It should look like the existing doors, drawers, and cabinet faces were professi
     const cleanPromptTest = String(KV_COMPANY.companyKey || "") === "13333";
     if (!cleanPromptTest && (!catalogDoorConstructionType || !catalogDrawerConstructionType)) {
       status.innerText = "This catalog style is missing its door or drawer construction type. Edit it in Catalog Manager, choose Inset, Raised panel, or Slab for both, save, then reload this page.";
+      return;
+    }
+    if (!cleanPromptTest && catalogDoorConstructionType !== "slab" && (!catalogDoorFrameWidthInches || doorFrameMeasurementStatus !== "confirmed")) {
+      status.innerText = "This catalog style needs a confirmed rail and stile width. In Catalog Manager, measure the rail and stile, review the suggested number, save the door, and reload this page.";
       return;
     }
     if (!cleanPromptTest && (!catalogDoorProfileDescription || !catalogDrawerProfileDescription || !catalogDoorProfileMustAvoid || !catalogDrawerProfileMustAvoid || profileAnalysisStatus !== "ready")) {
@@ -2478,10 +2486,15 @@ It should look like the existing doors, drawers, and cabinet faces were professi
           catalogDrawerProfileDescription: catalogDrawerProfileDescription,
           catalogDoorProfileMustAvoid: catalogDoorProfileMustAvoid,
           catalogDrawerProfileMustAvoid: catalogDrawerProfileMustAvoid,
+          catalogDoorMasterWidthInches: catalogDoorMasterWidthInches || 18,
+          catalogDoorMasterHeightInches: catalogDoorMasterHeightInches || 24,
+          catalogDoorFrameWidthInches: catalogDoorFrameWidthInches || null,
+          doorFrameMeasurementStatus: doorFrameMeasurementStatus,
           profileAnalysisStatus: profileAnalysisStatus,
           requireConstructionTypes: !cleanPromptTest,
           requireDrawerReference: true,
           requireProfileDescriptions: !cleanPromptTest,
+          requireFrameMeasurements: !cleanPromptTest,
           catalogSwatchReference: upperSwatchImage || null,
           catalogBaseSwatchReference: baseSwatchImage || null,
           upperSwatchName: upperFinishName || colorInput.value || null,
