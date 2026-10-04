@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Custom Cabinet Visualizer V2</title>
+  <style>
+    :root{--brand:#17324d;--ink:#172033;--muted:#647084;--line:#dfe4ec;--paper:#fff;--wash:#f4f6f9;--good:#087a55;--bad:#b42318}*{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{width:min(1120px,100%);margin:auto;padding:24px}.hero,.panel{background:var(--paper);border:1px solid var(--line);border-radius:20px;box-shadow:0 14px 38px rgba(23,32,51,.08)}.hero{display:flex;align-items:center;gap:18px;padding:20px 22px;margin-bottom:18px}.logo{width:62px;height:62px;border-radius:14px;object-fit:contain;background:#fff;border:1px solid var(--line);display:none}.hero h1{margin:0;font-size:clamp(24px,4vw,38px);letter-spacing:-.03em}.hero p{margin:5px 0 0;color:var(--muted)}.grid{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:18px}.panel{padding:20px}.panel h2{margin:0 0 15px;font-size:18px}.field{margin:0 0 14px}label{display:block;margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}select,input[type=file],button{width:100%;min-height:46px;border-radius:12px;font:inherit}select,input[type=file]{border:1px solid var(--line);background:#fff;padding:10px}button{border:0;background:var(--brand);color:#fff;font-weight:850;padding:11px 16px;cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}.previews{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 16px}.preview{border:1px solid var(--line);border-radius:14px;padding:10px;background:#fafbfc;min-width:0}.preview strong{display:block;font-size:12px;margin-bottom:8px}.preview img{width:100%;height:120px;object-fit:contain;border-radius:9px;background:#fff}.preview .empty{height:120px;display:grid;place-items:center;color:var(--muted);font-size:12px;text-align:center}.status{min-height:24px;margin:12px 0 0;color:var(--muted);font-size:13px;line-height:1.45}.status.error{color:var(--bad)}.status.good{color:var(--good)}.stage{min-height:520px;display:grid;place-items:center;border:1px dashed var(--line);border-radius:16px;overflow:hidden;background:#fafbfc}.stage img{display:block;width:100%;height:auto}.placeholder{max-width:440px;padding:30px;text-align:center;color:var(--muted)}.badge{display:inline-block;margin-bottom:12px;padding:7px 10px;border-radius:999px;background:#e9f0f7;color:var(--brand);font-size:12px;font-weight:850}.fine{font-size:12px;color:var(--muted);line-height:1.5;margin:11px 0 0}@media(max-width:820px){.shell{padding:12px}.grid{grid-template-columns:1fr}.stage{min-height:300px}.hero{align-items:flex-start}.previews img,.preview .empty{height:100px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero"><img id="logo" class="logo" alt=""><div><h1 id="title">Custom Cabinet Visualizer</h1><p>Exact catalog door geometry, exact finish, protected room layout.</p></div></header>
+    <div class="grid">
+      <section class="panel">
+        <h2>Build your cabinet preview</h2>
+        <div class="field"><label for="catalog">Catalog</label><select id="catalog"></select></div>
+        <div class="field"><label for="manufacturer">Manufacturer</label><select id="manufacturer"></select></div>
+        <div class="field"><label for="line">Cabinet line</label><select id="line"></select></div>
+        <div class="field"><label for="door">Door style</label><select id="door"></select></div>
+        <div class="field"><label for="finish">Cabinet color / finish</label><select id="finish"></select></div>
+        <div class="previews"><div class="preview"><strong>Selected door</strong><div id="doorPreview" class="empty">Select a ready door style</div></div><div class="preview"><strong>Selected finish</strong><div id="finishPreview" class="empty">Select a finish swatch</div></div></div>
+        <div class="field"><label for="photo">Kitchen photo</label><input id="photo" type="file" accept="image/png,image/jpeg,image/webp"></div>
+        <button id="generate" type="button" disabled>Generate protected preview</button>
+        <div id="status" class="status">Loading the assigned catalog…</div>
+        <p class="fine">The browser submits your kitchen photo and selection IDs. Door, drawer, and finish reference assets are retrieved and verified by the backend.</p>
+      </section>
+      <section class="panel"><h2>Your preview</h2><div id="stage" class="stage"><div class="placeholder"><span class="badge">Custom workflow V2</span><br>Your original room layout is locked while the selected catalog door and finish are applied.</div></div></section>
+    </div>
+  </main>
+  <script>
+    const params=new URLSearchParams(location.search),companyKey=params.get("companyKey")||"";
+    const $=id=>document.getElementById(id),state={catalogs:[],company:null};
+    function status(message,type=""){const el=$("status");el.textContent=message;el.className="status "+type}
+    function option(select,value,label,disabled=false){const el=document.createElement("option");el.value=value;el.textContent=label;el.disabled=disabled;select.appendChild(el)}
+    function selected(collection,id){return(collection||[]).find(item=>item.id===id)||(collection||[])[0]||null}
+    function catalog(){return selected(state.catalogs,$("catalog").value)}
+    function manufacturer(){return selected(catalog()?.manufacturers,$("manufacturer").value)}
+    function line(){return selected(manufacturer()?.lines,$("line").value)}
+    function door(){return selected(line()?.doors,$("door").value)}
+    function finish(){return selected(line()?.finishes,$("finish").value)}
+    function fill(select,items,label){select.innerHTML="";if(!items?.length){option(select,"","No "+label+" available",true);return}items.forEach(item=>option(select,item.id,item.name+(item.ready===false?" — catalog setup required":""),item.ready===false))}
+    function showPreview(id,item,fallback){const box=$(id);box.className="";box.innerHTML="";if(item?.preview){const img=document.createElement("img");img.src=item.preview;img.alt=item.name||"Catalog preview";box.appendChild(img)}else{box.className="empty";box.textContent=fallback}}
+    function renderFinishes(){fill($("finish"),line()?.finishes,"finishes");showPreview("finishPreview",finish(),"No finish swatch available");renderDoor();ready()}
+    function renderDoor(){showPreview("doorPreview",door(),"No door image available");ready()}
+    function renderLine(){fill($("door"),line()?.doors,"ready door styles");fill($("finish"),line()?.finishes,"finishes");renderDoor();showPreview("finishPreview",finish(),"No finish swatch available");ready()}
+    function renderManufacturer(){fill($("line"),manufacturer()?.lines,"cabinet lines");renderLine()}
+    function renderCatalog(){fill($("manufacturer"),catalog()?.manufacturers,"manufacturers");renderManufacturer()}
+    function ready(){const ok=companyKey&&catalog()&&manufacturer()&&line()&&door()?.ready&&finish()?.ready&&$("photo").files[0];$("generate").disabled=!ok}
+    function readFile(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error("Kitchen photo could not be read."));reader.readAsDataURL(file)})}
+    async function load(){if(!companyKey)throw Error("This visualizer link is missing its company key.");const response=await fetch("/api/custom-visualizer-options?companyKey="+encodeURIComponent(companyKey),{cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||"Catalog options could not be loaded.");state.catalogs=data.catalogs||[];state.company=data.company||{};$("title").textContent=(state.company.companyName||"Custom")+" Cabinet Visualizer";document.documentElement.style.setProperty("--brand",state.company.primaryColor||"#17324d");if(state.company.logoUrl){$("logo").src=state.company.logoUrl;$("logo").style.display="block"}fill($("catalog"),state.catalogs,"assigned catalogs");renderCatalog();status(state.catalogs.length?"Choose a catalog door and finish, then upload a kitchen photo.":"No active catalog is assigned to this customer.",state.catalogs.length?"":"error")}
+    async function generate(){const file=$("photo").files[0];if(!file)return;$("generate").disabled=true;status("Retrieving authoritative catalog assets and generating your preview…");try{const payload={companyKey,image:await readFile(file),selection:{catalogId:catalog().id,manufacturerId:manufacturer().id,lineId:line().id,doorId:door().id,finishId:finish().id}};const response=await fetch("/api/custom-visualizer-v2",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const data=await response.json().catch(()=>({}));if(!response.ok)throw Object.assign(Error(data.error||"Preview could not be generated."),{details:data});$("stage").innerHTML="";const img=document.createElement("img");img.src=data.image;img.alt="Generated cabinet preview";$("stage").appendChild(img);status("Preview passed layout, door, drawer, and finish validation in "+data.attempts+" attempt"+(data.attempts===1?".":"s."),"good")}catch(error){const violations=error.details?.validation?.violations||[];status(error.message+(violations.length?" "+violations.join(" "):""),"error")}finally{ready()}}
+    $("catalog").onchange=renderCatalog;$("manufacturer").onchange=renderManufacturer;$("line").onchange=renderLine;$("door").onchange=renderDoor;$("finish").onchange=()=>{showPreview("finishPreview",finish(),"No finish swatch available");ready()};$("photo").onchange=ready;$("generate").onclick=generate;load().catch(error=>status(error.message,"error"));
+  </script>
+</body>
+</html>

@@ -18,7 +18,7 @@ const TEST_CATALOG_IMAGE_MODEL = "gpt-image-1";
 const CATALOG_IMAGE_QUALITY = "high";
 const CATALOG_PROMPT_VERSION = "v10";
 const CLEAN_TEST_COMPANY_KEY = "13333";
-const CLEAN_TEST_PROMPT_VERSION = "v11-clean";
+const CLEAN_TEST_PROMPT_VERSION = "v12-phone-match";
 
 function selectCatalogImageModel(value) {
   return String(value || "").trim().toLowerCase() === TEST_CATALOG_IMAGE_MODEL
@@ -385,6 +385,18 @@ ${surfaceSection}
 Produce one photorealistic image with accurate lighting, perspective, and textures.`;
 }
 
+function buildCatalogPromptV12PhoneMatch() {
+  return `Replace all existing cabinet doors and drawer fronts in image 1 with the exact door and drawer-front styles shown together in reference image 2. Match the profiles, frame widths, inside bevels, center panels, proportions, edge details, and craftsmanship exactly. Do not simplify either profile or substitute a shaker style. Preserve every detail of the reference designs.
+
+Keep the cabinet boxes, cabinet layout, appliance locations, countertops, backsplash, flooring, walls, windows, trim, lighting, hardware placement, island, decorations, and room dimensions exactly as they are. Do not redesign, modernize, or move anything.
+
+Fit the referenced door style naturally to each cabinet-door size, including double doors, narrow doors, tall pantry doors, and island doors. Fit the referenced drawer-front style naturally to each drawer size. Maintain the same visible proportions and profile details shown in reference image 2.
+
+Apply the exact paint color shown in reference image 3 uniformly to all doors, drawer fronts, and visible face frames.
+
+This is a cabinet refacing visualization, not a kitchen remodel. The only changes should be the door style, drawer-front style, and cabinet finish. Everything else must remain identical to the original photograph. Produce one photorealistic image with accurate lighting, perspective, and textures.`;
+}
+
 function appendImage(form, dataUrl, fallbackName) {
   const base64 = stripDataUrl(dataUrl);
   if (!base64) return false;
@@ -430,6 +442,7 @@ export default async function handler(req, res) {
     const baseReference = body.islandCustomReference || body.islandCustomColorImage || body.islandCustomColorData || body.catalogBaseSwatchReference || mainReference;
     const doorReference = body.catalogDoorReference || null;
     const drawerReference = body.catalogDrawerReference || null;
+    const combinedCatalogReference = body.catalogCombinedReference || null;
     const requireDrawerReference = body.requireDrawerReference === true;
     const doorConstructionType = normalizeConstructionType(body.catalogDoorConstructionType);
     const drawerConstructionType = normalizeConstructionType(body.catalogDrawerConstructionType);
@@ -443,10 +456,13 @@ export default async function handler(req, res) {
     const backsplashReference = body.backsplashCustomReference || null;
     const flooringReference = body.flooringCustomReference || null;
 
-    if (!doorReference) {
+    if (cleanPromptTest && !combinedCatalogReference) {
+      return res.status(400).json({ error: "The combined cabinet door and drawer-front reference was not sent. Reload the visualizer, reselect the door style, and try again." });
+    }
+    if (!cleanPromptTest && !doorReference) {
       return res.status(400).json({ error: "Catalog door image was not sent. Select a catalog door again and generate after the page finishes loading." });
     }
-    if (requireDrawerReference && !drawerReference) {
+    if (!cleanPromptTest && requireDrawerReference && !drawerReference) {
       return res.status(400).json({ error: "Catalog drawer image was not sent. Add and generate the separate AI drawer reference in Catalog Manager before creating this premium custom preview." });
     }
     if (!cleanPromptTest && requireConstructionTypes && !doorConstructionType) {
@@ -463,9 +479,10 @@ export default async function handler(req, res) {
     }
 
     const imageModel = selectCatalogImageModel(body.imageModel);
-    const promptBuilder = cleanPromptTest ? buildCatalogPromptV11Clean : buildCatalogPrompt;
     const activePromptVersion = cleanPromptTest ? CLEAN_TEST_PROMPT_VERSION : CATALOG_PROMPT_VERSION;
-    const selectedPrompt = promptBuilder(body, !!mainReference, !!(baseReference && baseReference !== mainReference), !!countertopReference, !!backsplashReference, !!flooringReference);
+    const selectedPrompt = cleanPromptTest
+      ? buildCatalogPromptV12PhoneMatch()
+      : buildCatalogPrompt(body, !!mainReference, !!(baseReference && baseReference !== mainReference), !!countertopReference, !!backsplashReference, !!flooringReference);
 
     const form = new FormData();
     const generationId = createGenerationId();
@@ -478,13 +495,14 @@ export default async function handler(req, res) {
     }
     const attachmentStatus = {
       kitchen: false,
+      catalogCombined: !cleanPromptTest,
       catalogDoor: false,
-      catalogDrawer: !drawerReference,
+      catalogDrawer: cleanPromptTest ? false : !drawerReference,
       upperSwatch: false,
-      baseSwatch: !baseReference || baseReference === mainReference,
-      countertop: !countertopReference,
-      backsplash: !backsplashReference,
-      flooring: !flooringReference
+      baseSwatch: cleanPromptTest || !baseReference || baseReference === mainReference,
+      countertop: cleanPromptTest || !countertopReference,
+      backsplash: cleanPromptTest || !backsplashReference,
+      flooring: cleanPromptTest || !flooringReference
     };
     form.append("model", imageModel);
     form.append("prompt", selectedPrompt);
@@ -492,22 +510,30 @@ export default async function handler(req, res) {
     form.append("quality", CATALOG_IMAGE_QUALITY);
     attachmentStatus.kitchen = appendImage(form, body.image, "kitchen");
     if (attachmentStatus.kitchen) observeImage("Kitchen photo", body.image, "kitchen");
-    attachmentStatus.catalogDoor = appendImage(form, doorReference, "selected-catalog-door-exact-reference");
-    if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
-    if (drawerReference) attachmentStatus.catalogDrawer = appendImage(form, drawerReference, "selected-catalog-drawer-front-reference");
-    if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Approved AI drawer-front master", drawerReference, "selected-catalog-drawer-front-reference");
+    if (cleanPromptTest) {
+      attachmentStatus.catalogCombined = appendImage(form, combinedCatalogReference, "combined-approved-door-and-drawer-reference");
+      attachmentStatus.catalogDoor = attachmentStatus.catalogCombined;
+      attachmentStatus.catalogDrawer = attachmentStatus.catalogCombined;
+      if (attachmentStatus.catalogCombined) observeImage("Combined approved drawer-front and cabinet-door reference", combinedCatalogReference, "combined-approved-door-and-drawer-reference");
+    } else {
+      attachmentStatus.catalogDoor = appendImage(form, doorReference, "selected-catalog-door-exact-reference");
+      if (attachmentStatus.catalogDoor) observeImage("Approved AI cabinet door master", doorReference, "selected-catalog-door-exact-reference");
+      if (drawerReference) attachmentStatus.catalogDrawer = appendImage(form, drawerReference, "selected-catalog-drawer-front-reference");
+      if (attachmentStatus.catalogDrawer && drawerReference) observeImage("Approved AI drawer-front master", drawerReference, "selected-catalog-drawer-front-reference");
+    }
     attachmentStatus.upperSwatch = appendImage(form, mainReference, "selected-upper-swatch-reference");
     if (attachmentStatus.upperSwatch) observeImage("Upper swatch", mainReference, "selected-upper-swatch-reference");
-    if (baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(form, baseReference, "selected-base-swatch-reference");
-    if (attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
-    if (countertopReference) attachmentStatus.countertop = appendImage(form, countertopReference, "selected-countertop-reference");
-    if (attachmentStatus.countertop && countertopReference) observeImage("Countertop reference", countertopReference, "selected-countertop-reference");
-    if (backsplashReference) attachmentStatus.backsplash = appendImage(form, backsplashReference, "selected-backsplash-reference");
-    if (attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash reference", backsplashReference, "selected-backsplash-reference");
-    if (flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
-    if (attachmentStatus.flooring && flooringReference) observeImage("Flooring reference", flooringReference, "selected-flooring-reference");
+    if (!cleanPromptTest && baseReference && baseReference !== mainReference) attachmentStatus.baseSwatch = appendImage(form, baseReference, "selected-base-swatch-reference");
+    if (!cleanPromptTest && attachmentStatus.baseSwatch && baseReference && baseReference !== mainReference) observeImage("Base swatch", baseReference, "selected-base-swatch-reference");
+    if (!cleanPromptTest && countertopReference) attachmentStatus.countertop = appendImage(form, countertopReference, "selected-countertop-reference");
+    if (!cleanPromptTest && attachmentStatus.countertop && countertopReference) observeImage("Countertop reference", countertopReference, "selected-countertop-reference");
+    if (!cleanPromptTest && backsplashReference) attachmentStatus.backsplash = appendImage(form, backsplashReference, "selected-backsplash-reference");
+    if (!cleanPromptTest && attachmentStatus.backsplash && backsplashReference) observeImage("Backsplash reference", backsplashReference, "selected-backsplash-reference");
+    if (!cleanPromptTest && flooringReference) attachmentStatus.flooring = appendImage(form, flooringReference, "selected-flooring-reference");
+    if (!cleanPromptTest && attachmentStatus.flooring && flooringReference) observeImage("Flooring reference", flooringReference, "selected-flooring-reference");
 
     if (!attachmentStatus.kitchen) return res.status(400).json({ error: "Kitchen image could not be attached. Upload the kitchen photo again and retry." });
+    if (cleanPromptTest && !attachmentStatus.catalogCombined) return res.status(400).json({ error: "The combined cabinet reference could not be attached. Reload the visualizer and retry." });
     if (!attachmentStatus.catalogDoor) return res.status(400).json({ error: "Catalog door image could not be attached. Select the catalog door again after the page finishes loading." });
     if (drawerReference && !attachmentStatus.catalogDrawer) return res.status(400).json({ error: "Catalog drawer front image could not be attached. Select the catalog door style again after the page finishes loading." });
     if (!attachmentStatus.upperSwatch) return res.status(400).json({ error: "Catalog finish swatch could not be attached. Select the catalog color swatch again after the page finishes loading." });
@@ -553,13 +579,13 @@ export default async function handler(req, res) {
         drawerProfileDescription: cleanPromptTest ? "" : drawerProfileDescription,
         doorProfileMustAvoid: cleanPromptTest ? "" : doorProfileMustAvoid,
         drawerProfileMustAvoid: cleanPromptTest ? "" : drawerProfileMustAvoid,
-        promptMode: cleanPromptTest ? "clean-reference-only" : "catalog-guided",
+        promptMode: cleanPromptTest ? "phone-match" : "catalog-guided",
         requestCount: 1,
         upperFinish: body.upperSwatchName || body.selectedFinishColor || body.color || "",
-        baseFinish: body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || "",
-        countertop: body.countertop || "",
-        backsplash: body.backsplash || "",
-        flooring: body.flooring || ""
+        baseFinish: cleanPromptTest ? (body.upperSwatchName || body.selectedFinishColor || body.color || "") : (body.baseSwatchName || body.selectedBaseFinishColor || body.island || body.upperSwatchName || ""),
+        countertop: cleanPromptTest ? "Keep unchanged" : (body.countertop || ""),
+        backsplash: cleanPromptTest ? "Keep unchanged" : (body.backsplash || ""),
+        flooring: cleanPromptTest ? "Keep unchanged" : (body.flooring || "")
       },
       prompt: selectedPrompt,
       payload: inspectorPayload,
