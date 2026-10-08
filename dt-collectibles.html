@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DT Collectibles AI Listing Manager</title>
+<style>
+:root{--navy:#0f1b2a;--blue:#0d6ea8;--rust:#a4472b;--cream:#f4efe8;--paper:#fff;--ink:#211c18;--muted:#746b63;--line:#ded6cc;--ok:#20743b;--warn:#9a6500;--bad:#a32626}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--cream);color:var(--ink)}
+.hero{height:208px;background:
+radial-gradient(circle at 8% 30%,#4c2f1b 0 7%,transparent 8%),
+radial-gradient(circle at 18% 70%,#6d3b1d 0 8%,transparent 9%),
+radial-gradient(circle at 83% 28%,#5f432b 0 8%,transparent 9%),
+radial-gradient(circle at 92% 72%,#3f2a1e 0 8%,transparent 9%),
+linear-gradient(135deg,#2f1c11,#6b3e20 40%,#2a1b13 72%,#4e2d18);
+position:relative;overflow:hidden;border-bottom:1px solid #1f2d3d}
+.hero:before{content:"📷  🕰️  📚  🎺  🚗  🧳  🔭  📻  🐎  🪙";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;word-spacing:22px;letter-spacing:10px;font-size:36px;opacity:.32;filter:saturate(.6)}
+.logo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:170px;height:170px;border-radius:50%;border:8px solid #8c97a0;background:radial-gradient(circle at 65% 22%,#168ac2 0,#08324d 35%,#101010 69%,#7e261b 100%);box-shadow:0 0 0 3px #2b3846,0 7px 24px #000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:2}
+.logo .dt{font-family:Georgia,serif;font-size:63px;line-height:.8;font-weight:700}.logo .collect{font-family:Georgia,serif;font-size:25px;font-weight:700;margin-top:10px}
+.nav{position:sticky;top:0;z-index:25;background:var(--navy);padding:8px 9px 12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;border-bottom:1px solid #27394d}
+.nav button{border:1px solid #405269;background:#162537;color:#fff;border-radius:12px;padding:12px 6px;font-weight:800;font-size:14px;line-height:1.1;min-height:52px}
+.nav button.on{background:#1684ba}
+.badge{display:inline-block;margin-left:4px}
+.wrap{max-width:900px;margin:auto;padding:28px 26px 105px}.brand{text-align:center;font-weight:800;font-size:21px;color:#5d554c;margin:4px 0 27px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:28px;padding:30px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.card h2{font-size:31px;margin:0 0 18px}.intro{font-size:22px;line-height:1.25;margin:0 0 28px}
+.upload{border:3px dashed #aaa095;border-radius:22px;padding:50px 18px;text-align:center;background:#fbf9f6}
+.uploadIcon{font-size:52px;line-height:1;margin-bottom:20px}.uploadTitle{font-size:26px;font-weight:900;margin-bottom:28px}.upload .small{font-size:17px;margin-top:22px}
+.btn{border:0;border-radius:16px;padding:17px 18px;font-weight:900;font-size:18px;cursor:pointer}.btn.blue{background:#177eb5;color:#fff}.btn.dark{background:var(--navy);color:#fff}.btn.rust{background:var(--rust);color:#fff}.btn.light{background:#eee8e0}.btn.ghost{background:#fff;border:1px solid var(--line)}.btn.full{width:100%}.btn.smallbtn{padding:8px 10px;font-size:13px}
+.field{width:100%;border:1px solid #cec5bb;border-radius:10px;padding:12px;font-size:16px;background:#fff}.label{font-size:12px;font-weight:800;color:var(--muted);margin:13px 0 6px}
+.preview{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.photo{position:relative;border-radius:10px;overflow:hidden;border:2px solid transparent;background:#e9e3da}.photo.main{border-color:var(--blue)}.photo img{width:100%;aspect-ratio:1;object-fit:cover;display:block}.photo .tag{position:absolute;top:5px;left:5px;background:#10202fdd;color:#fff;padding:3px 6px;border-radius:7px;font-size:10px;font-weight:800}.photo .photoBtns{position:absolute;bottom:5px;left:5px;right:5px;display:flex;justify-content:space-between}.photo .photoBtns button{border:0;border-radius:6px;padding:4px 7px;background:#fff;font-weight:900}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.metric{border:1px solid #e0d8ce;border-radius:12px;padding:11px}.big{font-size:28px;font-weight:900}.priceChoices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.priceChoice{border:1px solid var(--line);border-radius:11px;background:#fff;padding:11px 7px;text-align:center;font-weight:850}.priceChoice.active{border-color:var(--blue);background:#eef8fd}
+.presetRow{display:flex;gap:7px;flex-wrap:wrap}.preset{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 10px;font-weight:800}
+.ok{background:#edf7ef;color:var(--ok);padding:11px;border-radius:10px;font-weight:800}.warn{background:#fff5dd;color:var(--warn);padding:11px;border-radius:10px;font-weight:800;margin-top:10px}.bad{background:#fdeaea;color:var(--bad);padding:11px;border-radius:10px;font-weight:800;margin-top:10px}.hidden{display:none!important}.small{font-size:12px;color:var(--muted)}
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);padding:10px}.bottomInner{max-width:900px;margin:auto;display:grid;grid-template-columns:1fr 1.2fr;gap:8px}
+.listing{display:grid;grid-template-columns:65px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #eee}.thumb{width:65px;height:65px;border-radius:9px;background:#ece6de;display:flex;align-items:center;justify-content:center;font-size:26px}.actions{display:flex;gap:6px;flex-wrap:wrap}.recent{display:grid;gap:8px}.recentItem{border:1px solid var(--line);border-radius:11px;padding:10px;background:#fff}.statusline{font-size:12px;color:var(--muted);margin-top:5px}
+@media(max-width:620px){
+ .hero{height:207px}.logo{width:166px;height:166px}.logo .dt{font-size:60px}.logo .collect{font-size:24px}
+ .nav{grid-template-columns:repeat(4,1fr);gap:7px}.nav button{font-size:12px;padding:9px 4px;min-height:51px}
+ .wrap{padding:28px 26px 100px}.brand{font-size:18px}.card{padding:29px;border-radius:28px}.card h2{font-size:28px}.intro{font-size:20px}.upload{padding:48px 12px}.uploadTitle{font-size:24px}.btn{font-size:17px}
+ .listing{grid-template-columns:55px 1fr}.listing .actions{grid-column:1/-1}.row3{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="hero"><div class="logo"><div class="dt">DT</div><div class="collect">Collectibles</div></div></div>
+<section id="new">
+    <div class="card">
+      <h2>New eBay Listing</h2>
+      <p class="intro">Add photos of one item. AI builds the listing, then you approve it.</p>
+      <div class="upload">
+        <div class="uploadIcon">📸</div>
+        <div class="uploadTitle">Add Item Photos</div>
+        <input id="photos" type="file" accept="image/*" multiple>
+        <div class="small">1–12 photos</div>
+      </div>
+      <div id="preview" class="preview"></div>
+      <br><button id="analyzeBtn" class="btn blue full" onclick="analyze()">✨ Analyze Photos & Create Listing</button>
+      <div id="analyzing" class="hidden small" style="text-align:center;margin-top:8px">Analyzing all photos…</div>
+    </div>
+
+    <div id="results" class="hidden">
+      <div class="card">
+        <h2>Listing Details</h2>
+        <div class="label">AI IDENTIFICATION</div><div id="identification" class="ok">Waiting for analysis.</div>
+        <div id="confidenceWarn" class="warn hidden"></div>
+
+        <div class="label">CUSTOM SKU</div><input id="sku" class="field" autocomplete="off">
+
+        <div class="label">TITLE <span id="count" class="small">(0/80)</span></div>
+        <input id="title" class="field" maxlength="80" oninput="countTitle();autosave()" placeholder="AI-generated eBay title">
+
+        <div class="row">
+          <div><div class="label">CATEGORY</div><select id="category" class="field" onchange="autosave()"><option>Collectibles</option><option>Antiques</option><option>Home & Garden</option><option>eBay Motors</option><option>Other</option></select></div>
+          <div><div class="label">CONDITION</div><select id="condition" class="field" onchange="autosave()"><option>Used</option><option>New</option><option>Open box</option><option>For parts or not working</option></select></div>
+        </div>
+
+        <div class="label">CONDITION NOTES</div>
+        <textarea id="conditionNotes" class="field" rows="3" oninput="autosave()" placeholder="Scratches, chips, stains, missing parts, etc."></textarea>
+
+        <div class="label">DESCRIPTION</div>
+        <textarea id="description" class="field" rows="6" oninput="autosave()" placeholder="AI-generated description"></textarea>
+
+        <div class="label">SEARCH TERMS</div>
+        <textarea id="keywords" class="field" rows="2" oninput="autosave()" placeholder="SEO search terms"></textarea>
+      </div>
+
+      <div class="card">
+        <h2>Price</h2>
+        <div class="priceChoices">
+          <button id="priceQuick" class="priceChoice" onclick="choosePrice('quick')"><div class="small">QUICK SALE</div><div id="quickSale">$—</div></button>
+          <button id="priceMarket" class="priceChoice active" onclick="choosePrice('market')"><div class="small">MARKET</div><div id="recommendedPrice">$—</div></button>
+          <button id="priceMax" class="priceChoice" onclick="choosePrice('max')"><div class="small">MAX VALUE</div><div id="maxPrice">$—</div></button>
+        </div>
+        <div class="label">BUY IT NOW</div><input id="buyPrice" class="field" type="number" min="0" step=".01" inputmode="decimal" oninput="autosave()">
+      </div>
+
+      <div class="card">
+        <h2>Shipping</h2>
+        <div class="label">PACKED WEIGHT</div>
+        <div class="row">
+          <div><div class="label">POUNDS</div><input id="weightLb" class="field" type="number" min="0" step="1" inputmode="numeric" placeholder="0" oninput="autosave()"></div>
+          <div><div class="label">OUNCES</div><input id="weightOz" class="field" type="number" min="0" max="15.99" step=".1" inputmode="decimal" placeholder="0" oninput="autosave()"></div>
+        </div>
+
+        <div class="label">PACKAGE SIZE PRESETS</div>
+        <div class="presetRow">
+          <button class="preset" onclick="setPreset(8,6,4)">Small 8×6×4</button>
+          <button class="preset" onclick="setPreset(12,10,8)">Medium 12×10×8</button>
+          <button class="preset" onclick="setPreset(18,14,12)">Large 18×14×12</button>
+          <button class="preset" onclick="setPreset('','','')">Clear</button>
+        </div>
+
+        <div class="label">PACKAGE DIMENSIONS (INCHES)</div>
+        <div class="row3">
+          <div><div class="label">LENGTH</div><input id="length" class="field" type="number" min="0" step=".1" inputmode="decimal" oninput="autosave()"></div>
+          <div><div class="label">WIDTH</div><input id="width" class="field" type="number" min="0" step=".1" inputmode="decimal" oninput="autosave()"></div>
+          <div><div class="label">HEIGHT</div><input id="height" class="field" type="number" min="0" step=".1" inputmode="decimal" oninput="autosave()"></div>
+        </div>
+
+        <div class="row">
+          <div><div class="label">SHIPPING</div><select id="shipping" class="field" onchange="autosave()"><option>Calculated shipping</option><option>Free shipping</option><option>Local pickup</option></select></div>
+          <div><div class="label">HANDLING</div><select id="handling" class="field" onchange="autosave()"><option>1 business day</option><option>2 business days</option><option>3 business days</option></select></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Recent Listings</h2>
+        <div id="recentListings" class="recent"><div class="small">Your latest drafts will show here.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="drafts" class="hidden"><div class="card"><h2>Drafts</h2><div id="draftList" class="small">No saved drafts yet.</div></div></section>
+
+  <section id="active" class="hidden"><div class="card"><h2>Active Listings</h2><div class="small">Your live eBay listings will sync here once eBay is connected.</div></div></section>
+  <section id="sold" class="hidden"><div class="card"><h2>Sold</h2><div class="small">Sold listings will sync here once eBay is connected.</div></div></section>
+
+  <section id="attention" class="hidden"><div class="card"><h2>Needs Attention</h2><div id="attentionList" class="small">Nothing needs attention yet.</div></div></section>
+
+  <section id="orders" class="hidden"><div class="card"><h2>Orders & Shipping</h2><div class="small">Orders will appear here after eBay is connected: Needs Packing → Ready to Ship → Shipped.</div></div></section>
+
+  <section id="settings" class="hidden">
+    <div class="card">
+      <h2>Defaults</h2>
+      <div class="label">LISTING FORMAT</div><select id="defaultFormat" class="field" onchange="saveDefaults()"><option>Buy It Now</option><option>Auction</option></select>
+      <div class="label">PRICING STRATEGY</div><select id="defaultPricing" class="field" onchange="saveDefaults()"><option value="market">Market value</option><option value="quick">Quick sale</option><option value="max">Maximum value</option></select>
+      <div class="label">DEFAULT SHIPPING</div><select id="defaultShipping" class="field" onchange="saveDefaults()"><option>Calculated shipping</option><option>Free shipping</option><option>Local pickup</option></select>
+      <div class="label">DEFAULT HANDLING</div><select id="defaultHandling" class="field" onchange="saveDefaults()"><option>1 business day</option><option>2 business days</option><option>3 business days</option></select>
+      <div class="label">RETURNS</div><select id="defaultReturns" class="field" onchange="saveDefaults()"><option>30-day returns</option><option>No returns</option></select>
+      <div class="statusline">Defaults save automatically.</div>
+    </div>
+    <div class="card"><h2>eBay Connection</h2><div class="warn">Waiting for eBay Developer approval. Once approved, this button will connect your seller account.</div><br><button class="btn dark full" onclick="alert('eBay OAuth will be enabled as soon as developer access is approved.')">Connect eBay Account</button></div>
+  </section>
+</div>
+
+<div id="bottom" class="bottom hidden"><div class="bottomInner"><button class="btn light" onclick="saveDraft()">Save Draft</button><button class="btn rust" onclick="post()">Post to eBay</button></div></div>
+
+<script>
+let photoFiles=[];
+let currentDraftId=null;
+let prices={quick:null,market:null,max:null};
+const $=id=>document.getElementById(id);
+
+function tab(id,b){
+  ['new','drafts','active','sold','attention','orders','settings'].forEach(x=>$(x).classList.add('hidden'));
+  $(id).classList.remove('hidden');
+  document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('on'));
+  if(b)b.classList.add('on');
+  $('bottom').classList.toggle('hidden',id!=='new'||$('results').classList.contains('hidden'));
+  if(id==='drafts')renderDrafts();
+  if(id==='attention')renderAttention();
+  if(id==='new')renderRecent();
+}
+function nextSku(){
+  let n=parseInt(localStorage.getItem('dtCollectiblesNextSku')||'1',10);
+  localStorage.setItem('dtCollectiblesNextSku',String(n+1));
+  return 'DT-'+String(n).padStart(6,'0');
+}
+function ensureSku(){if(!$('sku').value)$('sku').value=nextSku()}
+function countTitle(){$('count').textContent='('+$('title').value.length+'/80)'}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function money(v){return typeof v==='number'&&isFinite(v)?'$'+v.toFixed(2):'$—'}
+function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
+
+$('photos').addEventListener('change',e=>{
+  photoFiles=[...e.target.files].slice(0,12);
+  renderPhotos();
+});
+function renderPhotos(){
+  const p=$('preview');p.innerHTML='';
+  photoFiles.forEach((f,i)=>{
+    const d=document.createElement('div');d.className='photo'+(i===0?' main':'');
+    const img=document.createElement('img');img.src=URL.createObjectURL(f);d.appendChild(img);
+    const tag=document.createElement('div');tag.className='tag';tag.textContent=i===0?'MAIN':'#'+(i+1);d.appendChild(tag);
+    const btns=document.createElement('div');btns.className='photoBtns';
+    const l=document.createElement('button');l.textContent='←';l.disabled=i===0;l.onclick=()=>movePhoto(i,-1);
+    const r=document.createElement('button');r.textContent='→';r.disabled=i===photoFiles.length-1;r.onclick=()=>movePhoto(i,1);
+    btns.append(l,r);d.appendChild(btns);p.appendChild(d);
+  });
+}
+function movePhoto(i,dir){const j=i+dir;if(j<0||j>=photoFiles.length)return;[photoFiles[i],photoFiles[j]]=[photoFiles[j],photoFiles[i]];renderPhotos()}
+
+async function analyze(){
+  if(!photoFiles.length){alert('Add at least one photo first.');return}
+  $('analyzeBtn').disabled=true;$('analyzing').classList.remove('hidden');
+  try{
+    const images=[];for(const f of photoFiles)images.push(await fileToDataUrl(f));
+    const resp=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images})});
+    const data=await resp.json();if(!resp.ok)throw new Error(data.error||'Analysis failed');
+    ensureSku();currentDraftId=null;
+    $('identification').textContent=data.identification||'Unknown item';
+    $('title').value=data.title||'';
+    $('description').value=data.description||'';
+    $('keywords').value=data.keywords||'';
+    $('conditionNotes').value=(data.visibleFlaws||[]).join('; ');
+    setSelect('category',data.category,'Collectibles');setSelect('condition',data.condition,'Used');
+    prices.quick=numberOrNull(data.quickSalePrice);
+    prices.market=numberOrNull(data.recommendedPrice);
+    prices.max=numberOrNull(data.expectedHigh);
+    $('quickSale').textContent=money(prices.quick);$('recommendedPrice').textContent=money(prices.market);$('maxPrice').textContent=money(prices.max);
+    const conf=Number(data.confidence||0);
+    if(conf<75){$('confidenceWarn').textContent='AI confidence '+conf+'% — verify the item identification before posting.';$('confidenceWarn').classList.remove('hidden')}
+    else $('confidenceWarn').classList.add('hidden');
+    choosePrice(loadDefaults().pricing||'market',false);
+    $('results').classList.remove('hidden');$('bottom').classList.remove('hidden');countTitle();autosave();renderRecent();
+    window.scrollTo({top:$('results').offsetTop-70,behavior:'smooth'});
+  }catch(err){
+    alert('AI analysis could not run yet: '+err.message+'\n\nThe Vercel project still needs OPENAI_API_KEY configured.');
+  }finally{$('analyzeBtn').disabled=false;$('analyzing').classList.add('hidden')}
+}
+function numberOrNull(v){const n=Number(v);return Number.isFinite(n)?n:null}
+function setSelect(id,val,fallback){const el=$(id);if([...el.options].some(o=>o.value===val))el.value=val;else el.value=fallback}
+
+function choosePrice(type,save=true){
+  document.querySelectorAll('.priceChoice').forEach(x=>x.classList.remove('active'));
+  const map={quick:'priceQuick',market:'priceMarket',max:'priceMax'};$(map[type]||'priceMarket').classList.add('active');
+  if(prices[type]!=null)$('buyPrice').value=prices[type].toFixed(2);
+  if(save)autosave();
+}
+function setPreset(l,w,h){$('length').value=l;$('width').value=w;$('height').value=h;autosave()}
+
+function formData(){
+  ensureSku();
+  return {
+    id:currentDraftId||crypto.randomUUID(),sku:$('sku').value,title:$('title').value,category:$('category').value,condition:$('condition').value,
+    conditionNotes:$('conditionNotes').value,description:$('description').value,keywords:$('keywords').value,price:$('buyPrice').value,
+    weightLb:$('weightLb').value,weightOz:$('weightOz').value,length:$('length').value,width:$('width').value,height:$('height').value,
+    shipping:$('shipping').value,handling:$('handling').value,identification:$('identification').textContent,
+    prices,updatedAt:new Date().toISOString()
+  };
+}
+function fillForm(d){
+  currentDraftId=d.id||crypto.randomUUID();$('sku').value=d.sku||nextSku();$('title').value=d.title||'';$('category').value=d.category||'Collectibles';
+  $('condition').value=d.condition||'Used';$('conditionNotes').value=d.conditionNotes||'';$('description').value=d.description||'';$('keywords').value=d.keywords||'';
+  $('buyPrice').value=d.price||'';$('weightLb').value=d.weightLb||'';$('weightOz').value=d.weightOz||'';$('length').value=d.length||'';$('width').value=d.width||'';$('height').value=d.height||'';
+  $('shipping').value=d.shipping||'Calculated shipping';$('handling').value=d.handling||'1 business day';$('identification').textContent=d.identification||'Saved draft';
+  prices=d.prices||prices;$('quickSale').textContent=money(prices.quick);$('recommendedPrice').textContent=money(prices.market);$('maxPrice').textContent=money(prices.max);
+  $('results').classList.remove('hidden');$('bottom').classList.remove('hidden');countTitle();autosave();
+}
+function getDrafts(){try{return JSON.parse(localStorage.getItem('dtCollectiblesDrafts')||'[]')}catch{return[]}}
+function setDrafts(a){localStorage.setItem('dtCollectiblesDrafts',JSON.stringify(a));updateDraftCount();renderRecent()}
+function saveDraft(){
+  const d=formData();currentDraftId=d.id;const a=getDrafts();const i=a.findIndex(x=>x.id===d.id||x.sku===d.sku);
+  if(i>=0)a[i]=d;else a.unshift(d);setDrafts(a.slice(0,250));localStorage.removeItem('dtCollectiblesAutosave');alert('Draft saved: '+d.sku)
+}
+function renderDrafts(){
+  const a=getDrafts();updateDraftCount();const box=$('draftList');
+  if(!a.length){box.innerHTML='<div class="small">No saved drafts yet.</div>';return}
+  box.innerHTML=a.map(d=>`<div class="listing"><div class="thumb">📦</div><div><b>${esc(d.title||'Untitled')}</b><div class="small">${esc(d.sku)} • ${esc(d.weightLb||'0')} lb ${esc(d.weightOz||'0')} oz • ${esc(d.length||'—')}×${esc(d.width||'—')}×${esc(d.height||'—')} in</div><b>${d.price?'$'+esc(d.price):'No price'}</b></div><div class="actions"><button class="btn dark smallbtn" onclick="editDraft('${d.id}')">Edit</button><button class="btn ghost smallbtn" onclick="duplicateDraft('${d.id}')">Duplicate</button><button class="btn light smallbtn" onclick="deleteDraft('${d.id}')">Delete</button></div></div>`).join('');
+}
+function editDraft(id){const d=getDrafts().find(x=>x.id===id);if(!d)return;fillForm(d);tab('new',document.querySelector('.nav button'));window.scrollTo({top:0,behavior:'smooth'})}
+function duplicateDraft(id){
+  const a=getDrafts();const d=a.find(x=>x.id===id);if(!d)return;const copy={...d,id:crypto.randomUUID(),sku:nextSku(),title:(d.title||'Untitled')+' - Copy',updatedAt:new Date().toISOString()};
+  a.unshift(copy);setDrafts(a);renderDrafts();
+}
+function deleteDraft(id){if(!confirm('Delete this draft?'))return;setDrafts(getDrafts().filter(x=>x.id!==id));renderDrafts()}
+function updateDraftCount(){const n=getDrafts().length;$('draftCount').textContent=n;}
+function renderRecent(){
+  const a=getDrafts().slice(0,3);const box=$('recentListings');if(!box)return;
+  if(!a.length){box.innerHTML='<div class="small">Your latest drafts will show here.</div>';return}
+  box.innerHTML=a.map(d=>`<div class="recentItem"><b>${esc(d.title||'Untitled')}</b><div class="small">${esc(d.sku)} • ${d.price?'$'+esc(d.price):'No price'} • ${new Date(d.updatedAt).toLocaleDateString()}</div></div>`).join('');
+}
+function renderAttention(){
+  const a=getDrafts();const flags=[];
+  a.forEach(d=>{if(!d.price)flags.push([d,'Missing price']);if(!d.weightLb&&!d.weightOz)flags.push([d,'Missing shipping weight']);if(!d.length||!d.width||!d.height)flags.push([d,'Missing package dimensions']);if((d.title||'').length<20)flags.push([d,'Title may be too short'])});
+  const box=$('attentionList');if(!flags.length){box.innerHTML='<div class="ok">Nothing needs attention right now.</div>';return}
+  box.innerHTML=flags.slice(0,20).map(([d,m])=>`<div class="listing"><div class="thumb">⚠️</div><div><b>${esc(d.title||'Untitled')}</b><div class="warn">${esc(m)}</div></div><div class="actions"><button class="btn dark smallbtn" onclick="editDraft('${d.id}')">Fix</button></div></div>`).join('');
+}
+
+let autoTimer;
+function autosave(){
+  clearTimeout(autoTimer);autoTimer=setTimeout(()=>{if(!$('results').classList.contains('hidden'))localStorage.setItem('dtCollectiblesAutosave',JSON.stringify(formData()))},250);
+}
+function restoreAutosave(){
+  try{const d=JSON.parse(localStorage.getItem('dtCollectiblesAutosave')||'null');if(d){fillForm(d)}}catch{}
+}
+function loadDefaults(){try{return JSON.parse(localStorage.getItem('dtCollectiblesDefaults')||'{}')}catch{return{}}}
+function saveDefaults(){
+  const d={format:$('defaultFormat').value,pricing:$('defaultPricing').value,shipping:$('defaultShipping').value,handling:$('defaultHandling').value,returns:$('defaultReturns').value};
+  localStorage.setItem('dtCollectiblesDefaults',JSON.stringify(d));
+}
+function applyDefaults(){
+  const d=loadDefaults();if(d.format)$('defaultFormat').value=d.format;if(d.pricing)$('defaultPricing').value=d.pricing;if(d.shipping)$('defaultShipping').value=d.shipping;if(d.handling)$('defaultHandling').value=d.handling;if(d.returns)$('defaultReturns').value=d.returns;
+  if(d.shipping)$('shipping').value=d.shipping;if(d.handling)$('handling').value=d.handling;
+}
+function post(){
+  ensureSku();
+  if(!$('title').value.trim()){alert('Add a title first.');return}
+  if(!$('weightLb').value&&!$('weightOz').value){if(!confirm('No shipping weight entered. Continue anyway?'))return}
+  if(confirm('Post this listing to eBay?\n\nSKU: '+$('sku').value+'\nPrice: $'+($('buyPrice').value||'0.00'))){
+    alert('Listing is ready. Real eBay publishing will be enabled when your eBay Developer account is approved.');
+  }
+}
+
+applyDefaults();updateDraftCount();renderRecent();restoreAutosave();countTitle();
+</script>
+</body>
+</html>
