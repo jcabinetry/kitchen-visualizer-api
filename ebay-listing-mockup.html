@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#172033;padding-bottom:92px}
 button,input,select,textarea{font:inherit}.top{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #dde2e8}
-.head{max-width:1050px;margin:auto;padding:14px 14px 8px}.brand{font-weight:900;font-size:23px}.brand span{color:#3665f3}.sub{font-size:12px;color:#667085}
+.hero{background:linear-gradient(135deg,#151515 0%,#2b1b13 48%,#7a4526 100%);border-bottom:4px solid #8a5633;color:#fff;overflow:hidden}.head{max-width:1050px;margin:auto;padding:20px 14px 18px;min-height:126px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative}.head:after{content:"";position:absolute;right:-80px;top:-110px;width:330px;height:330px;border-radius:50%;background:rgba(255,255,255,.055)}.brand{font-weight:900;font-size:30px;line-height:1.05;letter-spacing:.5px;position:relative;z-index:1}.brand span{color:#f2b06f}.brand small{display:block!important;margin-top:7px;font-size:13px!important;color:#f2dfd2!important;letter-spacing:.25px}.sub{margin-top:8px;font-size:13px;color:#f5e6db;position:relative;z-index:1}.heroBadge{position:relative;z-index:1;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.24);border-radius:14px;padding:10px 13px;text-align:center;font-size:12px;font-weight:800;white-space:nowrap}.heroBadge strong{display:block;font-size:19px;color:#fff;margin-bottom:2px}
 .nav{max-width:1050px;margin:auto;padding:8px 14px 12px;display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
 .nav button{border:1px solid #cfd5dd;background:#fff;border-radius:9px;padding:10px 7px;font-weight:800}.nav button.active{background:#183b6b;color:#fff;border-color:#183b6b}
 .wrap{max-width:1050px;margin:auto;padding:14px}.card{background:#fff;border:1px solid #e0e4e9;border-radius:15px;padding:16px;margin-bottom:14px}
@@ -22,12 +22,12 @@ button,input,select,textarea{font:inherit}.top{position:sticky;top:0;z-index:10;
 .metricgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.metric{background:#fff;border:1px solid #e0e4e9;border-radius:13px;padding:16px}.metric b{display:block;font-size:27px;margin-top:5px}
 .list{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;border:1px solid #e1e5ea;border-radius:10px;margin-top:9px}
 .bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #dce1e7;padding:9px;z-index:20}.bottomin{max-width:1050px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-@media(max-width:720px){.nav{grid-template-columns:repeat(3,1fr)}.actions{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}.pricegrid,.metricgrid{grid-template-columns:1fr 1fr}.bottomin{grid-template-columns:repeat(2,1fr)}body{padding-bottom:145px}.btn{min-height:48px}}
+@media(max-width:720px){.head{min-height:112px;padding:17px 14px}.brand{font-size:25px}.heroBadge{padding:8px 10px;font-size:10px}.heroBadge strong{font-size:16px}.nav{grid-template-columns:repeat(3,1fr)}.actions{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}.pricegrid,.metricgrid{grid-template-columns:1fr 1fr}.bottomin{grid-template-columns:repeat(2,1fr)}body{padding-bottom:145px}.btn{min-height:48px}}
 </style>
 </head>
 <body>
 <div class="top">
-  <div class="head"><div class="brand"><span>DT</span> Collectibles <small style="font-size:13px;color:#667085">AI eBay Lister</small></div><div class="sub">Photos → AI listing → Review → Post</div></div>
+  <div class="hero"><div class="head"><div><div class="brand"><span>DT</span> COLLECTIBLES<small>AI eBay Listing Assistant</small></div><div class="sub">Snap photos → AI builds the listing → Review → Post to eBay</div></div><div class="heroBadge"><strong>⚡ FAST LIST</strong>Photo-to-listing workflow</div></div></div>
   <div class="nav">
     <button onclick="screen('dashboard',this)">Dashboard</button>
     <button class="active" onclick="screen('new',this)">+ New Listing</button>
