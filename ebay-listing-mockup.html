@@ -1,15 +1,140 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KPM eBay AI Lister</title><style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#182230}.top{background:#fff;border-bottom:1px solid #ddd;padding:16px;position:sticky;top:0;z-index:3}.brand{font-weight:800;font-size:21px}.brand b{color:#3665f3}.wrap{max-width:900px;margin:auto;padding:18px}.tabs{display:flex;gap:8px;overflow:auto;margin:0 0 16px}.tab{padding:10px 14px;border:1px solid #d7dce1;border-radius:20px;background:#fff;white-space:nowrap}.tab.on{background:#182230;color:white}.card{background:white;border:1px solid #e1e4e8;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px #0000000a}.drop{border:2px dashed #b8c0ca;border-radius:14px;padding:34px 15px;text-align:center;background:#fafbfc}.btn{border:0;border-radius:10px;padding:13px 18px;font-weight:700;cursor:pointer}.blue{background:#3665f3;color:white}.green{background:#1f9d55;color:white}.dark{background:#182230;color:white}.ghost{background:#eef1f5}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.thumb{height:110px;border-radius:10px;background:linear-gradient(135deg,#d7dce2,#f2f4f7);display:flex;align-items:center;justify-content:center;font-size:30px}.label{font-size:12px;font-weight:700;color:#667085;margin:12px 0 5px}.field{width:100%;border:1px solid #cfd5dc;border-radius:9px;padding:11px;font-size:15px}.price{font-size:30px;font-weight:800}.row{display:flex;gap:10px;flex-wrap:wrap}.pill{background:#edf3ff;color:#2454c6;padding:6px 9px;border-radius:7px;font-size:12px;font-weight:700}.hidden{display:none}.status{padding:12px;border-radius:10px;background:#edf9f1;margin:12px 0;font-weight:700;color:#18743b}.bottom{position:sticky;bottom:0;background:#fff;border-top:1px solid #ddd;padding:12px;display:flex;gap:8px}.bottom .btn{flex:1}@media(max-width:600px){.wrap{padding:12px}.grid{grid-template-columns:repeat(2,1fr)}}
-</style></head><body><div class="top"><div class="brand"><b>KPM</b> AI Lister <span style="font-size:12px;color:#667085">for eBay</span></div></div>
-<div class="wrap"><div class="tabs"><button class="tab on">New Listing</button><button class="tab" onclick="alert('Drafts: 8')">Drafts 8</button><button class="tab" onclick="alert('Active listings: 63')">Active 63</button><button class="tab" onclick="alert('Sold items: 17')">Sold 17</button></div>
-<div class="card" id="upload"><h2>1. Add item photos</h2><p>Upload 1–12 photos. AI will identify the item and build the listing.</p><div class="drop"><div style="font-size:42px">📸</div><h3>Drop photos here</h3><input id="photos" type="file" accept="image/*" multiple><p style="color:#667085">or take pictures with your phone</p></div><br><button class="btn blue" onclick="analyze()">✨ Analyze Photos & Build Listing</button></div>
-<div id="working" class="card hidden"><h2>AI is analyzing your item…</h2><p>Reading labels • identifying model • checking condition • building title • estimating value</p></div>
-<div id="result" class="hidden"><div class="card"><h2>2. AI Listing</h2><div class="status">✓ Analysis complete — review before posting</div><div class="grid" id="preview"></div>
-<div class="label">EBAY TITLE <span id="count"></span></div><input class="field" id="title" value="Vintage Craftsman 1/2 in Drive Ratchet Socket Wrench Made in USA" oninput="counter()">
-<div class="label">CATEGORY</div><select class="field"><option>Home & Garden > Tools & Workshop Equipment > Hand Tools</option><option>Collectibles</option><option>eBay Motors</option></select>
-<div class="label">CONDITION</div><select class="field"><option>Used</option><option>New</option><option>For parts or not working</option></select>
-<div class="label">DESCRIPTION</div><textarea class="field" rows="7">Pre-owned Craftsman hand tool in good used condition. Please review all photos carefully for exact cosmetic condition, markings, and included components. Photos are part of the description. Item shown is the exact item you will receive.</textarea></div>
-<div class="card"><h2>3. AI Pricing</h2><div class="row"><div><div class="label">RECOMMENDED</div><div class="price">$34.99</div></div><div><div class="label">EXPECTED RANGE</div><div style="font-size:20px;font-weight:700">$29–$42</div></div><div><div class="label">QUICK SALE</div><div style="font-size:20px;font-weight:700">$27.99</div></div></div><div class="label">YOUR BUY IT NOW PRICE</div><input class="field" value="34.99" type="number" step=".01"></div>
-<div class="card"><h2>4. Item specifics</h2><div class="row"><span class="pill">Brand: Craftsman</span><span class="pill">Type: Ratchet</span><span class="pill">Drive: 1/2 in</span><span class="pill">Country: USA</span></div><div class="label">SHIPPING</div><select class="field"><option>Calculated shipping</option><option>Free shipping</option><option>Local pickup</option></select></div></div></div>
-<div id="resultbar" class="bottom hidden"><button class="btn ghost" onclick="alert('Draft saved')">Save Draft</button><button class="btn dark" onclick="alert('This mockup would connect to eBay OAuth here.')">Preview</button><button class="btn green" onclick="post()">Post to eBay</button></div>
-<script>function counter(){let v=document.getElementById('title').value;document.getElementById('count').textContent=v.length+'/80'}function analyze(){document.getElementById('upload').classList.add('hidden');document.getElementById('working').classList.remove('hidden');let files=document.getElementById('photos').files;let p=document.getElementById('preview');p.innerHTML='';for(let i=0;i<Math.min(files.length,6);i++){let d=document.createElement('img');d.className='thumb';d.style='width:100%;object-fit:cover';d.src=URL.createObjectURL(files[i]);p.appendChild(d)}if(!files.length){for(let i=0;i<4;i++){let d=document.createElement('div');d.className='thumb';d.textContent='📦';p.appendChild(d)}}setTimeout(()=>{document.getElementById('working').classList.add('hidden');document.getElementById('result').classList.remove('hidden');document.getElementById('resultbar').classList.remove('hidden');counter();scrollTo({top:0,behavior:'smooth'})},1300)}function post(){if(confirm('Publish this listing to eBay?\n\nMockup only — nothing will actually be posted.'))alert('✅ Mock listing published!\n\nThe real version would now return the live eBay item number and link.')}counter()</script></body></html>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DT Collectibles AI eBay Lister</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#172033;padding-bottom:92px}
+button,input,select,textarea{font:inherit}.top{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #dde2e8}
+.head{max-width:1050px;margin:auto;padding:14px 14px 8px}.brand{font-weight:900;font-size:23px}.brand span{color:#3665f3}.sub{font-size:12px;color:#667085}
+.nav{max-width:1050px;margin:auto;padding:8px 14px 12px;display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+.nav button{border:1px solid #cfd5dd;background:#fff;border-radius:9px;padding:10px 7px;font-weight:800}.nav button.active{background:#183b6b;color:#fff;border-color:#183b6b}
+.wrap{max-width:1050px;margin:auto;padding:14px}.card{background:#fff;border:1px solid #e0e4e9;border-radius:15px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:9px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:12px 14px;font-weight:800;cursor:pointer}
+.blue{background:#3665f3;color:#fff}.navy{background:#183b6b;color:#fff}.green{background:#198754;color:#fff}.purple{background:#6d4aff;color:#fff}.orange{background:#f59e0b;color:#fff}.gray{background:#edf0f4;color:#172033}.outline{background:#fff;border:1px solid #cfd5dd}.red{background:#c9362b;color:#fff}
+.drop{border:2px dashed #bbc4ce;border-radius:13px;text-align:center;padding:26px 12px;background:#fafbfc}.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:12px 0}.thumb{height:125px;border-radius:10px;background:#eef1f5;display:flex;align-items:center;justify-content:center;font-size:34px;object-fit:cover;width:100%}
+.label{font-size:12px;font-weight:800;color:#667085;margin:12px 0 5px}.field{width:100%;border:1px solid #ccd3dc;border-radius:9px;padding:11px}
+.pricegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.pricebox{border:1px solid #e1e5ea;border-radius:11px;padding:12px}.price{font-size:27px;font-weight:900}
+.pills{display:flex;gap:7px;flex-wrap:wrap}.pill{background:#edf3ff;color:#2454c6;padding:7px 9px;border-radius:7px;font-size:12px;font-weight:800}
+.status{background:#eaf7ef;color:#176b39;border-radius:9px;padding:11px;font-weight:800;margin:10px 0}.screen{display:none}.screen.show{display:block}.hidden{display:none}
+.metricgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.metric{background:#fff;border:1px solid #e0e4e9;border-radius:13px;padding:16px}.metric b{display:block;font-size:27px;margin-top:5px}
+.list{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;border:1px solid #e1e5ea;border-radius:10px;margin-top:9px}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #dce1e7;padding:9px;z-index:20}.bottomin{max-width:1050px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+@media(max-width:720px){.nav{grid-template-columns:repeat(3,1fr)}.actions{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}.pricegrid,.metricgrid{grid-template-columns:1fr 1fr}.bottomin{grid-template-columns:repeat(2,1fr)}body{padding-bottom:145px}.btn{min-height:48px}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="head"><div class="brand"><span>DT</span> Collectibles <small style="font-size:13px;color:#667085">AI eBay Lister</small></div><div class="sub">Photos → AI listing → Review → Post</div></div>
+  <div class="nav">
+    <button onclick="screen('dashboard',this)">Dashboard</button>
+    <button class="active" onclick="screen('new',this)">+ New Listing</button>
+    <button onclick="screen('drafts',this)">Drafts 8</button>
+    <button onclick="screen('active',this)">Active 63</button>
+    <button onclick="screen('sold',this)">Sold 17</button>
+    <button onclick="alert('Mockup: Connect eBay account')">Connect eBay</button>
+  </div>
+</div>
+
+<main class="wrap">
+<section id="dashboard" class="screen">
+  <div class="metricgrid">
+    <div class="metric">Active<b>63</b></div><div class="metric">Drafts<b>8</b></div><div class="metric">Sold<b>17</b></div><div class="metric">Sales<b>$1,842</b></div>
+  </div>
+  <div class="card"><h2>Quick Actions</h2><div class="actions"><button class="btn blue" onclick="openNew()">📸 Create Listing</button><button class="btn navy" onclick="alert('Mockup: Bulk listing')">📦 Bulk List</button><button class="btn purple" onclick="alert('Mockup: Price scanner')">💲 Price Scanner</button></div></div>
+</section>
+
+<section id="new" class="screen show">
+  <div class="card">
+    <h2>1. Add Item Photos</h2>
+    <div class="drop"><div style="font-size:44px">📸</div><h3>Take or choose photos</h3><input id="photos" type="file" accept="image/*" multiple></div>
+    <div class="actions">
+      <button class="btn navy" onclick="document.getElementById('photos').click()">📷 Take / Choose Photos</button>
+      <button class="btn gray" onclick="clearPhotos()">🗑 Clear Photos</button>
+      <button class="btn blue" onclick="analyze()">✨ Analyze & Build Listing</button>
+    </div>
+  </div>
+
+  <div class="card" id="listing">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2 style="margin:0">2. Listing Builder</h2><button class="btn outline" onclick="toast('Entire listing regenerated')">↻ Regenerate All</button></div>
+    <div class="status" id="status">Demo item loaded — all buttons are clickable.</div>
+    <div id="preview" class="grid"><div class="thumb">📦</div><div class="thumb">🏷️</div><div class="thumb">🔍</div><div class="thumb">📷</div></div>
+
+    <div class="label">EBAY TITLE <span id="count"></span></div>
+    <input id="title" class="field" value="Vintage Craftsman 1/2 in Drive Ratchet Socket Wrench Made in USA" oninput="counter()">
+    <div class="actions">
+      <button class="btn gray" onclick="toast('AI title regenerated')">✨ Regenerate Title</button>
+      <button class="btn gray" onclick="toast('Keywords optimized')">🔎 Optimize Keywords</button>
+      <button class="btn gray" onclick="toast('Best category selected')">📂 Find Category</button>
+    </div>
+
+    <div class="label">CATEGORY</div>
+    <select class="field"><option>Home & Garden > Tools & Workshop Equipment > Hand Tools</option><option>Collectibles</option><option>eBay Motors</option></select>
+
+    <div class="label">CONDITION</div>
+    <select class="field"><option>Used</option><option>New</option><option>Open box</option><option>For parts or not working</option></select>
+
+    <div class="label">DESCRIPTION</div>
+    <textarea class="field" rows="6">Pre-owned Craftsman hand tool in good used condition. Please review all photos carefully for exact cosmetic condition, markings, and included components. Photos are part of the description. Item shown is the exact item you will receive.</textarea>
+    <div class="actions">
+      <button class="btn gray" onclick="toast('Description rewritten')">✍️ Rewrite Description</button>
+      <button class="btn gray" onclick="toast('Condition language checked')">✅ Check Condition</button>
+      <button class="btn gray" onclick="toast('Item specifics filled')">🧾 Fill Item Specifics</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Price Research</h2>
+    <div class="pricegrid">
+      <div class="pricebox"><div class="label">RECOMMENDED</div><div class="price">$34.99</div></div>
+      <div class="pricebox"><div class="label">EXPECTED RANGE</div><div class="price">$29–$42</div></div>
+      <div class="pricebox"><div class="label">QUICK SALE</div><div class="price">$27.99</div></div>
+    </div>
+    <div class="actions">
+      <button class="btn purple" onclick="toast('Mockup: eBay sold comps researched')">🔍 Research Sold Comps</button>
+      <button class="btn orange" onclick="toast('Price updated from comps')">💲 Auto Price</button>
+      <button class="btn gray" onclick="toast('Price history opened')">📈 Price History</button>
+    </div>
+    <div class="label">YOUR BUY IT NOW PRICE</div><input class="field" type="number" step=".01" value="34.99">
+  </div>
+
+  <div class="card">
+    <h2>4. Item Specifics & Shipping</h2>
+    <div class="pills"><span class="pill">Brand: Craftsman</span><span class="pill">Type: Ratchet</span><span class="pill">Drive: 1/2 in</span><span class="pill">Country: USA</span></div>
+    <div class="actions">
+      <button class="btn gray" onclick="toast('Specifics editor opened')">✏️ Edit Specifics</button>
+      <button class="btn gray" onclick="toast('Missing specifics checked')">⚠️ Check Missing Fields</button>
+      <button class="btn gray" onclick="toast('Suggested specifics added')">➕ Add Suggested</button>
+    </div>
+    <div class="label">SHIPPING</div><select class="field"><option>Calculated shipping</option><option>Free shipping</option><option>Local pickup</option></select>
+    <div class="label">PACKAGE WEIGHT</div><input class="field" value="2 lb 4 oz">
+  </div>
+</section>
+
+<section id="drafts" class="screen"><div class="card"><h2>Drafts</h2><div class="list"><span>Vintage Craftsman Ratchet</span><button class="btn blue" onclick="openNew()">Edit</button></div><div class="list"><span>Polaroid Camera</span><button class="btn blue" onclick="openNew()">Edit</button></div></div></section>
+<section id="active" class="screen"><div class="card"><h2>Active Listings</h2><div class="list"><span>63 live listings</span><button class="btn navy" onclick="toast('Mockup: listing manager opened')">Manage</button></div></div></section>
+<section id="sold" class="screen"><div class="card"><h2>Sold</h2><div class="list"><span>17 sold items this month</span><button class="btn green" onclick="toast('Mockup: sold orders opened')">View Orders</button></div></div></section>
+</main>
+
+<div class="bottom">
+  <div class="bottomin">
+    <button class="btn gray" onclick="toast('Draft saved')">💾 Save Draft</button>
+    <button class="btn navy" onclick="toast('Preview opened')">👁 Preview</button>
+    <button class="btn purple" onclick="toast('eBay validation passed')">✅ Validate</button>
+    <button class="btn green" onclick="post()">🚀 Post to eBay</button>
+  </div>
+</div>
+
+<script>
+function counter(){document.getElementById('count').textContent=document.getElementById('title').value.length+'/80'}
+function screen(id,btn){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('show'));document.getElementById(id).classList.add('show');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');window.scrollTo({top:0,behavior:'smooth'})}
+function openNew(){screen('new',document.querySelectorAll('.nav button')[1])}
+function clearPhotos(){document.getElementById('photos').value='';document.getElementById('preview').innerHTML='<div class="thumb">📦</div><div class="thumb">🏷️</div><div class="thumb">🔍</div><div class="thumb">📷</div>';toast('Photos cleared')}
+function analyze(){const files=document.getElementById('photos').files;const p=document.getElementById('preview');p.innerHTML='';if(files.length){for(let i=0;i<Math.min(files.length,8);i++){const img=document.createElement('img');img.className='thumb';img.src=URL.createObjectURL(files[i]);p.appendChild(img)}}else{p.innerHTML='<div class="thumb">📦</div><div class="thumb">🏷️</div><div class="thumb">🔍</div><div class="thumb">📷</div>'}document.getElementById('status').textContent='✓ AI analysis complete — review the generated listing below.';document.getElementById('listing').scrollIntoView({behavior:'smooth'})}
+function toast(msg){alert(msg)}
+function post(){if(confirm('Post this listing to eBay?\n\nMockup only — nothing will actually be published.'))alert('✅ Mock listing published!\nThe real app would return the live eBay item number and link here.')}
+counter()
+</script>
+</body></html>
